@@ -1,13 +1,22 @@
-import geopandas as gpd
-import pandas as pd
-import numpy as np
-from shapely.geometry import box
-from pathlib import Path
+import argparse
 import time
+from pathlib import Path
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+from shapely.geometry import box
+
 
 def main():
+    parser = argparse.ArgumentParser(description="Calcolo dei pesi spaziali areali per le 479 contee su griglia ERA5-Land 0.1°.")
+    parser.add_argument("--data-dir", type=Path, default=Path("01_Dati_Soia_e_Target"), help="Cartella dei dati agronomici e shapefile (default: 01_Dati_Soia_e_Target).")
+    parser.add_argument("--out-dir", type=Path, default=Path("era5_land_daily"), help="Cartella di destinazione per i pesi spaziali (default: era5_land_daily).")
+    args = parser.parse_args()
+
     t0 = time.time()
-    data_dir = Path("Dati")
+    data_dir = args.data_dir
+    out_dir = args.out_dir
     shp_path = data_dir / "census_counties" / "cb_2020_us_county_500k.shp"
     excel_path = data_dir / "soybean_yield_479_counties_1950_2025.xlsx"
 
@@ -50,7 +59,6 @@ def main():
     weights_df = intersections[["GEOID", "lat", "lon", "weight"]].copy()
     weights_df.rename(columns={"GEOID": "county_fips"}, inplace=True)
     
-    out_dir = Path("era5_land_daily")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_parquet = out_dir / "spatial_weights_479_counties.parquet"
     out_csv = out_dir / "spatial_weights_479_counties.csv"

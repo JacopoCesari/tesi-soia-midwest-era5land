@@ -1,0 +1,26 @@
+# ==============================================================================
+# Dipendenze di Progetto: Previsione Resa Soia con Dati Meteorologici ed ERA5-Land
+# Ambiente testato su Python 3.12 (Windows / Linux)
+# ==============================================================================
+
+# Elaborazione Dati e Calcolo Scientifico
+numpy==1.26.3
+scipy==1.16.1
+pandas==2.2.3
+pyarrow==24.0.0
+openpyxl==3.1.2
+
+# Dati Geospaziali e Shapefile Contee
+geopandas==1.1.4
+shapely==2.1.2
+
+# Acquisizione Meteo Copernicus CDS e Gestione NetCDF
+cdsapi==0.7.7
+netCDF4==1.7.4
+xarray==2026.7.0
+
+# Modellazione e Machine Learning
+scikit-learn==1.7.1
+xgboost==3.0.4
+lightgbm==4.6.0
+torch==2.9.0
