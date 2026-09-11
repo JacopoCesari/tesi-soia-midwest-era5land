@@ -311,7 +311,35 @@ class CDSDownloader:
 
         logging.info("DOWNLOAD CANALE B: Anno %d, Accumulated 00:00 UTC (%d variabili)", year, len(VARS_ACCUMULATED))
         self.client.retrieve(DATASET_HOURLY, request).download(str(part_path))
-        part_path.replace(target_path)
+        
+        if zipfile.is_zipfile(part_path):
+            temp_extract_dir = self.raw_accum_dir / f"_tmp_{year}_accum"
+            temp_extract_dir.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(part_path, "r") as z:
+                z.extractall(temp_extract_dir)
+            if part_path.exists():
+                part_path.unlink()
+
+            nc_files = list(temp_extract_dir.glob("*.nc"))
+            if len(nc_files) == 1:
+                if target_path.exists():
+                    target_path.unlink()
+                nc_files[0].replace(target_path)
+            elif len(nc_files) > 1:
+                logging.info("Merging di %d variabili NetCDF accumulate...", len(nc_files))
+                datasets = [xr.open_dataset(get_safe_path(f)) for f in nc_files]
+                merged = xr.merge(datasets)
+                if target_path.exists():
+                    target_path.unlink()
+                merged.to_netcdf(get_safe_path(target_path))
+                for ds in datasets:
+                    ds.close()
+                merged.close()
+            shutil.rmtree(temp_extract_dir, ignore_errors=True)
+        else:
+            if target_path.exists():
+                target_path.unlink()
+            part_path.replace(target_path)
 
         logging.info("Completato: %s (%.1f MB)", target_path.name, target_path.stat().st_size / 1e6)
         return target_path
