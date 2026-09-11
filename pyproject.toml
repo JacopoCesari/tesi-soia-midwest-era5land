@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tesi-soia-midwest-era5land"
+version = "0.1.0"
+description = "Previsione della resa della soia nel Midwest USA con dati meteorologici ERA5-Land e Machine Learning"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Jacopo Cesari" }
+]
+dependencies = [
+    "numpy>=1.26.0,<2.0.0",
+    "scipy>=1.14.0",
+    "pandas>=2.2.0",
+    "pyarrow>=15.0.0",
+    "openpyxl>=3.1.0",
+    "geopandas>=1.0.0",
+    "shapely>=2.0.0",
+    "cdsapi>=0.7.0",
+    "netCDF4>=1.7.0",
+    "xarray>=2024.0.0",
+    "scikit-learn>=1.5.0",
+    "xgboost>=2.1.0",
+    "lightgbm>=4.5.0",
+    "torch>=2.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
