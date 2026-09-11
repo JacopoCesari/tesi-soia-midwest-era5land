@@ -1,0 +1,5 @@
+timestamp,year,channel,subgroup,file_path,file_size_bytes,sha256,qc_status,qc_notes
+2026-09-11T09:10:42.146795,1950,A,daily_mean,era5_land_daily\raw_daily_stats\era5_land_1950_daily_mean.nc,593251,cba2af9bbb7c03fdfa144c4b26950e976e3369db824c1dbccd78124dd1a7a547,PASS,Pre-flight test
+2026-09-11T09:10:42.162796,1950,A,daily_min,era5_land_daily\raw_daily_stats\era5_land_1950_daily_minimum.nc,255572,2e8fabea6b9a6affe613fa96bbac63a8620456dd912dee1c5a33cbf583ce55c0,PASS,Pre-flight test
+2026-09-11T09:10:42.165440,1950,A,daily_max,era5_land_daily\raw_daily_stats\era5_land_1950_daily_maximum.nc,255544,a98e2916f40982835be69e6c6271f8958b00e46b6b07e797c1c30d8d478122c4,PASS,Pre-flight test
+2026-09-11T09:10:42.179888,1950,B,accumulated,era5_land_daily\raw_accumulated_boundaries\era5_land_1950_accumulated_00utc.nc,5300577,c3387ee3a7af75b9aa076f03d1db6acaa382094035c0a5ce781b584086fdc766,PASS,Pre-flight test

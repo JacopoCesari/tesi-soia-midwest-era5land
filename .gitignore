@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.ipynb_checkpoints/
+.env
+.venv
+env/
+venv/
+
+# Credenziali CDS (MAI committare su GitHub!)
+.cdsapirc
+*.cdsapirc
+
+# Dati climatici e archivi pesanti (non tracciati su Git per vincoli di quota)
+era5_land_daily/raw_daily_stats/
+era5_land_daily/raw_accumulated_boundaries/
+era5_land_daily/county_daily/
+era5_land_daily/logs/
+*.nc
+*.nc.part
+*.grib
+*.zip
+*.tar.gz
+
+# File temporanei di sistema e IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+scratch/
