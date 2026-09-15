@@ -8,24 +8,51 @@ __pycache__/
 env/
 venv/
 
-# Credenziali CDS (MAI committare su GitHub!)
+# CDS credentials
 .cdsapirc
 *.cdsapirc
 
-# Dati climatici e archivi pesanti (non tracciati su Git per vincoli di quota)
-era5_land_daily/raw_daily_stats/
-era5_land_daily/raw_accumulated_boundaries/
-era5_land_daily/county_daily/
-era5_land_daily/logs/
+# Large climate downloads and generated data
+data/raw/era5_land/production/
+data/raw/era5_land/preflight/
+data/interim/county_daily_weather/production/
+data/interim/county_daily_weather/preflight/
+data/processed/model_datasets/*
+!data/processed/model_datasets/README.md
 *.nc
 *.nc.part
 *.grib
 *.zip
 *.tar.gz
 
-# File temporanei di sistema e IDE
+# System and editor temporary files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 scratch/
+
+# Packaging, test caches and generated analyses
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+reports/experiments/quality_control/
+reports/experiments/runs/
+reports/exploratory_analysis/generated/
+reports/figures/generated/
+reports/tables/generated/
+*.pt
+*.pth
+*.joblib
+
+# Preserve only the supplied small preflight fixtures; other NetCDF stays ignored.
+!data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_1950_daily_mean.nc
+!data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_1950_daily_minimum.nc
+!data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_1950_daily_maximum.nc
+!data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_2025_daily_mean.nc
+!data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_2025_daily_minimum.nc
+!data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_2025_daily_maximum.nc
+!data/raw/era5_land/supplied_preflight/raw_accumulated_boundaries/era5_land_1950_accumulated_00utc.nc
+!data/raw/era5_land/supplied_preflight/raw_accumulated_boundaries/era5_land_2025_accumulated_00utc.nc

@@ -1,0 +1,28 @@
+# Paths are relative to the parent of this configs directory.
+paths:
+  repository_root: ..
+  external: ../work/data/external/usda_nass_and_county_boundaries
+  target: data/target/soybean_yield_1951_2025.csv
+  counties: data/auxiliary/counties.csv
+  acreage: data/auxiliary/acres_harvested_1951_2025.csv
+  provenance: data/auxiliary/panel_provenance.json
+  raw: ../work/data/raw/era5_land/production
+  preflight: ../work/data/raw/era5_land/preflight
+  supplied_preflight: ../work/data/raw/era5_land/supplied_preflight
+  output: ../work/data/interim/county_daily_weather/production
+  preflight_output: ../work/data/interim/county_daily_weather/preflight
+  weights: data/auxiliary/spatial_weights.csv
+  supplied_weights: ../work/data/interim/spatial_weights/spatial_weights_479_counties.parquet
+  historical_manifest: ../work/data/raw/era5_land/manifest.csv
+  migration_map: ../work/data/external/file_migration.json
+  quality_reports: ../work/reports/experiments/quality_control
+primary_period:
+  start_year: 1951
+  end_year: 2025
+# Keep 1950 weather for the October 1950-October 1951 crop campaign.
+weather_period:
+  start_year: 1950
+  end_year: 2025
+expected_counties: 135
+supplied_counties: 479
+preflight_years: [1950, 2025]

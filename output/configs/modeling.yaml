@@ -1,0 +1,9 @@
+validation:
+  strategy: expanding_window
+  initial_training_years: null
+  status: initial_window_open
+metrics: [rmse, mae, r2_out_of_sample]
+primary_metric: null
+preprocessing: training_only
+acreage_weighting: false
+# Training and metric implementations belong to a later phase.

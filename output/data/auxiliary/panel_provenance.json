@@ -1,0 +1,34 @@
+{
+  "acreage": "Complete for the same selected county-year keys; auxiliary only, never a predictor or weight",
+  "counties": 135,
+  "counties_by_state": {
+    "ILLINOIS": 28,
+    "INDIANA": 20,
+    "IOWA": 35,
+    "MINNESOTA": 19,
+    "MISSOURI": 6,
+    "OHIO": 27
+  },
+  "decision_date": "2026-09-15",
+  "derived_sha256": {
+    "acres_harvested_1951_2025.csv": "71371782ff2f7aeddb4cce6019199c698e6063a60080f62d9d723e1ce7ddb10c",
+    "counties.csv": "99620c68c76ff0bcd69d0d5b683d07e4c4f0fc8eb9e6d90ff51bb27e6ddccd17",
+    "soybean_yield_1951_2025.csv": "261902f14e7d72bbc256939edc55ba35ece7c5893ca4dacbb2f5c218c7d6c172",
+    "spatial_weights.csv": "dd39ea62df30292940514a6fa7c7f53cd7395aa0319bb9b365c11aa21f899877"
+  },
+  "excluded_source_observations": 25362,
+  "observations": 10125,
+  "period": {
+    "end_year": 2025,
+    "start_year": 1951
+  },
+  "rationale": "Maximum usable crop-year coverage; 1950 yield excluded because October 1949 weather is unavailable",
+  "selection": "Finite SURVEY yield in every year; no imputation; within the supplied 479 counties",
+  "source_sha256": {
+    "soybean_acres_479_counties_1950_2025.xlsx": "163ed61cf3b3067359c7dd4b0e1c4d3ed5d88936101274bc4a184fa3667511c3",
+    "soybean_yield_479_counties_1950_2025.xlsx": "80870a935f5a0a14cb1fe48727cbc2dcc7ff7337e8134e6d86eb537a5305cbc9",
+    "spatial_weights_479_counties.parquet": "e04b61a521b218d8bb7b49b9d9b2668499693fb6eb0e81fed53c0a153661c9ef"
+  },
+  "source_yield_observations": 35487,
+  "weight_rows": 3344
+}

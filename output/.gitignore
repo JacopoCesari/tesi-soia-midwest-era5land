@@ -1,0 +1,3 @@
+# Future model datasets can be large; the selected yield target is tracked separately.
+data/processed/model_datasets/*
+!data/processed/model_datasets/README.md
