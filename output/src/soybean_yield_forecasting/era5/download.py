@@ -5,9 +5,17 @@ from __future__ import annotations
 import calendar
 import logging
 import shutil
+import warnings
 import zipfile
 from pathlib import Path
 from typing import Any, Sequence
+
+warnings.warn(
+    "CDSDownloader is deprecated and preserved for historical verification and legacy comparison only. "
+    "ECMWF ARCO Zarr (ARCOClient and ARCOPipeline) is the primary acquisition engine.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 import cdsapi
 import pandas as pd

@@ -98,26 +98,7 @@ class CountyAggregator:
         if status != "PASS":
             raise ValueError(note)
         logging.info("Computing weighted county means for %d dates...", len(common_dates))
-        county_frames = []
-        for fips, group in self.weights_frame.groupby("county_fips"):
-            county_latitudes = xr.DataArray(group["latitude"].values, dims="points")
-            county_longitudes = xr.DataArray(group["longitude"].values, dims="points")
-            point_weights = xr.DataArray(group["weight"].values, dims="points")
-            points = combined_dataset.sel(latitude=county_latitudes, longitude=county_longitudes)
-            county_aggregate = (
-                (points * point_weights).sum(dim="points", skipna=False).to_dataframe().reset_index()
-            )
-            county_aggregate["county_fips"] = fips
-            county_frames.append(county_aggregate)
-        year_frame = pd.concat(county_frames).reset_index(drop=True)
-        year_frame.rename(columns={"time": "date"}, inplace=True)
-        columns_to_drop = [
-            column
-            for column in ["points", "latitude", "longitude", "number", "expver"]
-            if column in year_frame.columns
-        ]
-        if columns_to_drop:
-            year_frame.drop(columns=columns_to_drop, inplace=True)
+        year_frame = self.aggregate_gridded_dataset(combined_dataset)
         year_frame = apply_unit_conversions(year_frame)
         year_frame = canonicalize_weather(year_frame)
         qc_status, quality_message = validate_county_daily(
@@ -146,7 +127,12 @@ class CountyAggregator:
             raise ValueError(quality_message)
         else:
             logging.info("QC County-Daily: %s", quality_message)
-        year_frame.to_parquet(out_parquet, index=False)
+
+        part_parquet = out_parquet.with_suffix(".parquet.part")
+        year_frame.to_parquet(part_parquet, index=False)
+        if out_parquet.exists():
+            out_parquet.unlink()
+        part_parquet.replace(out_parquet)
         logging.info(
             "Saved county-daily year %d: %s (%.2f MB, %d rows)",
             year,
@@ -155,3 +141,46 @@ class CountyAggregator:
             len(year_frame),
         )
         return out_parquet
+
+    def aggregate_gridded_dataset(self, dataset: xr.Dataset) -> pd.DataFrame:
+        """Compute area-weighted county means from any gridded daily dataset."""
+        time_coord = "valid_time" if "valid_time" in dataset.coords else "time"
+        ds = dataset.copy()
+        if time_coord in ds.coords:
+            normalized_dates = pd.to_datetime(ds[time_coord].values).normalize()
+            ds = ds.assign_coords({time_coord: normalized_dates})
+            if time_coord != "time":
+                ds = ds.rename({time_coord: "time"})
+
+        ds = ds.assign_coords(
+            {
+                "latitude": np.round(ds["latitude"].values, 2),
+                "longitude": np.round(ds["longitude"].values, 2),
+            }
+        )
+
+        county_frames = []
+        for fips, group in self.weights_frame.groupby("county_fips"):
+            county_latitudes = xr.DataArray(group["latitude"].values, dims="points")
+            county_longitudes = xr.DataArray(group["longitude"].values, dims="points")
+            point_weights = xr.DataArray(group["weight"].values, dims="points")
+            points = ds.sel(latitude=county_latitudes, longitude=county_longitudes)
+            county_aggregate = (
+                (points * point_weights).sum(dim="points", skipna=False).to_dataframe().reset_index()
+            )
+            county_aggregate["county_fips"] = fips
+            county_frames.append(county_aggregate)
+
+        year_frame = pd.concat(county_frames).reset_index(drop=True)
+        if "time" in year_frame.columns:
+            year_frame.rename(columns={"time": "date"}, inplace=True)
+
+        columns_to_drop = [
+            column
+            for column in ["points", "latitude", "longitude", "number", "expver"]
+            if column in year_frame.columns
+        ]
+        if columns_to_drop:
+            year_frame.drop(columns=columns_to_drop, inplace=True)
+
+        return year_frame

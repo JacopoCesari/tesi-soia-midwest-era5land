@@ -20,6 +20,8 @@ dependencies = [
     "cdsapi>=0.7.0",
     "netCDF4>=1.7.0",
     "xarray>=2024.0.0",
+    "zarr>=2.18.0,<3.0.0",
+    "fsspec>=2024.0.0",
     "PyYAML>=6.0.1",
 ]
 
@@ -35,6 +37,10 @@ development = [
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["../work/tests"]
+markers = [
+    "network: tests requiring external network access to ARCO or CDS (deselected by default)",
+]
+addopts = "-m 'not network'"
 
 [tool.setuptools.packages.find]
 where = ["src"]
