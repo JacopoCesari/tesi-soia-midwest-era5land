@@ -14,17 +14,18 @@ weather still starts in 1950 for the October 1950–October 1951 campaign.
 
 | Responsibility | Module under `src/soybean_yield_forecasting/era5/` |
 |---|---|
-| CDS variable selections and domain | `variables.py` |
-| Requests and response extraction | `download.py` |
-| Portable NetCDF loading and hashing | `file_io.py` |
-| Record append and resume checks | `manifest.py` |
-| Calendar, physical and county checks | `quality_control.py` |
-| Parameter correction and unit conversion | `conversions.py` |
-| English output names | `schema.py` |
+| ARCO Zarr client, probing and chunked access | `arco.py` |
+| Canonical 37-feature manifest and schema validation | `feature_manifest.py` |
+| Daily aggregations, conversions and derived features | `transformations.py` |
 | County-cell overlay and weight validation | `spatial_weights.py` |
-| Daily weighted aggregation | `county_aggregation.py` |
-| Validated year orchestration | `pipeline.py` |
-| CLI parsing and report orchestration | `cli.py` |
+| Daily weighted county aggregation | `county_aggregation.py` |
+| Validated year orchestration (ARCO & legacy CDS) | `pipeline.py` |
+| CLI entry points and report orchestration | `cli.py` |
+| Calendar, physical and county QC checks | `quality_control.py` |
+| English output names and schema definitions | `schema.py` |
+| Portable NetCDF / Zarr loading and hashing | `file_io.py` |
+| Legacy CDS downloader (deprecated) | `download.py` |
+| Legacy manifest tracking | `manifest.py` |
 
 The scripts in `scripts/` are thin entry points. Paths come from `configs/data.yaml`
 or explicit overrides. The CDS client is created lazily on the first retrieval;
