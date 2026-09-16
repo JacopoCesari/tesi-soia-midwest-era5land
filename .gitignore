@@ -17,6 +17,12 @@ data/raw/era5_land/production/
 data/raw/era5_land/preflight/
 data/interim/county_daily_weather/production/
 data/interim/county_daily_weather/preflight/
+work/data/raw/era5_land/arco_cache/
+work/data/raw/era5_land/production/
+work/data/raw/era5_land/preflight/
+work/data/interim/county_daily_weather/production/
+work/data/interim/county_daily_weather/preflight/
+work/scratch/
 data/processed/model_datasets/*
 !data/processed/model_datasets/README.md
 *.nc

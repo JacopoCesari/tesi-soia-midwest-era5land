@@ -68,29 +68,45 @@ It never rewrites sources or silently replaces conflicting prepared files.
 
 Target years and weather years are separate settings. `--primary-period` retrieves
 the configured **weather years 1950–2025**, supporting **yield years 1951–2025**.
-Requests use all 37 fields on the minimum rectangle containing every selected
-weight cell: 16,236 grid points instead of 20,040 (18.98% fewer). Resolution and
-within-county weights are unchanged. Completed years resume after source-record,
-optional checksum and output validation, without raw NetCDF reloading.
-Daily-statistic requests use resumable monthly blocks, splitting their days further
-when CDS explicitly rejects a block for exceeding its cost limit.
 
-The commands below contact CDS. They require separate download authorization and
-credentials outside the repository:
+The pipeline uses **ECMWF ARCO (Analysis-Ready Cloud-Optimized) Zarr** as its primary
+acquisition engine, with direct HTTP chunked access to the 8 official stores on
+`https://arco.datastores.ecmwf.int`. The legacy CDS batch API pipeline is deprecated and
+preserved under `docs/legacy_cds_pipeline.md` (callable via `--legacy-cds`).
+
+### ARCO Pipeline Workflow
+1. **Cloud Access**: Lazy, chunk-aware HTTP slicing over the 135-county bounding box.
+2. **Local Daily Aggregations**: Hourly fields aggregated to daily statistics (mean, min, max, sum).
+3. **Spatial Aggregation**: Area-weighted county aggregation via EPSG:5070 precomputed weights.
+4. **Physical Conversions**: Kelvin to °C, Pa to hPa, m to mm, J/m² to MJ/m².
+5. **Derived Meteorological & Agronomic Features**:
+   - `wind_speed = sqrt(u10^2 + v10^2)`
+   - `relative_humidity` (August-Roche-Magnus formula)
+   - `vapor_pressure_deficit` (Tetens formula)
+   - `growing_degree_days` (base 10°C, cutoff 30°C)
+   - `heat_day_30`, `heat_day_35`
+   - `et0_fao56` (FAO-56 Penman-Monteith reference evapotranspiration)
+   - `p_minus_et0` (climatic water balance)
+6. **Validation & Atomic Parquet Output**: Strict QC schema and physical consistency checks.
+
+### Usage Commands
 
 ```powershell
-python scripts/run_preflight.py --download --verify-checksum
-python scripts/download_era5_land.py --test-year 1950 --verify-checksum
-python scripts/download_era5_land.py --test-year 1952 --verify-checksum
-# Only after pilot acceptance and explicit historical-download authorization:
-python scripts/download_era5_land.py --primary-period --verify-checksum
-```
+# 1. Discover and inspect available ARCO stores and variable inventory
+python scripts/arco_inventory.py
 
-For downloaded files, use `python scripts/build_county_daily_weather.py --test-year
-1950 --verify-checksum` and `python scripts/validate_downloaded_data.py --year 1950
---verify-checksum`. Recomputing weights with `python scripts/compute_spatial_weights.py
---output-dir ../work/scratch/recomputed_weights_new` requires the original Census
-boundaries and the geospatial extra. Prepared weights are already included here.
+# 2. Run minimal 7-day preflight pilot (June 1–7, 1950) via ARCO
+python scripts/download_era5_land.py --pilot
+
+# 3. Offline preflight validation of supplied artifacts
+python scripts/run_preflight.py
+
+# 4. Acquire one complete pilot year via ARCO (requires prior authorization)
+python scripts/download_era5_land.py --test-year 1950
+
+# 5. Legacy CDS execution (deprecated, preserved for benchmark verification)
+python scripts/download_era5_land.py --test-year 1950 --legacy-cds --verify-checksum
+```
 
 ## Current status
 

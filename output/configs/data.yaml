@@ -16,6 +16,23 @@ paths:
   historical_manifest: ../work/data/raw/era5_land/manifest.csv
   migration_map: ../work/data/external/file_migration.json
   quality_reports: ../work/reports/experiments/quality_control
+  feature_manifest: configs/feature_manifest_37.yaml
+  arco_cache: ../work/data/raw/era5_land/arco_cache
+  arco_inventory: ../work/data/raw/era5_land/arco_inventory.json
+arco:
+  base_url: "https://arco.datastores.ecmwf.int"
+  store_type: "geoChunked"
+  timeout_seconds: 60
+  max_retries: 3
+  stores:
+    sfc-2m-temperature: "cadl-arco-geo-007"
+    sfc-soil-temperature: "cadl-arco-geo-006"
+    sfc-soil-water: "cadl-arco-geo-005"
+    sfc-radiation-heat: "cadl-arco-geo-010"
+    sfc-snow: "cadl-arco-geo-030"
+    sfc-wind: "cadl-arco-geo-008"
+    sfc-pressure-precipitation: "cadl-arco-geo-009"
+    sfc-skin-temperature: "cadl-arco-geo-043"
 primary_period:
   start_year: 1951
   end_year: 2025

@@ -11,9 +11,10 @@ import pandas as pd
 import xarray as xr
 
 from ..configuration import load_configuration
+from .arco import ARCOClient
 from .file_io import open_dataset_safe
 from .manifest import ManifestManager
-from .pipeline import run_year, year_files
+from .pipeline import ARCOPipeline, run_year, run_year_arco, run_year_cds, year_files
 from .quality_control import validate_county_daily, validate_era5_dataset, write_quality_report
 from .schema import WEATHER_VARIABLES, canonicalize_weather
 from .spatial_weights import compute_spatial_weights, load_spatial_weights
@@ -27,6 +28,28 @@ def _parser(description: str) -> argparse.ArgumentParser:
     return parser
 
 
+def inventory_main(argv: Sequence[str] | None = None) -> None:
+    """Discover and summarize available ECMWF ARCO Zarr stores and variables."""
+    parser = _parser("Discover and inspect ECMWF ARCO ERA5-Land Zarr stores")
+    parser.add_argument("--save", type=Path, help="Custom path to save JSON inventory")
+    arguments = parser.parse_args(argv)
+    configuration = load_configuration(arguments.config)
+    paths = configuration.get("paths", {})
+    save_path = arguments.save or paths.get("arco_inventory")
+    client = ARCOClient()
+    inv = client.discover_inventory(save_path=save_path)
+    print(f"\nDiscovered {len(inv['stores'])} candidate stores:")
+    for store_name, meta in inv["stores"].items():
+        avail = "AVAILABLE" if meta["available"] else f"UNAVAILABLE (status {meta['status_code']})"
+        var_count = len(meta["variables"])
+        print(f"  - {store_name} ({meta['bucket']}): {avail} [{var_count} variables]")
+        if meta["available"]:
+            print(f"    Variables: {', '.join(meta['variables'][:10])}{'...' if var_count > 10 else ''}")
+    print(f"\nTotal variables identified: {len(inv['all_variables'])}")
+    if save_path:
+        print(f"Inventory saved to: {save_path}")
+
+
 def download_main(argv: Sequence[str] | None = None, *, aggregate_only: bool = False) -> None:
     """Download or aggregate explicitly chosen years; never start a run on empty arguments."""
     parser = _parser("Download and aggregate ERA5-Land county weather")
@@ -38,22 +61,62 @@ def download_main(argv: Sequence[str] | None = None, *, aggregate_only: bool = F
         help="Weather years supporting the primary target (1950-2025)",
     )
     selection.add_argument("--start-year", type=int, help="First explicit year; requires --end-year")
+    selection.add_argument(
+        "--pilot",
+        action="store_true",
+        help="Run minimal 7-day preflight pilot (June 1-7, 1950)",
+    )
+    selection.add_argument(
+        "--inventory",
+        action="store_true",
+        help="Query and print available ARCO Zarr stores and variables",
+    )
     parser.add_argument("--end-year", type=int, help="Last explicit year")
+    parser.add_argument(
+        "--engine",
+        choices=["arco", "cds"],
+        default="arco",
+        help="Acquisition engine: 'arco' (default, cloud Zarr) or 'cds' (legacy batch API)",
+    )
+    parser.add_argument(
+        "--legacy-cds",
+        action="store_true",
+        help="Shortcut to use legacy CDS batch API engine instead of ARCO",
+    )
     parser.add_argument(
         "--aggregate-only",
         action="store_true",
         default=aggregate_only,
-        help="Read downloaded files without creating a CDS client",
+        help="Read downloaded files without creating a remote client",
     )
     parser.add_argument(
         "--verify-checksum", action="store_true", help="Require SHA-256 matches against the manifest"
     )
     parser.add_argument("--raw-dir", type=Path, help="Override raw input/output directory")
     parser.add_argument("--output-dir", type=Path, help="Override county output directory")
+    parser.add_argument("--cache-dir", type=Path, help="Override ARCO slice cache directory")
+    parser.add_argument("--no-derived", action="store_true", help="Skip derived feature calculations")
+    parser.add_argument(
+        "--stores",
+        nargs="+",
+        help="Specific ARCO store names to acquire (defaults to all 8 stores)",
+    )
     arguments = parser.parse_args(argv)
+
+    if arguments.inventory:
+        inventory_main(argv)
+        return
+
     configuration = load_configuration(arguments.config)
     paths = configuration["paths"]
-    if arguments.start_year is not None:
+    is_preflight = False
+    test_days = None
+
+    if arguments.pilot:
+        years = [1950]
+        test_days = [f"{day:02d}" for day in range(1, 8)]
+        is_preflight = True
+    elif arguments.start_year is not None:
         if arguments.end_year is None or arguments.end_year < arguments.start_year:
             parser.error("--start-year requires --end-year >= --start-year")
         years = range(arguments.start_year, arguments.end_year + 1)
@@ -65,10 +128,13 @@ def download_main(argv: Sequence[str] | None = None, *, aggregate_only: bool = F
         years = range(
             configuration["weather_period"]["start_year"], configuration["weather_period"]["end_year"] + 1
         )
+
+    engine = "cds" if arguments.legacy_cds else arguments.engine
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
     for year in years:
-        raw = arguments.raw_dir or paths["raw"]
-        output = arguments.output_dir or paths["output"]
+        raw = arguments.raw_dir or (paths["preflight"] if is_preflight else paths["raw"])
+        output = arguments.output_dir or (paths["preflight_output"] if is_preflight else paths["output"])
         try:
             result = run_year(
                 year,
@@ -78,6 +144,12 @@ def download_main(argv: Sequence[str] | None = None, *, aggregate_only: bool = F
                 aggregate_only=arguments.aggregate_only,
                 verify_checksum=arguments.verify_checksum,
                 expected_counties=configuration["expected_counties"],
+                engine=engine,
+                cache_dir=arguments.cache_dir or paths.get("arco_cache"),
+                compute_derived=not arguments.no_derived,
+                preflight=is_preflight,
+                test_days=test_days,
+                store_names=arguments.stores,
             )
             print(result)
         except (ValueError, OSError) as error:
@@ -180,7 +252,18 @@ def preflight_main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument(
         "--download",
         action="store_true",
-        help="Contact CDS for 7 days and all 37 fields; requires prior authorization",
+        help="Download 7 days and all available fields; requires prior authorization",
+    )
+    parser.add_argument(
+        "--engine",
+        choices=["arco", "cds"],
+        default="arco",
+        help="Engine for preflight download: 'arco' (default) or 'cds' (legacy batch API)",
+    )
+    parser.add_argument(
+        "--legacy-cds",
+        action="store_true",
+        help="Shortcut to use legacy CDS API for preflight download",
     )
     parser.add_argument("--verify-checksum", action="store_true")
     parser.add_argument("--report", type=Path, help="JSON QC report destination")
@@ -190,6 +273,7 @@ def preflight_main(argv: Sequence[str] | None = None) -> None:
     checks = []
     try:
         if arguments.download:
+            engine = "cds" if arguments.legacy_cds else arguments.engine
             for year in configuration["preflight_years"]:
                 output = run_year(
                     year,
@@ -199,6 +283,7 @@ def preflight_main(argv: Sequence[str] | None = None) -> None:
                     verify_checksum=arguments.verify_checksum,
                     preflight=True,
                     expected_counties=configuration["expected_counties"],
+                    engine=engine,
                 )
                 checks.append({"check": "new_preflight", "year": year, "status": "PASS", "file": str(output)})
         else:
