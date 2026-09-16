@@ -1,0 +1,202 @@
+[
+  {
+    "old_path": "01_Dati_Soia_e_Target/balanced_panel_candidate_counties.csv",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/balanced_panel_candidate_counties.csv",
+    "sha256": "96713382be4d9c5d84e9bcb7fdfe489f86893b21ece7c2d6a79eb65a36b4cefe"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/soybean_acres_479_counties_1950_2025.xlsx",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/soybean_acres_479_counties_1950_2025.xlsx",
+    "sha256": "163ed61cf3b3067359c7dd4b0e1c4d3ed5d88936101274bc4a184fa3667511c3"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/soybean_yield_479_counties_1950_2025.xlsx",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/soybean_yield_479_counties_1950_2025.xlsx",
+    "sha256": "80870a935f5a0a14cb1fe48727cbc2dcc7ff7337e8134e6d86eb537a5305cbc9"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/census_counties/cb_2020_us_county_500k.cpg",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/census_counties/cb_2020_us_county_500k.cpg",
+    "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/census_counties/cb_2020_us_county_500k.dbf",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/census_counties/cb_2020_us_county_500k.dbf",
+    "sha256": "72a2dad5514aaf5476b42d8c5395130851a6692086b872d088fc65e404ca616f"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/census_counties/cb_2020_us_county_500k.prj",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/census_counties/cb_2020_us_county_500k.prj",
+    "sha256": "0b9041e921d9ebb43247d314608fe9e38a0b008ee793067fc1806199ea1fb9dd"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/census_counties/cb_2020_us_county_500k.shp",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/census_counties/cb_2020_us_county_500k.shp",
+    "sha256": "6338e1d5b9093370eb66345f70c6d2198e526247666453e6e959bb055125f05a"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/census_counties/cb_2020_us_county_500k.shp.ea.iso.xml",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/census_counties/cb_2020_us_county_500k.shp.ea.iso.xml",
+    "sha256": "cd1c8fb75f13be6aa81a72bac624c40448a423a76ac08d2db0f124700d7183f6"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/census_counties/cb_2020_us_county_500k.shp.iso.xml",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/census_counties/cb_2020_us_county_500k.shp.iso.xml",
+    "sha256": "ee10bb8d48a618d54ddb78883313f29dd0881f275241798d81cf7719027678fe"
+  },
+  {
+    "old_path": "01_Dati_Soia_e_Target/census_counties/cb_2020_us_county_500k.shx",
+    "new_path": "work/data/external/usda_nass_and_county_boundaries/census_counties/cb_2020_us_county_500k.shx",
+    "sha256": "93a856ebbb639724de450117a324870be1a3fb7f30d5a045e7cd382b7ae7276b"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Ceglar & Toreti (2021) — Seasonal Climate Forecasts for European Agriculture.pdf",
+    "new_path": "work/references/papers/Ceglar & Toreti (2021) — Seasonal Climate Forecasts for European Agriculture.pdf",
+    "sha256": "5b745b425d262769ab79c600e686d888f1ddabb101b06a3c5335ba71add7addf"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Hoffman, Kemanian & Forest (2020) — Growing-Phase Climate and Soybean Yield.pdf",
+    "new_path": "work/references/papers/Hoffman, Kemanian & Forest (2020) — Growing-Phase Climate and Soybean Yield.pdf",
+    "sha256": "f78ae56bba2dae2a0ec25f592ce45dc529f21d62a79329e9a7fad75b8b53f6dd"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Iizumi et al. (2018) — Global Crop Yield Forecasting Using Seasonal Climate Information.pdf",
+    "new_path": "work/references/papers/Iizumi et al. (2018) — Global Crop Yield Forecasting Using Seasonal Climate Information.pdf",
+    "sha256": "f01eec494e31dc9e82f02e79669fdda8792dae3cfdff3103d6f4bd686400ae37"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Iizumi et al. (2021) — Global Within-Season Yield Anomaly Prediction.pdf",
+    "new_path": "work/references/papers/Iizumi et al. (2021) — Global Within-Season Yield Anomaly Prediction.pdf",
+    "sha256": "7a6dad21bbc9cbdf6a8d9fa93226be16faf4348c3c8b0b2247097fb25327d9f2"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Jeong et al. (2016) — Random Forests for Global and Regional Crop Yield Predictions.pdf",
+    "new_path": "work/references/papers/Jeong et al. (2016) — Random Forests for Global and Regional Crop Yield Predictions.pdf",
+    "sha256": "9637075c5a43382c17778eff330fe60939b16567c02f43131830cb7692f0b436"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Khaki & Wang (2019) — Crop Yield Prediction Using Deep Neural Networks.pdf",
+    "new_path": "work/references/papers/Khaki & Wang (2019) — Crop Yield Prediction Using Deep Neural Networks.pdf",
+    "sha256": "89ed065b9cb97d5fabd9e8ac8014d17bcc7d647580423fbd5a1d33767db112ac"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Khaki, Wang & Archontoulis (2020) — A CNN-RNN Framework for Crop Yield Prediction.pdf",
+    "new_path": "work/references/papers/Khaki, Wang & Archontoulis (2020) — A CNN-RNN Framework for Crop Yield Prediction.pdf",
+    "sha256": "34e047b30ecf6e91a36c47ff9ff58e1aec2334d8dffb2bdfba8de1056f8a8f56"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Schlenker & Roberts (2009) — Nonlinear Temperature Effects on U.S. Crop Yields.pdf",
+    "new_path": "work/references/papers/Schlenker & Roberts (2009) — Nonlinear Temperature Effects on U.S. Crop Yields.pdf",
+    "sha256": "cc265b6213fdabbf1336e49757d3bbe9f3a7bf8c1b51818a91733161f113a369"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Sharma et al. (2025) — Maize and Soybean Yield Prediction Using ML Systematic Review.pdf",
+    "new_path": "work/references/papers/Sharma et al. (2025) — Maize and Soybean Yield Prediction Using ML Systematic Review.pdf",
+    "sha256": "c79e1e336562738c52672c8fbe5b5483e818b2b30d5e531056aa147200d7ecf4"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Shook et al. (2021) — Crop Yield Prediction Integrating Genotype and Weather Using Deep Learning.pdf",
+    "new_path": "work/references/papers/Shook et al. (2021) — Crop Yield Prediction Integrating Genotype and Weather Using Deep Learning.pdf",
+    "sha256": "c6babc04e5f5bdbfa697fbd91980ebf1c230898ea9e80d92ceb27633b066b891"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Sweet et al. (2023) — Cross-Validation Strategy Impacts ML Performance and Interpretation.pdf",
+    "new_path": "work/references/papers/Sweet et al. (2023) — Cross-Validation Strategy Impacts ML Performance and Interpretation.pdf",
+    "sha256": "e616b073552fe69d2cf3b8d810ef3f25b3205fae8a239e47cc08996f33e42b08"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Torsoni et al. (2023) — Soybean Yield Prediction by Machine Learning and Climate.pdf",
+    "new_path": "work/references/papers/Torsoni et al. (2023) — Soybean Yield Prediction by Machine Learning and Climate.pdf",
+    "sha256": "4b991b195673a46d612715b76a30dee9372e6fa01f52893f65395370650a66b9"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Vijverberg, Hamed & Coumou (2023) — Skillful U.S. Soy Yield Forecasts at Presowing Lead Times.pdf",
+    "new_path": "work/references/papers/Vijverberg, Hamed & Coumou (2023) — Skillful U.S. Soy Yield Forecasts at Presowing Lead Times.pdf",
+    "sha256": "5f2fe731fac18fa6be5d9e90c84150e474ec6ac2276465beb0e9f7c8dee6bed5"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Xie, Huang & Meng (2025) — Soybean Yield Modeling with Weather Dynamics.pdf",
+    "new_path": "work/references/papers/Xie, Huang & Meng (2025) — Soybean Yield Modeling with Weather Dynamics.pdf",
+    "sha256": "71c94e7915d3dbde9209fe3d5d1ee2b4c9b5ce51202de4a399215fc1cb7b8585"
+  },
+  {
+    "old_path": "03_Documentazione_e_Paper/Papers/Yin et al. (2026) — Estimating Soybean Yields from High-Temporal-Resolution Multi-Source Data.pdf",
+    "new_path": "work/references/papers/Yin et al. (2026) — Estimating Soybean Yields from High-Temporal-Resolution Multi-Source Data.pdf",
+    "sha256": "6efd4309d3182ab267d883aefca74deb174551b1b4d7ddfd0fdaf017a8c3cbd6"
+  },
+  {
+    "old_path": "era5_land_daily/manifest.csv",
+    "new_path": "work/data/raw/era5_land/manifest.csv",
+    "sha256": "db400815550c5df032cd43b6e17c201b08f4ab627faef8c434c37fcd34213e43"
+  },
+  {
+    "old_path": "era5_land_daily/spatial_weights_479_counties.csv",
+    "new_path": "work/data/interim/spatial_weights/spatial_weights_479_counties.csv",
+    "sha256": "a2469c50f77b8a2d8d6fbd90b94aac613c5117e68090fa966faa2ecac6978bc9"
+  },
+  {
+    "old_path": "era5_land_daily/spatial_weights_479_counties.parquet",
+    "new_path": "work/data/interim/spatial_weights/spatial_weights_479_counties.parquet",
+    "sha256": "e04b61a521b218d8bb7b49b9d9b2668499693fb6eb0e81fed53c0a153661c9ef"
+  },
+  {
+    "old_path": "era5_land_daily/county_daily/county_daily_1950.parquet",
+    "new_path": "work/data/interim/county_daily_weather/supplied_preflight/county_daily_1950.parquet",
+    "sha256": "5209156eed4145bf2f452d8f3de9daacf91d3bf15c3a09953998cef9c8fa9f10"
+  },
+  {
+    "old_path": "era5_land_daily/county_daily/county_daily_2025.parquet",
+    "new_path": "work/data/interim/county_daily_weather/supplied_preflight/county_daily_2025.parquet",
+    "sha256": "dedba82074d1467e841437956cecd462883446f28f8ae488e9f8e7fb0728cec6"
+  },
+  {
+    "old_path": "era5_land_daily/raw_accumulated_boundaries/era5_land_1950_accumulated_00utc.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_accumulated_boundaries/era5_land_1950_accumulated_00utc.nc",
+    "sha256": "c3387ee3a7af75b9aa076f03d1db6acaa382094035c0a5ce781b584086fdc766"
+  },
+  {
+    "old_path": "era5_land_daily/raw_accumulated_boundaries/era5_land_2025_accumulated_00utc.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_accumulated_boundaries/era5_land_2025_accumulated_00utc.nc",
+    "sha256": "b6e234ba544ac6d5124d0784d9d9d0c8e3fcdca91617017632624458edbb8beb"
+  },
+  {
+    "old_path": "era5_land_daily/raw_daily_stats/era5_land_1950_daily_maximum.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_1950_daily_maximum.nc",
+    "sha256": "a98e2916f40982835be69e6c6271f8958b00e46b6b07e797c1c30d8d478122c4"
+  },
+  {
+    "old_path": "era5_land_daily/raw_daily_stats/era5_land_1950_daily_mean.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_1950_daily_mean.nc",
+    "sha256": "cba2af9bbb7c03fdfa144c4b26950e976e3369db824c1dbccd78124dd1a7a547"
+  },
+  {
+    "old_path": "era5_land_daily/raw_daily_stats/era5_land_1950_daily_minimum.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_1950_daily_minimum.nc",
+    "sha256": "2e8fabea6b9a6affe613fa96bbac63a8620456dd912dee1c5a33cbf583ce55c0"
+  },
+  {
+    "old_path": "era5_land_daily/raw_daily_stats/era5_land_2025_daily_maximum.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_2025_daily_maximum.nc",
+    "sha256": "dd6b1f03290881dc8c8f1671f0321292263c4d4ef318052b9cba38730f6717f0"
+  },
+  {
+    "old_path": "era5_land_daily/raw_daily_stats/era5_land_2025_daily_mean.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_2025_daily_mean.nc",
+    "sha256": "48240e0dc7ff2d42f5383c36a5be5493227e5884de1d082785cb3d0b19a45340"
+  },
+  {
+    "old_path": "era5_land_daily/raw_daily_stats/era5_land_2025_daily_minimum.nc",
+    "new_path": "work/data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_2025_daily_minimum.nc",
+    "sha256": "5b27375b698a3d1363c70c86826f0385a860e3c3c9f3bb559ffc69a5037f804f"
+  },
+  {
+    "old_path": "balanced_panel_candidate_counties.csv",
+    "new_path": "work/data/external/supplied_candidate_counties.csv",
+    "sha256": "96713382be4d9c5d84e9bcb7fdfe489f86893b21ece7c2d6a79eb65a36b4cefe"
+  },
+  {
+    "old_path": "Vademecum.pdf",
+    "new_path": "work/thesis_notes/university_thesis_guide.pdf",
+    "sha256": "f93485beb73cd17512442c8230c02c8470aaa61821e13062ed69b3d78a0bab9b"
+  }
+]

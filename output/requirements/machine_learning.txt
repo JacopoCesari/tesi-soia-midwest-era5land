@@ -1,0 +1,2 @@
+# Optional future modeling dependencies.
+-e .[machine_learning]

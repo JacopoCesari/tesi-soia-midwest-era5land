@@ -1,75 +1,89 @@
-# Istruzioni Operative per Coding Agent (AGENTS.md)
+# Instructions for research and coding agents
 
-Questo file definisce i vincoli metodologici, le gerarchie delle fonti e le regole operative per qualsiasi agente AI che collabori su questo repository.
+## Sources of truth
 
----
+1. `output/docs/research_protocol.md` contains the consolidated protocol. Read the relevant
+   research design, data/target, ERA5 methodology, feature, validation, dictionary
+   and decision documents before editing their implementation.
+2. Source code establishes what is actually implemented. Verify it before describing
+   behavior; distinguish local tests, simulated responses and completed live runs.
+3. External notes may suggest new directions, but only consolidated author-approved
+   methodological decisions belong in active repository documentation.
+4. Git history is the version archive. Do not create historical copies or archive folders.
 
-## 1. Gerarchia delle Fonti (Source of Truth)
+## Attribution, publication boundaries and simplicity
 
-1. **Documentazione Canonica (`docs/`):**
-   - [`docs/research_design.md`](docs/research_design.md): domanda di ricerca, ambito, ipotesi, cutoff e baseline.
-   - [`docs/data_and_target.md`](docs/data_and_target.md): selezione USDA NASS, 479 contee, balanced panel 1950–2010.
-   - [`docs/era5_land_methodology.md`](docs/era5_land_methodology.md): 37 campi ERA5-Land, architettura a due canali, QC e limiti correnti.
-   - [`docs/feature_engineering.md`](docs/feature_engineering.md): GDD, VPD proxy, heat days, bilanci idrici rolling, aggregazioni 5/10/30 giorni.
-   - [`docs/validation_and_modeling.md`](docs/validation_and_modeling.md): expanding-window temporal validation, modelli, bootstrap annuale ed earliest stable skill.
-   - [`docs/references.md`](docs/references.md): catalogo dei 15 paper verificati disponibili localmente in `03_Documentazione_e_Paper/Papers/`.
-2. **Codice della Repository:**
-   - Rappresenta l'effettivo stato di implementazione. **Verificare sempre il codice sorgente prima di descriverne il funzionamento.** Non fidarsi di assunzioni o commenti obsoleti.
-3. **Notion e Fonti Esterne:**
-   - Appunti o workspace Notion possono contenere orientamenti più recenti del relatore/autore, ma nel repository GitHub devono confluire **soltanto le decisioni metodologiche consolidate e approvate**.
-4. **Cronologia Git:**
-   - Costituisce l'unico archivio delle versioni precedenti. Non creare cartelle `archive/` né duplicati storici.
+- When a method, formula, implementation or argument clearly draws on another
+  paper, explicitly annotate that attribution near the relevant code or text and
+  connect it to the reference catalog. Distinguish borrowed material from this
+  project's choices; do not invent or imply an unverified citation.
+- Keep the final material shared with the professor minimal, clean and easy to
+  navigate: working research code, essential usage documentation, publishable data
+  and the thesis writing layer.
+- Clearly separate internal coding-agent operations, development-only documentation,
+  internal validation tests and their artifacts, scratch work and other supporting
+  development files. Retain them for development, but exclude them from the material
+  intended for publication or delivery to the professor.
+- Separate explanatory research notes intended to support thesis writing from both
+  internal development notes and the actual thesis narrative.
+- Keep publishable auxiliary data distinct from the datasets used by the models.
+  Make each area's purpose and publication status explicit; folder separation alone
+  must not be mistaken for exclusion from a published repository or delivery.
+- Prefer minimal, DRY code and structure: preserve behavior and information while
+  avoiding redundant modules, documents and copies of the final product. Keep
+  technical documentation concise; thesis-oriented explanations may be longer when
+  needed to preserve reasoning, attribution and methodological detail.
 
----
+## Scientific constraints
 
-## 2. Scope Scientifico e Vincoli Inviolabili
+- The main design is weather-only: no markets, futures, macroeconomic data, remote
+  sensing, proprietary crop platforms, seasonal forecasts or future-weather completion.
+- The author selected the primary balanced panel 1951–2025: 75 years, 135 counties,
+  10,125 finite yield observations, with matching complete auxiliary acreage.
+  This supersedes the 1950–2010 primary scope. Never describe the full original
+  479-county 1950–2025 export as balanced. No imputation is permitted.
+- Weather production targets 1950–2025 and the selected 135-county weights. Preserve
+  the complete original exports separately in `work/data/`; prepared targets live
+  in `output/data/target/` and publishable auxiliaries in `output/data/auxiliary/`.
+  Exclude 1950 yield because October 1949 weather is missing. Keep 1950 weather
+  for the first retained October 1950–October 1951 campaign.
+- The primary target is yield or a training-only detrended anomaly. Acres harvested
+  is for panel construction only, never a predictor, target or weight.
+- Use 12 separate monthly horizons before October, confirmed by the author. The
+  exact harvest day remains open; never invent it. Weather after the cutoff is invalid.
+- Use complete-year expanding windows. The initial training window remains unset;
+  there is no approved 40-year default or fixed 60/40 split. Preprocessing, tuning
+  and any classification thresholds are train-only.
+- No random county-year split is accepted. Do not assume deep learning superiority.
 
-- **Disegno Iniziale Rigorosamente Weather-Only:**
-  La tesi valuta l'informazione predittiva dei dati meteorologici ERA5-Land. **È vietato introdurre nel disegno principale:**
-  - Prezzi, futures, indici macroeconomici;
-  - Dati di remote sensing (NDVI, SIF, NIRv, MODIS, Sentinel);
-  - Dataset proprietari o piattaforme terze (CropCast, IFAB);
-  - Modelli ibridi meteo-satellite o simulazioni biofisiche complesse (DSSAT).
-- **Distinzione Temporale Categorica:**
-  - **Balanced panel principale:** **1950–2010** (61 anni, 479 contee, 29.219 osservazioni). Zero valori mancanti.
-  - **Anni 2011–2025:** conservati separatamente nei file Excel (`all_years_survey`). Possono contenere valori mancanti. **Nessuna imputazione automatica.** Non fanno parte del balanced panel principale.
-  - **Copertura meteorologica ERA5-Land:** **1950–2025** (76 anni giornalieri continui).
-  - **DIVIETO ASSOLUTO:** Non descrivere mai il periodo 1950–2025 come un panel bilanciato.
-- **Definizione dei Target:**
-  - Primario: resa continua (`BU / ACRE` o `t/ha`) o anomalia controllando il trend tecnologico.
-  - Complementare: classificazione in 3 classi (*Low / Normal / High*), con soglie stimate **esclusivamente sul training set**.
-- **Protocollo di Validazione Anti-Leakage:**
-  - Schema **expanding-window (rolling-origin)**. Gli anni devono essere mantenuti uniti tra tutte le 479 contee.
-  - **Vietato** qualsiasi split casuale o k-fold disgiunto sulle coppie contea-anno.
-  - Preprocessing, detrending, standardizzazione e tuning devono essere stimati **esclusivamente sul set di addestramento**.
-- **Nessuna Assunzione a Priori sul Deep Learning:**
-  Non dichiarare né dare per scontata la superiorità di LSTM o del deep learning rispetto a Random Forest, Gradient Boosting o baseline statistiche/econometriche (GAM).
+## Implementation transparency
 
----
+The supplied NetCDF samples have seven June days in 1950 and 2025, with reduced
+channel A variables. Their original county Parquet files have six aligned days and
+21 fields. New preflight configuration requests seven aligned days and 37 fields.
+Offline tests and simulated full-year responses do not establish live CDS production
+readiness. Feature engineering, model fitting, metrics and bootstrap are future work.
+The authorized live June 1950 preflight passed on 2026-09-15 (945 rows, 135 counties,
+37 fields). The 2025 preflight and 1950/1952 annual pilots are not yet complete.
+Live channel A cost-limit failures require resumable month/day blocks; do not restore
+a single full-year daily-statistics request based on offline tests alone.
+There are two content sections: `output/` is the single maintained clean thesis
+project; `work/` contains originals, operations, tests and writing notes. Run research
+commands from `output/`. `work/export_delivery.py` exports only approved output files.
+The full Git tree still contains work material and is not the delivery ZIP.
 
-## 3. Regole di Trasparenza sull'Implementazione
+## Data and repository integrity
 
-- **Trasparenza sullo stato del codice e della pipeline:**
-  1. I file NetCDF presenti nel repository rappresentano **campioni di preflight di 7 giorni** (giugno 1950 e 2025), non serie annuali complete.
-  2. La pipeline `download_era5_land_daily.py` e `compute_spatial_weights.py` è stata consolidata con aggregazione Canale A+B (37 campi), evaporation swap, gestione CDS sotto 12.000 fields, validazione QC e suite di test in `tests/test_pipeline.py`.
-  3. Il calcolo delle feature derivate (GDD, VPD proxy, bilanci rolling) e la modellazione (baseline, ML, LSTM) sono definiti metodologicamente ma devono essere sviluppati nelle fasi successive.
-
----
-
-## 4. Protezione Dati e Integrità Repository
-
-Non modificare, cancellare o sovrascrivere mai:
-- File dati CSV o Excel (`.csv`, `.xlsx`);
-- Shapefile e geometrie in `01_Dati_Soia_e_Target/census_counties/`;
-- File NetCDF (`.nc`) e Parquet (`.parquet`);
-- File di pesi spaziali e `manifest.csv`;
-- I 15 PDF scientifici in `03_Documentazione_e_Paper/Papers/`;
-- Credenziali e file `.cdsapirc` o configurazioni utente;
-- Il file `.gitignore`.
-
----
-
-## 5. Protocollo Git
-
-- Non committare né pushare direttamente su `main` o `dev`. Lavorare sempre su feature branch dedicati (es. `docs/...` o `fix/...`).
-- **Regola Commit:** Non committare mai il codice finché l'utente non lo richiede esplicitamente. Attendere sempre l'autorizzazione o la richiesta esplicita dell'utente prima di eseguire `git commit`.
+- Preserve original CSV, Excel, geometry, NetCDF, Parquet, weights, manifest and PDFs
+  byte for byte. The author authorized the documented English-path migration and
+  scoped `.gitignore` updates in this reorganization; this is not permission for
+  future source-data rewriting or deletion.
+- Original workbook/source-document language and external field names are immutable
+  source content. Explain them in English at ingestion boundaries and in documentation.
+- Keep the supplied historical manifest read-only. Its path map is
+  `work/data/external/file_migration.json`; new operations use separate manifests.
+- Never read or change credentials unnecessarily. Ordinary tests must work offline.
+- Ask before any CDS download. Do not launch a historical run without explicit approval.
+- Work on a dedicated feature branch. Never commit or push unless expressly requested.
+- Make repository-owned documentation, code, messages and comments English. Use clear
+  snake_case internally; preserve source codes only at ingestion boundaries.

@@ -1,0 +1,2 @@
+# Includes base processing; used only to regenerate spatial weights.
+-e .[geospatial]

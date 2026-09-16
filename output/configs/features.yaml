@@ -1,0 +1,10 @@
+harvest_reference:
+  status: october_confirmed_day_open
+  month: 10
+  day: null
+months_before_harvest: [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+weather_cutoff: inclusive_daily_utc_date
+feature_lookback_start: null
+# Specifications only; derived features are not implemented.
+planned_aggregation_days: [5, 10, 30]
+planned_rolling_days: [7, 14, 30, 60, 90]

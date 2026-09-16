@@ -1,0 +1,15 @@
+# Large downloads and generated internal artifacts, scoped to the work area.
+data/raw/era5_land/production/
+data/raw/era5_land/preflight/
+data/interim/county_daily_weather/production/
+data/interim/county_daily_weather/preflight/
+reports/experiments/quality_control/
+reports/experiments/runs/
+reports/exploratory_analysis/generated/
+reports/figures/generated/
+reports/tables/generated/
+cache/
+scratch_remaining/
+# Keep the immutable supplied fixtures available for offline regression tests.
+!data/raw/era5_land/supplied_preflight/raw_daily_stats/*.nc
+!data/raw/era5_land/supplied_preflight/raw_accumulated_boundaries/*.nc

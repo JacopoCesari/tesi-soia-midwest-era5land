@@ -1,0 +1,2 @@
+# Optional future sequential modeling dependencies.
+-e .[deep_learning]
