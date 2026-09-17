@@ -84,6 +84,6 @@ The full Git tree still contains work material and is not the delivery ZIP.
   `work/data/external/file_migration.json`; new operations use separate manifests.
 - Never read or change credentials unnecessarily. Ordinary tests must work offline.
 - Ask before any CDS download. Do not launch a historical run without explicit approval.
-- Work on a dedicated feature branch. Never commit or push unless expressly requested.
+- Do not work on external repositories or separate feature branches; always work directly on the `main` branch (the author is the sole contributor). Never commit or push unless expressly requested.
 - Make repository-owned documentation, code, messages and comments English. Use clear
   snake_case internally; preserve source codes only at ingestion boundaries.

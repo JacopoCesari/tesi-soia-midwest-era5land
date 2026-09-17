@@ -1,0 +1,106 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ------------------------------------------------------------------------------
+% Packages & Layout Configuration (Conforming to Unibo Vademecum Guidelines)
+% ------------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+% Margins: 2.5 cm on all sides
+\usepackage[a4paper, margin=2.5cm]{geometry}
+
+% Line spacing: 1.5
+\usepackage{setspace}
+\onehalfspacing
+
+% Colors and typography
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs, array, multirow}
+\usepackage{tabularx}
+
+% Bibliography with author-year citation (APA style)
+\usepackage[round, authoryear]{natbib}
+
+% Hyperlinks (clean formal style)
+\usepackage[colorlinks=true, allcolors=black, citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+
+% Chapter and section styling
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
+\titlespacing*{\chapter}{0pt}{1.5ex plus 1ex minus .2ex}{2.5ex plus .2ex}
+
+\titleformat{\section}[hang]{\normalfont\large\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{2.0ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\titleformat{\subsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1.5ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+
+% Caption formatting
+\usepackage[font=small, labelfont=bf, labelsep=period]{caption}
+
+\begin{document}
+
+% ------------------------------------------------------------------------------
+% Front Matter
+% ------------------------------------------------------------------------------
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+    \begin{center}
+        {\large \textbf{ALMA MATER STUDIORUM -- UNIVERSIT\`A DI BOLOGNA}} \\[2.5cm]
+        
+        {\large Master's Degree Thesis} \\[1.5cm]
+        
+        {\LARGE \textbf{Early County-Level Soybean Yield Forecasting with Weather Reanalysis:}} \\[0.5cm]
+        {\Large \textbf{Evaluating Incremental Information and Lead Times in the U.S. Midwest}} \\[3.0cm]
+        
+        \begin{minipage}[t]{0.45\textwidth}
+            \raggedright
+            \textbf{Supervisor:} \\
+            Prof. [Supervisor Name]
+        \end{minipage}
+        \hfill
+        \begin{minipage}[t]{0.45\textwidth}
+            \raggedleft
+            \textbf{Candidate:} \\
+            Jacopo Cesari
+        \end{minipage} \\[3.0cm]
+        
+        \vfill
+        {\large Academic Year 2025/2026}
+    \end{center}
+\end{titlepage}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+
+% Table of Contents
+\tableofcontents
+\clearpage
+
+% ------------------------------------------------------------------------------
+% Main Chapters
+% ------------------------------------------------------------------------------
+\pagenumbering{arabic}
+
+\include{chapters/01_introduction}
+
+% Future chapters (uncomment when drafts are ready):
+% \include{chapters/02_literature_review}
+% \include{chapters/03_data_and_study_area}
+% \include{chapters/04_methodology}
+% \include{chapters/05_empirical_results}
+% \include{chapters/06_discussion}
+% \include{chapters/07_conclusions}
+
+% ------------------------------------------------------------------------------
+% Bibliography
+% ------------------------------------------------------------------------------
+\clearpage
+\bibliographystyle{apalike}
+\bibliography{references}
+
+\end{document}

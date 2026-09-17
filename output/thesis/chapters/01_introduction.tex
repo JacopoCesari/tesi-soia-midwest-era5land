@@ -1,0 +1,76 @@
+\chapter{Introduction}
+\label{chap:introduction}
+
+\section{Problem and Economic Motivation}
+\label{sec:intro_problem}
+
+Agricultural yield becomes definitively observable only at the conclusion of the harvest season, long after key operational, commercial, and financial commitments have been locked in. In modern agrifood systems, access to reliable yield forecasts well in advance is essential for systematic risk management across the entire value chain. In the United States, soybean (\textit{Glycine max}) is a foundational crop, underpinning domestic livestock feed supplies and international commodity export flows. The Midwestern Corn Belt accounts for the predominant share of this production. As a result, localized and regional weather shocks propagate rapidly through global agricultural markets \citep{Schlenker2009}.
+
+The economic and operational costs associated with harvest surprises are substantial and asymmetric. A severe crop shortfall, typically driven by summer drought or extreme heat, triggers supply deficits, price spikes, heightened market volatility, and acute procurement difficulties for downstream crushers. Such shortages force processing facilities to operate below capacity and sharply drive up commercial hedging costs. Conversely, a bumper harvest exerts severe downward pressure on local cash prices, creates storage deficits at grain elevators, strains river and rail transport networks, and compresses farm operating margins. 
+
+Importantly, this thesis models county-level crop yield (measured in bushels per acre), rather than aggregate production volume or equilibrium commodity prices directly. The aggregate market impact depends on harvested acreage, the spatial distribution of weather shocks, national carryover stocks, and broader macroeconomic conditions. Accordingly, these systemic supply-chain repercussions provide the practical economic motivation for this study, rather than quantities estimated directly within the empirical models.
+
+While within-season weather directly governs final crop productivity, the operational utility of a forecast does not depend solely on its terminal accuracy at harvest. Crucially, economic value depends on the forecast lead time---the specific moment when the forecast achieves reliable predictive skill over existing historical knowledge. A highly precise forecast delivered immediately prior to harvest offers limited managerial flexibility. In contrast, a moderately accurate yet statistically robust signal available several months earlier enables strategic interventions. Therefore, this thesis treats forecast lead time not as an incidental parameter, but as the central dimension of the forecasting problem.
+
+\section{Forecast Lead Time as the Core Object}
+\label{sec:intro_lead_time}
+
+The operational relevance of a yield forecast depends directly on the decision horizon of the decision maker:
+\begin{itemize}
+    \item \textbf{Pre-sowing lead times (early origins, $H \ge 8$):} Reliable early signals can inform farm-level acreage allocations between corn and soybeans, crop rotation schemes, and initial input purchasing, provided the information arrives before planting deadlines.
+    \item \textbf{Within-season lead times (mid origins, $H \approx 7 \text{ to } 4$):} In-season updates allow producers and crop insurers to revise expected yield distributions, update financial exposure, and adapt mid-season risk management strategies.
+    \item \textbf{Pre-harvest lead times (late origins, $H \approx 3 \text{ to } 2$):} Several months prior to harvest, commercial buyers, crushers, and commodity traders can actively adjust physical sourcing commitments, optimize forward contracts, and rebalance financial futures and options hedges.
+    \item \textbf{Proximate harvest lead times ($H=1$):} Weeks before harvest, grain elevator operators, barge lines, and processing plants can optimize localized logistics, including storage space allocation, transport scheduling, and facility runtime, even though broad crop-allocation decisions are irreversible.
+\end{itemize}
+
+Rather than prescribing an arbitrary date at which a forecast becomes ``useful'', this study measures predictive skill across twelve progressive monthly forecast origins, from one year before harvest ($H=12$) down to the harvest month ($H=1$). This design maps the empirical skill trajectory over time and identifies the earliest cutoff where predictive gains become statistically significant and temporally stable. This setup explicitly reflects the operational distinction between long-range agricultural planning decisions and subsequent market and logistical risk adjustments.
+
+A substantial portion of county yield variability may already be explained by time-invariant soil endowments, long-term technological trends, and antecedent weather from the previous autumn and winter. Conversely, early weather signals may prove largely uninformative before summer reproductive stages begin \citep{Hoffman2020}. Both outcomes constitute valid empirical findings. Benchmarking candidate forecasting models against reference historical baselines (such as historical trends or local climatological averages) isolates the genuine incremental value of observed weather from the baseline trajectory inherent in agricultural time series.
+
+\section{Research Question and Objectives}
+\label{sec:intro_research_question}
+
+The core objective of this research is to determine whether, and at what lead times, models informed exclusively by observed high-resolution weather reanalysis can forecast county-level soybean yields with statistically significant and stable improvements over reference historical baselines. By systematically re-estimating models across twelve monthly origins prior to harvest, the analysis reconstructs the out-of-sample skill curve and identifies the earliest stable predictability frontier.
+
+The central research question is formulated as follows:
+\begin{quote}
+\textit{At what lead times prior to harvest do observed weather data enable forecasting models to achieve statistically significant and temporally stable improvements in county-level soybean yield over reference historical baselines, and how does this skill vary across model families?}
+\end{quote}
+
+The experimental design evaluates both continuous regression and categorical classification formulations across the full distribution of crop outcomes:
+\begin{itemize}
+    \item \textbf{Continuous Yield Forecasting (Regression):} The primary task models continuous county-level yield (measured in bushels per acre) as well as detrended yield anomalies. This continuous formulation evaluates predictive skill across typical, above-average, and below-average crop years alike.
+    \item \textbf{Categorical Yield Forecasting (Classification):} Complementing continuous regression, a classification perspective evaluates the predictability of categorical yield outcomes across the entire distribution (such as predicting whether a county will experience above- or below-trend yields, or classifying performance into distinct yield regimes). Investigating a classification setup tests whether broad directional signals or regimes can be reliably recognized at earlier lead times, even when fine-grained continuous point estimates remain subject to greater uncertainty.
+\end{itemize}
+
+\section{Methodological Framework and Academic Rationale}
+\label{sec:intro_contributions}
+
+The academic interest of this thesis extends beyond benchmarking conventional machine learning algorithms against agricultural data \citep{Sharmaetal2025}. Rather, the academic contribution resides in addressing four fundamental methodological challenges:
+\begin{enumerate}
+    \item \textbf{Quantifying Incremental Weather Information:} Measuring precisely when within-season weather observations begin to provide statistically meaningful information beyond what is already captured by reference historical baselines and antecedent crop yields.
+    \item \textbf{Evaluating Temporal Stability across Cutoffs:} Determining whether early predictive gains persist stably across subsequent monthly origins or represent transient sampling noise.
+    \item \textbf{Preserving High-Frequency Meteorological Dynamics:} Investigating whether daily weather statistics derived from hourly reanalysis preserve critical stress signals (e.g., extreme temperature degree days and rapid soil moisture deficits) that are otherwise masked by coarse monthly averages.
+    \item \textbf{Assessing Complex Architectures under Strict Leak-Free Validation:} Testing whether complex, sequential deep learning models (such as LSTMs) deliver genuine forecasting advantages over transparent regularized linear regressions and tree ensembles (Random Forests, Gradient Boosting) when subjected to strict, out-of-sample expanding-window validation \citep{Sweetetal2023}.
+\end{enumerate}
+
+To ensure methodological rigor, the empirical framework is grounded on four strict design pillars:
+\begin{itemize}
+    \item \textbf{Strict Weather-Only Information Set:} Features are constructed exclusively from surface weather variables in the ECMWF ERA5-Land reanalysis. The design deliberately excludes satellite vegetation indices, commodity prices, and seasonal climate forecasts, isolating the pure predictive power of observed weather.
+    \item \textbf{Extended Balanced Panel (1951--2025):} The dataset covers 135 counties across six core Midwest states (Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio) over 75 continuous years (10,125 observations). The sample maximizes temporal depth without artificial imputation, capturing diverse multidecadal climatic cycles.
+    \item \textbf{Expanding-Window Temporal Validation:} To prevent spatial and temporal data leakage, models are evaluated through rolling-origin, complete-crop-year validation. All detrending, scaling, and hyperparameter tuning are conducted strictly within past training folds.
+    \item \textbf{Ex-Ante Model Neutrality:} No model family is presumed superior a priori. Reference statistical baselines, regularized regressions, tree ensembles, and recurrent neural networks compete under strictly identical, admissible information sets.
+\end{itemize}
+
+\section{Structure of the Thesis}
+\label{sec:intro_structure}
+
+The remainder of this thesis is structured as follows:
+\begin{itemize}
+    \item \textbf{Chapter 2 (Literature Review)} examines the agronomic mechanisms governing soybean weather sensitivity, reviews empirical yield forecasting approaches, and discusses validation pitfalls, data leakage, and lead-time dynamics in recent literature.
+    \item \textbf{Chapter 3 (Data and Study Area)} details the geographic and agronomic characteristics of the 135 Midwest counties, documents the assembly, screening, and acreage continuity of the 1951--2025 USDA NASS panel, describes the extraction and quality control of daily weather series from ERA5-Land reanalysis, and conducts in-depth exploratory data analysis on regional climate dynamics, spatial weather gradients, and historical yield variability across the study area.
+    \item \textbf{Chapter 4 (Methodology)} formalizes the feature engineering workflow, the twelve relative monthly forecast origins ($H=12, \dots, 1$), the candidate baseline and machine learning specifications, and the expanding-window temporal validation and block-bootstrap evaluation protocol.
+    \item \textbf{Chapter 5 (Empirical Results)} presents the out-of-sample forecasting performance across all twelve lead times, compares baseline models with tree-based and neural network architectures, and evaluates the emergence of stable predictive skill.
+    \item \textbf{Chapter 6 (Discussion)} interprets the findings in the context of agricultural supply-chain risk management, examines the operational constraints of weather-only forecasting, and analyzes data publication latency and methodological boundaries.
+    \item \textbf{Chapter 7 (Conclusions)} summarizes the primary conclusions, highlights practical implications for agricultural economics and forecasting practice, and outlines avenues for future research.
+\end{itemize}
