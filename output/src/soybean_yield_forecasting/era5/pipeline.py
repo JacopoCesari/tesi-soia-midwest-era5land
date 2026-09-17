@@ -164,7 +164,8 @@ class ARCOPipeline:
         else:
             start_date = f"{year}-01-01"
             end_date = f"{year}-12-31"
-            expected_days = 366 if calendar.isleap(year) else 365
+            # ERA5-Land in ARCO begins on 1950-01-02 (364 days); subsequent years have 365/366 days
+            expected_days = 364 if year == 1950 else (366 if calendar.isleap(year) else 365)
 
         north, west, south, east = self.area
         lat_bounds = (south, north)

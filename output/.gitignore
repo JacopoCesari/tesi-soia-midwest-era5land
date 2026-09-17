@@ -1,3 +1,21 @@
 # Future model datasets can be large; the selected yield target is tracked separately.
 data/processed/model_datasets/*
 !data/processed/model_datasets/README.md
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fls
+*.fdb_latexmk
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.pdf
+
+

@@ -45,10 +45,11 @@ def validate_era5_dataset(
     if not dates.is_monotonic_increasing or not dates.equals(dates.normalize()):
         return "FAIL", "Timestamps must increase at UTC midnight"
     if expected_dates is None and year is not None and not is_preflight:
-        count = 366 if calendar.isleap(year) else 365
+        count = 364 if year == 1950 else (366 if calendar.isleap(year) else 365)
         if len(dates) != count:
             return "FAIL", f"Day count: {len(dates)} vs {count} expected"
-        expected_dates = pd.date_range(f"{year}-01-01", f"{year}-12-31")
+        start_str = f"{year}-01-02" if year == 1950 else f"{year}-01-01"
+        expected_dates = pd.date_range(start_str, f"{year}-12-31")
     if expected_dates is not None and not dates.equals(pd.DatetimeIndex(expected_dates)):
         return "FAIL", "Dates do not match the expected calendar"
     if len(dates) > 1 and not (np.diff(dates.values) == np.timedelta64(1, "D")).all():
@@ -106,8 +107,9 @@ def validate_county_daily(
         return "FAIL", "Expected nonempty daily dates at midnight"
     if expected_days is not None and len(dates) != expected_days:
         return "FAIL", f"Unexpected day count: {len(dates)} vs {expected_days}"
+    start_str = f"{year}-01-02" if year == 1950 else f"{year}-01-01"
     calendar_dates = (
-        pd.date_range(f"{year}-01-01", f"{year}-12-31") if year else pd.date_range(dates.min(), dates.max())
+        pd.date_range(start_str, f"{year}-12-31") if year else pd.date_range(dates.min(), dates.max())
     )
     if not dates.equals(calendar_dates):
         return "FAIL", "Unexpected missing dates or incorrect year"

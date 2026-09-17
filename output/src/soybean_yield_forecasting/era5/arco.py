@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
+import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
@@ -279,7 +280,7 @@ class ARCOClient:
 
         if use_cache and cache_path and cache_path.exists():
             logging.info("Loading cached ARCO slice: %s", cache_path.name)
-            return xr.open_zarr(cache_path)
+            return xr.open_zarr(cache_path).load()
 
         ds = self.open_store_lazy(store_name)
 
@@ -315,7 +316,28 @@ class ARCOClient:
                     next_lat,
                     dict(strip_ds.sizes),
                 )
-                loaded_strip = strip_ds.load()
+                loaded_strip = None
+                for strip_attempt in range(1, self.max_retries + 1):
+                    try:
+                        loaded_strip = strip_ds.load()
+                        has_nan = any(np.isnan(loaded_strip[v].values).any() for v in loaded_strip.data_vars)
+                        if has_nan:
+                            raise ValueError(f"Strip lat [{cur_lat:.2f}, {next_lat:.2f}] contains unexpected NaNs")
+                        break
+                    except Exception as err:
+                        if strip_attempt == self.max_retries:
+                            raise
+                        sleep_time = self.backoff_factor**strip_attempt
+                        logging.warning(
+                            "Retry %d/%d downloading strip [%.2f, %.2f] after %.1fs due to: %s",
+                            strip_attempt,
+                            self.max_retries,
+                            cur_lat,
+                            next_lat,
+                            sleep_time,
+                            err,
+                        )
+                        time.sleep(sleep_time)
                 strips.append(loaded_strip)
                 cur_lat = next_lat
             loaded = xr.concat(strips, dim="latitude")
@@ -330,7 +352,35 @@ class ARCOClient:
                 available = [v for v in variables if v in sub_ds.data_vars]
                 sub_ds = sub_ds[available]
             logging.info("Downloading slice %s (shape %s)...", tag, dict(sub_ds.sizes))
-            loaded = sub_ds.load()
+            loaded = None
+            for single_attempt in range(1, self.max_retries + 1):
+                try:
+                    loaded = sub_ds.load()
+                    has_nan = any(np.isnan(loaded[v].values).any() for v in loaded.data_vars)
+                    if has_nan:
+                        raise ValueError(f"Slice {tag} contains unexpected NaNs")
+                    break
+                except Exception as err:
+                    if single_attempt == self.max_retries:
+                        raise
+                    sleep_time = self.backoff_factor**single_attempt
+                    logging.warning(
+                        "Retry %d/%d downloading slice %s after %.1fs due to: %s",
+                        single_attempt,
+                        self.max_retries,
+                        tag,
+                        sleep_time,
+                        err,
+                    )
+                    time.sleep(sleep_time)
+
+        # Integrity verification before caching
+        for v in loaded.data_vars:
+            nan_count = int(np.isnan(loaded[v].values).sum())
+            if nan_count > 0:
+                raise ValueError(
+                    f"Refusing to cache corrupted store {store_name}: variable {v} has {nan_count} NaNs"
+                )
 
         if use_cache and cache_path:
             temp_path = cache_path.with_suffix(".zarr.part")

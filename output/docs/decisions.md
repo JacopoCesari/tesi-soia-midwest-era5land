@@ -21,6 +21,8 @@ not fabricated historical approval dates. Earlier selection provenance is unavai
 | 2026-09-15 | open | Metric denominators, annual aggregation and bootstrap settings | Multiple metrics supported; implementation deferred | Evaluation |
 | 2026-09-15 | open | Evaporative-demand sign and aggregation window details | Preserve raw ERA5 signs and avoid inventing derived behavior | Future feature engineering |
 | 2026-09-15 | consolidated | Two content sections: output/ and work/ | Clean thesis project separate from all original data and internal operations; no duplicate code tree | Layout, manifest path map, delivery export |
+| 2026-09-17 | consolidated | Thesis manuscript in English and LaTeX format | Conforms to international academic standards and Unibo Vademecum (12pt, 1.5 line spacing, 2.5cm margins) | output/thesis/ |
+| 2026-09-17 | open | Past yield and previous-campaign weather lookback for early horizons | Because long lead times (H=12 down to H=8) precede the current crop year, models necessarily rely on past observed yield data; the exact number of antecedent weather months from the previous campaign to include remains an open decision | Feature engineering & model fitting |
 
 ## Reorganization implementation choices
 
