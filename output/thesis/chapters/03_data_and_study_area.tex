@@ -4,7 +4,7 @@
 \section{Regional Agronomic Context and Study Area}
 \label{sec:data_study_area}
 
-The empirical analysis focuses on the agricultural heartland of the United States Midwest, encompassing six premier producing states: Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio. Collectively, these states form the core of the North American Corn and Soybean Belt, accounting for over half of domestic soybean (\textit{Glycine max}) production and global export flows \citep{Schlenker2009, ChenZhang2026}.
+The empirical analysis focuses on the agricultural heartland of the United States Midwest, encompassing six premier producing states: Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio. Collectively, these states form the core of the North American Corn and Soybean Belt, accounting for over half of domestic soybean production and global export flows \citep{Schlenker2009, ChenZhang2026}.
 
 The region's agricultural preeminence stems from exceptional edaphic and climatic endowments. Regional pedology is dominated by deep, fertile Mollisols and Alfisols with high organic matter and expansive moisture-holding capacity that buffers crops against dry spells. Climatologically, the region features a humid continental regime (Köppen \textit{Dfa} in central/southern zones, \textit{Dfb} in northern Minnesota), with warm, humid summers and convective rainfall providing the bulk of growing-season precipitation.
 
@@ -77,6 +77,19 @@ Surface meteorological observations are extracted from the ECMWF ERA5-Land globa
     \item \textbf{Evaporative Demand:} Vapor pressure deficit ($VPD$, kPa) and FAO-56 Penman-Monteith reference evapotranspiration ($ET_0$, mm/day) \citep{Allen1998}.
     \item \textbf{Hydrological Fluxes:} Daily precipitation ($P$, mm/day) and potential evaporation ($PE$, mm/day).
     \item \textbf{Radiative and Soil Fluxes:} Surface solar radiation ($SSRD$, $\text{MJ}/\text{m}^2/\text{day}$) and volumetric soil moisture across four depth horizons ($0$--$7$, $7$--$28$, $28$--$100$, and $100$--$289\text{ cm}$).
+\end{itemize}
+
+\subsection{Methodological Rationale for a Weather-Only Scope}
+\label{sec:data_weather_only_rationale}
+
+Empirical crop forecasting leverages diverse meteorological, biophysical, and management sources. Gridded atmospheric reanalyses, particularly ECMWF ERA5-Land \citep{Vijverberg2023, Yinetal2026}, provide continuous, physically consistent hourly meteorological fields at $0.1^\circ$ resolution ($\approx 9\text{ km}$), eliminating the station-drop biases, spatial interpolation artifacts, and reporting gaps inherent in ground station networks \citep{ChenZhang2026}.
+
+A central methodological choice of this thesis is the deliberate restriction of dynamic inputs strictly to observed surface weather. This restriction is justified by four foundational constraints that render alternative modalities methodologically inadmissible for multi-lead-time forecasting over multidecadal panels:
+\begin{itemize}
+    \item \textbf{Ex-Post Reporting of Agronomic Management:} Comprehensive county-level management records (cultivar genetics, planting dates, fertilizer application rates) are typically compiled at annual cadences and released months after harvest. Incorporating these records into intra-seasonal forecasts would induce severe temporal data leakage or operational infeasibility. Furthermore, consistent 75-year historical panels of management practices at county resolution do not exist.
+    \item \textbf{Physiological Latency and Satellite Coverage Limits:} While vegetation indices (NDVI, EVI) and Solar-Induced Chlorophyll Fluorescence (SIF) from MODIS or Sentinel monitor canopy health \citep{Yinetal2026}, their historical depth is limited to the post-2000 era, preventing multi-decadal sampling of climate extremes. Crucially, satellite greenness signals exhibit severe physiological latency, becoming informative only after mid-summer canopy closure (July), offering zero predictive utility during pre-sowing and early vegetative stages ($H \ge 4$).
+    \item \textbf{Temporal Invariance of Pedological Attributes:} Static soil endowments from databases such as USGS SSURGO (water capacity, organic matter, texture) \citep{ChenZhang2026, Khaki2020} explain permanent cross-sectional yield baselines across counties. However, because their values are constant over time ($\text{Var}(X_{it}) = 0$), static soil features contain zero interannual variance to explain temporal yield anomalies within counties.
+    \item \textbf{Avoiding Confounded Climate Model Biases:} While dynamical seasonal weather forecasts (e.g., ECMWF SEAS5) are available in real time, coupling crop models with seasonal atmospheric predictions conflates agronomic sensitivity with long-range climate model biases. Restricting dynamic inputs to realized surface reanalysis isolates the unconfounded, physical upper bound of predictability attributable strictly to atmospheric forcing observed up to the forecast cutoff.
 \end{itemize}
 
 \section{Exploratory Data Analysis of County Soybean Yields (1951--2025)}
