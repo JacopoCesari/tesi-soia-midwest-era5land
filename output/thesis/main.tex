@@ -1,7 +1,7 @@
 \documentclass[12pt,a4paper,oneside]{report}
 
 % ------------------------------------------------------------------------------
-% Packages & Layout Configuration (Conforming to Unibo Vademecum Guidelines)
+% Packages & Layout Configuration (Standard academic thesis template; formal departmental guidelines to be verified before final submission)
 % ------------------------------------------------------------------------------
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -22,7 +22,7 @@
 \usepackage{booktabs, array, multirow}
 \usepackage{tabularx}
 
-% Bibliography with author-year citation (APA style)
+% Bibliography with author-year citation (natbib / apalike author-year style)
 \usepackage[round, authoryear]{natbib}
 
 % Hyperlinks (clean formal style)
@@ -54,8 +54,8 @@
         
         {\large Master's Degree Thesis} \\[1.5cm]
         
-        {\LARGE \textbf{Early County-Level Soybean Yield Forecasting with Weather Reanalysis:}} \\[0.5cm]
-        {\Large \textbf{Evaluating Incremental Information and Lead Times in the U.S. Midwest}} \\[3.0cm]
+        {\LARGE \textbf{Progressive Lead-Time Forecasting of Agricultural Yields from Weather Data:}} \\[0.5cm]
+        {\Large \textbf{Evidence from County-Level U.S. Soybean Yields}} \\[3.0cm]
         
         \begin{minipage}[t]{0.45\textwidth}
             \raggedright
@@ -87,10 +87,11 @@
 \pagenumbering{arabic}
 
 \include{chapters/01_introduction}
+\include{chapters/02_literature_review}
 
 % Future chapters (uncomment when drafts are ready):
-% \include{chapters/02_literature_review}
 % \include{chapters/03_data_and_study_area}
+
 % \include{chapters/04_methodology}
 % \include{chapters/05_empirical_results}
 % \include{chapters/06_discussion}

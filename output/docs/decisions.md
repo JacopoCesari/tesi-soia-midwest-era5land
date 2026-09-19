@@ -21,8 +21,17 @@ not fabricated historical approval dates. Earlier selection provenance is unavai
 | 2026-09-15 | open | Metric denominators, annual aggregation and bootstrap settings | Multiple metrics supported; implementation deferred | Evaluation |
 | 2026-09-15 | open | Evaporative-demand sign and aggregation window details | Preserve raw ERA5 signs and avoid inventing derived behavior | Future feature engineering |
 | 2026-09-15 | consolidated | Two content sections: output/ and work/ | Clean thesis project separate from all original data and internal operations; no duplicate code tree | Layout, manifest path map, delivery export |
-| 2026-09-17 | consolidated | Thesis manuscript in English and LaTeX format | Conforms to international academic standards and Unibo Vademecum (12pt, 1.5 line spacing, 2.5cm margins) | output/thesis/ |
+| 2026-09-17 | consolidated | Thesis manuscript in English and LaTeX format | Conforms to international academic standards; formal departmental guidelines to be verified before final submission | output/thesis/ |
 | 2026-09-17 | open | Past yield and previous-campaign weather lookback for early horizons | Because long lead times (H=12 down to H=8) precede the current crop year, models necessarily rely on past observed yield data; the exact number of antecedent weather months from the previous campaign to include remains an open decision | Feature engineering & model fitting |
+| 2026-09-17 | consolidated | Evaluation hierarchy: accuracy, earliness, stability | Stated research priority: forecast must first achieve accuracy over baselines, then establish lead-time earliness, and finally demonstrate temporal/spatial stability | Protocol, evaluation design |
+| 2026-09-17 | consolidated | Modeling target is detrended continuous yield anomaly | Observed raw yield is preserved as ground truth; model predicts detrended anomaly (fitted train-only) to isolate weather sensitivity; absolute yield level reconstructed post-hoc | Target, features, models |
+| 2026-09-17 | consolidated | Regression and classification evaluated in parallel | Continuous anomaly regression paired with discrete regime classification to test whether regimes can be recognized earlier than point estimates | Modeling, evaluation |
+| 2026-09-17 | consolidated | Detrending comparison: linear, polynomial, spline, rolling average | Sensitivity analysis across deterministic trend models fitted train-only; Fourier series treated as exploratory alternative, not primary baseline | Preprocessing, baselines |
+| 2026-09-17 | consolidated | Classification thresholds and extreme quantiles fitted train-only | Strict anti-leakage requirement for regime boundary estimation | Splitter, classification targets |
+| 2026-09-17 | consolidated | Scientific validity of null / negative results | Failure to detect stable incremental skill or finding that skill emerges only near harvest is a valid empirical result defining predictability limits | Research design, thesis conclusions |
+| 2026-09-17 | consolidated | Explicit research hypotheses H1–H5 | Formulate testable hypotheses on incremental weather skill, lead-time dependence, 5/10/30-day temporal aggregation, model complexity, and early regime recognition | Research design, empirical evaluation |
+| 2026-09-18 | consolidated | Systematic logging of all model progressions, ablations, and iterations | Author explicitly requested preserving performance metrics for every tested iteration (progressive feature additions, model variants from simple to complex, deep learning architectural stages, ablations) to enable reporting the complete iterative modeling journey in the thesis | Experiment tracking, modeling, thesis reporting |
+
 
 ## Reorganization implementation choices
 

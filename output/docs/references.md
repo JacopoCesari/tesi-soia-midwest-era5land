@@ -24,10 +24,14 @@ presence does not authorize adopting those inputs.
 | **Xie, Huang & Meng (2025)** | Regional weather dynamics | [DOI](https://doi.org/10.3390/cli13020033) |
 | **Ceglar & Toreti (2021)** | Seasonal verification context (outside main design) | [DOI](https://doi.org/10.1038/s41612-021-00198-3) |
 | **Sharma et al. (2025)** | Systematic review | [DOI](https://doi.org/10.1007/s44279-025-00215-6) |
+| **Chen & Zhang (2026)** | Primary deep learning benchmark (county-level U.S. soy) | [DOI](https://doi.org/10.3389/frai.2026.1914697) |
+| **Allen et al. (1998)** | FAO-56 Penman-Monteith reference evapotranspiration ($ET_0$) | FAO Paper 56 |
 
 ## Bibliographic entries supplied in the repository
 
+- Allen, R. G., Pereira, L. S., Raes, D., & Smith, M. (1998). *Crop evapotranspiration: Guidelines for computing crop water requirements*. FAO Irrigation and Drainage Paper 56, Rome.
 - Ceglar, A., & Toreti, A. (2021). Seasonal climate forecasts can inform the European agricultural sector well in advance of harvesting. *npj Climate and Atmospheric Science*, 4(1), 42.
+- Chen, B., & Zhang, W. (2026). A deep learning approach to county-level soybean yield forecasting using large-scale environmental data. *Frontiers in Artificial Intelligence*, 9, 1914697.
 - Hoffman, L., Kemanian, A. R., & Forest, C. E. (2020). The response of maize, sorghum, and soybean yield to growing-phase climate revealed with machine learning. *Environmental Research Letters*, 15(9), 094013.
 - Iizumi, T., Shin, Y., Kim, W., Kim, M., & Choi, J. (2018). Global crop yield forecasting using seasonal climate information from a multi-model ensemble. *Climate Services*, 11, 13–23.
 - Iizumi, T., Takaya, Y., Kim, W., Nakaegawa, T., & Maeda, S. (2021). Global within-season yield anomaly prediction for major crops derived using seasonal forecasts of large-scale climate indices and regional temperature and precipitation. *Weather and Forecasting*, 36(1), 285–299.
@@ -43,8 +47,4 @@ presence does not authorize adopting those inputs.
 - Xie, W., Huang, Y., & Meng, Q. (2025). Soybean yield modeling and analysis with weather dynamics in the Greater Mississippi River Basin. *Climate*, 13(2), 33.
 - Yin, J., Zhang, R., Zeng, Y., Zhu, P., Yin, L., Ma, Y., Su, W., Huang, J., Li, X., & Hao, D. (2026). Estimating soybean yields from high-temporal-resolution multi-source data. *Computers and Electronics in Agriculture*, 241, 111283.
 
-## Unverified candidate
 
-The earlier catalog also listed Chen and Zhang (2026), DOI `10.3389/frai.2026.1914697`,
-as unverified. It remains outside the consolidated references; current publication
-status and methodological relevance have not been checked in this reorganization.

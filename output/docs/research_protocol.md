@@ -3,11 +3,15 @@
 This is the concise source of truth for the author's consolidated instructions,
 recorded on 2026-09-15. The date records receipt, not an invented earlier approval.
 
-- **Question:** How early can county soybean yield be forecast from observed weather,
-  with statistically meaningful and stable improvement over historical-trend and
-  climatology baselines?
-- **Target:** Annual county soybean yield (`yield_bu_per_acre`), or a yield anomaly
-  after training-only detrending. No acreage predictor or weighting.
+- **Question:** How early can county soybean yield anomalies be forecast from observed
+  weather, with statistically meaningful and stable improvement over historical-trend
+  and climatology baselines?
+- **Target:** Continuous county-level yield anomaly after removing the long-term
+  technological trend through transformations fitted exclusively on training data.
+  Observed raw yield (`yield_bu_per_acre`) is preserved as the ground-truth series;
+  yield levels can be reconstructed post-hoc by summing predicted trend and anomaly.
+  Discrete yield regimes are modeled in parallel using training-only quantile thresholds.
+  No acreage predictor or weighting.
 - **Primary sample:** Illinois, Indiana, Iowa, Minnesota, Missouri and Ohio; 135
   counties; 1951–2025 inclusive; 75 years; 10,125 complete county-year measurements.
   The author prioritizes temporal coverage without model-comparison tests.
@@ -17,17 +21,24 @@ recorded on 2026-09-15. The date records receipt, not an invented earlier approv
 - **Information set:** Weather only, observed on or before each origin. No satellite,
   market, seasonal forecast or future observed/climatological/previous-year completion.
 - **Horizons:** 12 through 1 calendar months before an explicitly configured harvest
-  reference. October is author-confirmed; the exact day remains **open**. Each horizon has separate
-  cutoff-specific features and a separate model or model instance.
+  reference ($H \in \{12, \dots, 1\}$). With $H=1$, the origin is one month prior to harvest,
+  ensuring all forecasts strictly precede harvest. October is author-confirmed; the exact
+  day remains **open**. Each horizon has separate cutoff-specific features and a separate
+  model instance.
 - **Validation:** Expanding-window, rolling-origin validation with indivisible crop
   years across all counties. Initial training length remains open; no fixed 60/40
   split or implicit 40-year default. Test years expand through 2025 once configured.
 - **Training-only operations:** Detrending, scaling, selection, tuning and any later
   classification thresholds. No random county-year cross-validation.
-- **Evaluation:** Support RMSE, MAE, out-of-sample R² and optional baseline-relative
-  skill. No single primary metric selected; no acreage evaluation weighting.
+- **Evaluation hierarchy:** 1. Accuracy relative to historical baselines; 2. Lead-time
+  earliness; 3. Temporal and spatial stability across cutoffs, years, and counties.
+  Failure to find stable incremental skill is recognized as an equally valid scientific result.
+- **Evaluation metrics:** Support RMSE, MAE, out-of-sample R² and baseline-relative
+  skill. Primary metric selection and pooled vs year-averaged convention remain to be settled.
+  No acreage evaluation weighting.
 - **Uncertainty:** Whole-year block bootstrap and earliest stable skill are planned.
   No model family's superiority is assumed.
+
 
 ## Open decisions and implementation boundaries
 

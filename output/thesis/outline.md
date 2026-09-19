@@ -1,9 +1,10 @@
 # Proposed chapter outline
 
-1. **Introduction** — question, motivation, weather-only scope and contribution.
-2. **Literature review** — weather information, forecast lead times, validation and model families.
-3. **Data and study area** — NASS panel, six states, selection provenance and ERA5-Land.
-4. **Methodology** — spatial aggregation, future features, twelve horizons and temporal validation.
-5. **Results** — to be written after reproducible experiments; no results available yet.
-6. **Discussion** — interpretation, data/availability limits and robustness after results exist.
-7. **Conclusions** — answer the research question using completed evidence only.
+1. **Introduction** — Research question, economic motivation, forecast lead time as central object, hierarchy of objectives (accuracy, earliness, stability), hypotheses H1–H5, weather-only scope, academic contributions, and boundary limitations.
+2. **Literature Review** — Agronomic weather sensitivity, lead-time dynamics in agricultural forecasting, recent benchmarks (Vijverberg et al. 2023, Chen & Zhang 2026, Yin et al. 2026), target detrending methodologies, and the fundamental distinction between explanatory/causal econometric modeling and predictive out-of-sample forecasting.
+3. **Data and Study Area** — USDA NASS panel assembly (135 counties across six Midwest states, 1951–2025), yield completeness, descriptive acreage coverage, sample provenance, ERA5-Land reanalysis extraction and quality control, and exploratory data analysis of regional climate dynamics and yield variability.
+4. **Methodology** — Spatial aggregation, weather features available at each forecast origin ($H=12, \dots, 1$), continuous anomaly regression and categorical regime classification tasks, candidate model taxonomy (historical baselines, weather-only ablation, integrated models), research hypotheses, evaluation metrics, expanding-window temporal validation, and significance testing.
+5. **Empirical Results** — Iterative model development and progression (from parsimonious reference baselines to complex architectures), incremental impact of feature engineering (raw weather vs derived agro-climatic indices vs temporal granularities), out-of-sample predictive performance across twelve monthly lead times ($H=12 \dots 1$), comparison of model families (linear, tree ensembles, LSTM), ablation analysis (e.g., dropping past-yield persistence), forecasting performance during extreme climate anomaly years, and geographic heterogeneity across counties.
+6. **Discussion** — Operational implications for agrifood supply-chain risk management, survivorship bias in balanced historical panels, ERA5-Land reanalysis latency versus real-time operational forecasting, methodological boundaries, and external validity.
+7. **Conclusions** — Synthesis of empirical findings, answers to research hypotheses, practical implications for agricultural risk management, and avenues for future research.
+

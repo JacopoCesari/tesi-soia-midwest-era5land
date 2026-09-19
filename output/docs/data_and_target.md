@@ -74,9 +74,27 @@ must not become a predictor. This preparation uses no such summary to filter cou
 
 ## Target and auxiliary roles
 
-Yield in BU/ACRE is the continuous target. Conversion to t/ha, detrending and later
-class thresholds belong to future training-only modeling stages. Acres harvested
-is sample documentation only: never a predictor, target, observation weight or
-evaluation weight. County names and the 3,344 selected spatial intersections are
+Observed yield in BU/ACRE (`yield_bu_per_acre`) is the preserved ground-truth series.
+The primary continuous modeling target is the detrended yield anomaly, obtained after
+removing the long-term technological trend via transformations fitted exclusively on
+the training data. Predicted continuous yields in level (BU/ACRE) can be reconstructed
+post-hoc by summing the predicted trend and predicted anomaly. In parallel, discrete
+yield regimes (e.g., severe shortfall, normal, bumper) are constructed from detrended
+anomalies using training-only quantile thresholds.
+
+Acres harvested is sample documentation only: never a predictor, target, observation weight
+or evaluation weight. County names and the 3,344 selected spatial intersections are
 auxiliary data. Weather features will live in `data/processed/model_datasets/`.
 Source labels and units are mapped in the [dictionary](data_dictionary.md).
+
+## Label availability and publication timing
+
+A critical constraint for early forecast origins ($H=12$ down to $H=8$) is that they
+fall within calendar year $Y-1$. In the United States, USDA NASS typically publishes
+final county-level crop production and yield estimates for year $Y-1$ in January or
+February of year $Y$ (in the annual *Crop Production Summary*). Consequently, at
+origins in late $Y-1$ (e.g., October, November, December of $Y-1$), the official yield
+label for crop year $Y-1$ was not yet available to decision makers. Historical yield
+baselines and antecedent yield predictors used at these early origins must strictly
+respect this publication lag, using $Y-2$ as the latest available observed harvest.
+
