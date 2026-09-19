@@ -1,203 +1,132 @@
 \chapter{Literature Review}
 \label{chap:literature_review}
 
-\section{Introduction and Structure of the Literature}
+\section{Introduction and Organization of the Literature}
 \label{sec:lit_structure}
 
-The empirical literature on agricultural productivity, climate variability, and yield forecasting spans several decades and multiple scientific disciplines, including agricultural economics, agronomy, atmospheric science, and applied machine learning. To establish a rigorous foundation for this thesis, the literature is organized according to a clear five-tier hierarchy of essential research streams:
-\begin{enumerate}
-    \item \textbf{Stream 1 --- Agro-Meteorological Foundations and Physiological Sensitivity:} Establishes why crop yield exhibits interannual variability and justifies the biological relevance of temperature, moisture availability, evaporative demand, and weather sequences \citep{Schlenker2009, Hoffman2020}. In this thesis, this stream serves strictly to motivate the engineered feature space and temporal representations, rather than to conduct causal econometric inference.
-    \item \textbf{Stream 2 --- Weather-Based Crop-Yield Forecasting:} Represents the core domain of this investigation: predicting crop yields using meteorological observations and historical production records. The central empirical benchmark is the recent study by \citet{ChenZhang2026}, which models county-level U.S. soybean yields using monthly climate data, soil properties, and past yields across progressive in-season horizons.
-    \item \textbf{Stream 3 --- Statistical, Machine Learning, and Deep Learning Architectures:} Evaluates candidate predictive architectures, contrasting regularized linear models, tree-based ensembles (Random Forests, Gradient Boosting), and sequential neural networks (LSTM, CNN-RNN) \citep{Khaki2020, Sharmaetal2025, Yinetal2026}. The central question in this stream is not whether deep learning is inherently superior, but whether complex sequential representations add genuine predictive value over parsimonious models under strict validation.
-    \item \textbf{Stream 4 --- Lead-Time Dynamics and Progressive Forecasting:} Focuses on how predictive skill evolves over the growing season, spanning presowing horizons \citep{Vijverberg2023}, multi-month anomaly horizons \citep{Iizumietal2021}, and progressive in-season updates \citep{ChenZhang2026, Khaki2020, Yinetal2026}. The primary analytical contribution of this review is to demonstrate that while many studies forecast yield, few treat the exact horizon at which predictions become stably informative as their central research object.
-    \item \textbf{Stream 5 --- Target Formulations, Detrending, and Anomaly Regimes:} Addresses the isolation of the weather-driven yield signal from secular technological trends, justifying continuous detrended anomalies alongside categorical regime classifications (normal, bumper, or severe shortfall) \citep{Hoffman2020, Iizumietal2021, Schlenker2009, Vijverberg2023}.
-\end{enumerate}
+The empirical literature on agricultural productivity, climate variability, and yield forecasting spans agricultural economics, crop physiology, atmospheric science, and applied machine learning. Understanding how meteorological variability translates into crop yield anomalies requires examining biological sensitivity mechanisms, statistical representations of secular technological trends, candidate machine learning architectures, and rigorous out-of-sample validation protocols.
 
-Secondary literature streams---such as extreme climate anomaly attribution, spatial validation theory, and geographical model transferability---are integrated concisely as methodological support rather than standalone thematic pillars.
+To establish the academic foundation for this thesis, this review is organized into five domains: (i) decomposing raw yields into technological trends and weather anomalies; (ii) soybean physiological sensitivity to thermal, hydrologic, and phenological shocks; (iii) environmental data modalities and the rationale for a weather-only scope; (iv) candidate predictive models, lead-time dynamics, and reference baselines; and (v) spatial autocorrelation, validation protocols, and handling unobserved future weather. The review culminates in a comparative analysis of primary empirical benchmarks \citep{ChenZhang2026, Vijverberg2023, Yinetal2026} and the formal derivation of research hypotheses (H1--H5).
 
 \section{Agricultural Yield, Technological Trends, and Weather Variability}
 \label{sec:lit_yield_trend_weather}
 
-Understanding and predicting agricultural productivity requires a fundamental conceptual distinction between aggregate crop production and crop yield. Aggregate agricultural production represents the total physical volume of crop harvested within a given geographic jurisdiction (measured in bushels or metric tons), computed as the product of harvested acreage and average yield per unit area ($P_{it} = A_{it} \times Y_{it}$). While total production directly governs market supply balances and national export capacities, harvested acreage reflects complex economic decisions, farm program incentives, insurance provisions, and localized planting conditions. In contrast, agricultural crop yield ($Y_{it}$, measured in bushels per acre or metric tons per hectare) serves as the direct physical measure of biological productivity, capturing how environmental factors, technological endowments, and agronomic management interact over the course of a specific growing season.
-
-Across decadal horizons, agricultural yield series exhibit strong, persistent upward trajectories. In the United States, average soybean yields have more than doubled over the past seven decades, rising from approximately 20 bushels per acre in the early 1950s to over 50 bushels per acre in recent years. This sustained expansion is driven by cumulative technological progress, including advanced cultivar breeding, hybrid seed genetics, increased fertilizer efficacy, synthetic pest and weed management, mechanization, artificial subsurface drainage, and precision farming technologies. Consequently, observed historical yield series $Y_{it}$ can be decomposed into two distinct, additive components:
+In agricultural economics, crop yield ($Y_{it}$, bushels per acre) serves as the primary metric of biological productivity. Across multidecadal horizons, developed agricultural systems exhibit strong upward trajectories: in the U.S. Corn Belt, average soybean yields more than doubled from approximately 20 bushels per acre in the early 1950s to over 50 bushels per acre today, driven by cumulative genetic improvements, chemical inputs, mechanization, and precision farming. Consequently, historical yield series $Y_{it}$ decompose into two additive components:
 \begin{equation}
     Y_{it} = T_{it} + \varepsilon_{it}
     \label{eq:yield_decomposition}
 \end{equation}
-where $T_{it}$ represents the smooth, long-term technological trend capturing non-meteorological advancements, and $\varepsilon_{it}$ denotes the high-frequency, interannual yield anomaly primarily driven by within-season weather variability, transient pest pressures, and idiosyncratic environmental shocks.
+where $T_{it}$ represents the smooth technological trend capturing non-meteorological advancements, and $\varepsilon_{it}$ denotes the interannual yield anomaly driven by within-season weather variability, transient pest pressures, and environmental shocks.
 
-In empirical crop modeling and forecasting, failing to properly address this trend component introduces severe statistical pathologies. Because atmospheric greenhouse gas concentrations and global surface temperatures have trended upward over the same multidecadal period, estimating yield prediction models directly on unadjusted raw yield levels ($Y_{it}$) risks confounding genuine physiological weather sensitivity with secular technological growth. A model trained on raw yields may attribute secular genetic yield gains to rising summer temperatures or altered precipitation regimes, generating spurious correlations and severely distorting both predictive accuracy and feature attributions.
+Failing to account for $T_{it}$ introduces severe statistical pathologies. Because atmospheric greenhouse gas concentrations and temperatures have trended upward over the same multidecadal period, training models directly on raw yields risks confounding physiological weather sensitivity with secular technological growth \citep{Schlenker2009}. A model estimated on raw yields may spuriously attribute genetic gains to rising temperatures, distorting both predictive accuracy and feature attributions.
 
-Therefore, detrending is not an optional preprocessing step but a foundational prerequisite for isolating the weather-yield relationship \citep{Hoffman2020, Schlenker2009}. Several deterministic and statistical trend specifications are commonly debated in the literature:
-\begin{itemize}
-    \item \textbf{Linear Trends:} The simplest and most parsimonious formulation, assuming a constant annual technological gain over time. While highly stable out of sample, linear trends can miss decadal shifts in the rate of technological adoption.
-    \item \textbf{Polynomial Trends (Quadratic and Cubic):} Allowing for acceleration or deceleration in technological yield gains. However, higher-order polynomials risk severe overfitting and unrealistic boundary behavior when extrapolated forward into out-of-sample testing folds.
-    \item \textbf{Smoothing Splines and Generalized Additive Models (GAMs):} Non-parametric splines offer flexible representations of evolving technological trajectories, but require careful penalization to avoid fitting high-frequency climate anomalies rather than underlying technology.
-    \item \textbf{Past-Only Rolling Averages:} Calculating local historical moving averages using only past observations. While robust to global functional form assumptions, rolling windows introduce sensitivity to window length and lag real technological changes.
-    \item \textbf{Fourier Series and Spectral Decompositions:} Periodic harmonic functions can capture cyclical patterns associated with multidecadal ocean-atmosphere oscillations (such as ENSO or the Pacific Decadal Oscillation). However, Fourier representations should be treated as exploratory tools for cycle analysis rather than primary models of directional technological progress.
-\end{itemize}
-
-Crucially, in an operational forecasting context, all detrending transformations must be estimated strictly \textit{train-only}. Applying a two-sided filter or fitting a trend line across the entire retrospective sample constitutes a severe form of temporal data leakage, as it imparts information regarding future yield trajectories into historical training periods.
+Following established literature \citep{Hoffman2020, Schlenker2009}, detrending is a foundational prerequisite for isolating weather-yield relationships. Crucially, in operational forecasting, trend estimation must be conducted strictly \textit{train-only}. Applying two-sided filters or fitting trend lines across the full panel constitutes temporal data leakage, imparting future yield trajectories into past training folds.
 
 \section{Weather Sensitivity of Soybean and Agro-Meteorological Features}
 \label{sec:lit_weather_sensitivity}
 
-Soybean (\textit{Glycine max}) is an annual legume whose physiological development and final seed production are exquisitely sensitive to prevailing meteorological conditions. While total seasonal rainfall and average temperatures provide a general climatological envelope, crop yield is primarily determined by non-linear responses to acute meteorological extremes and the precise timing of weather events relative to crop phenology.
+Soybean (\textit{Glycine max}) is an annual legume whose physiological development and final seed production respond non-linearly to prevailing weather conditions, governed by acute extremes and phenological exposure timing.
 
 \subsection{Growing Degree Days and Thermal Time}
-The relationship between ambient temperature and crop development is inherently non-linear. Within moderate temperature ranges, increasing temperatures accelerate physiological development, leaf area expansion, and photosynthetic enzyme activity. These cumulative thermal requirements are traditionally represented via Growing Degree Days (GDD), accumulated between a base temperature (typically $10^\circ\text{C}$ for soybeans) and an upper threshold (approximately $30^\circ\text{C}$). \citet{Hoffman2020} demonstrate that tracking thermal time provides a biologically grounded framework for identifying developmental milestones, establishing that aggregating meteorological forcing by phenological growth stages captures yield-limiting stress far more effectively than standard civil calendar months. However, while thermal accumulation is theoretically well-founded, empirical literature indicates that fixed threshold parameters (such as $10^\circ\text{C}$ base and $30^\circ\text{C}$ cutoff) represent regional approximations rather than universally optimal values across all geographic counties.
+The relationship between ambient temperature and crop development is non-linear. Within moderate ranges, temperature accelerates vegetative growth, leaf expansion, and developmental progression. These cumulative thermal requirements are represented via Growing Degree Days (GDD), accumulated between a base temperature ($10^\circ\text{C}$) and an upper threshold ($30^\circ\text{C}$). \citet{Hoffman2020} demonstrate that tracking thermal time provides a biologically grounded framework for identifying developmental milestones, capturing yield-limiting stress far more effectively than standard calendar months.
 
-\subsection{Non-Linear Temperature Effects and Thermal Damage}
-When ambient temperatures exceed critical physiological thresholds, thermal damage accelerates rapidly. In a seminal econometric analysis, \citet{Schlenker2009} demonstrated that crop yields exhibit sharp non-linear breakpoints: while temperatures up to $29^\circ\text{C}$ or $30^\circ\text{C}$ are beneficial for soybeans, temperatures exceeding this threshold inflict severe, non-linear yield penalties. Extreme heat stress accelerates floral abscission, disrupts pollen viability, induces stomatal closure to prevent desiccation, and impairs Photosystem II activity in chloroplasts. 
+\subsection{Non-Linear Temperature Breakpoints and Thermal Damage}
+When temperatures exceed critical thresholds, thermal damage accelerates rapidly. In a seminal econometric analysis, \citet{Schlenker2009} demonstrated sharp non-linear breakpoints: while temperatures up to $29^\circ\text{C}$ or $30^\circ\text{C}$ are beneficial, temperatures exceeding this threshold inflict severe yield penalties via floral abscission, pollen sterility, stomatal closure, and impaired photosynthesis.
 
-To capture these acute damage mechanisms, researchers construct Extreme Degree Days (EDD), accumulating thermal exposure strictly above physiological damage thresholds ($>30^\circ\text{C}$). Coarse monthly temperature averages inevitably smooth out these high-temperature excursions, masking destructive heatwaves that may last only a few consecutive days. Furthermore, both \citet{Hoffman2020} and \citet{ChenZhang2026} identify indicators of extreme summer heat as among the most decisive predictors of interannual yield variance, justifying the inclusion of threshold counts, cumulative thermal stress, and sensitivity analyses evaluating alternative damage cutoffs (such as $30^\circ\text{C}$ versus $35^\circ\text{C}$).
+To capture these damage mechanisms, researchers construct Extreme Degree Days (EDD), accumulating thermal exposure strictly above physiological damage thresholds ($>30^\circ\text{C}$). Coarse monthly temperature averages inevitably smooth out these excursions, masking destructive heatwaves lasting only a few consecutive days. Both \citet{Hoffman2020} and \citet{ChenZhang2026} identify indicators of extreme summer heat as among the most decisive predictors of interannual yield variance.
 
 \subsection{Atmospheric Moisture Demand and Soil Water Balance}
-While rainfall is the primary source of soil moisture replenishment, crop water stress is governed by the joint interaction between soil moisture supply and atmospheric evaporative demand. Atmospheric evaporative demand is accurately characterized by the Vapor Pressure Deficit (VPD)---the difference between the saturation vapor pressure at air temperature and the actual ambient vapor pressure. \citet{Hoffman2020} identify VPD as a critical driver of yield variability, demonstrating that elevated atmospheric vapor demand exerts severe negative impacts during moisture-sensitive developmental stages. High VPD forces plants to close their stomata to preserve internal water, shutting down transpirational cooling and halting photosynthetic carbon fixation even when nominal soil moisture is present.
+While rainfall replenishes soil moisture, crop water stress is governed by the joint interaction between soil water availability and atmospheric evaporative demand, characterized by Vapor Pressure Deficit (VPD). \citet{Hoffman2020} identify elevated VPD as a critical driver of yield reduction during reproductive growth: high VPD forces stomatal closure to prevent desiccation, halting transpirational cooling and carbon fixation even when soil moisture is present.
 
-Regarding the surface water budget, empirical studies consistently emphasize the role of precipitation, root-zone soil moisture, and compounding heat-drought interactions \citep{ChenZhang2026, Hoffman2020, Vijverberg2023}. In this thesis, the surface climatic water balance is operationalized via the difference between accumulated precipitation and reference evapotranspiration ($P - \text{ET}_0$), calculated following the standard FAO-56 Penman-Monteith guidelines \citep{Allen1998}. In accordance with rigorous scientific attribution, this metric is treated as an agronomically plausible candidate feature rather than an established optimal index, acknowledging that the exact formulation must be validated empirically against observed yield variations.
+Regarding the surface water budget, empirical studies emphasize compounding interactions between precipitation, root-zone soil moisture, and atmospheric demand \citep{ChenZhang2026, Hoffman2020, Vijverberg2023}. In this thesis, the surface climatic water balance is operationalized via the difference between accumulated precipitation and reference evapotranspiration ($P - \text{ET}_0$), calculated following FAO-56 Penman-Monteith guidelines \citep{Allen1998}, providing an agronomically plausible feature for empirical validation.
 
-\subsection{Phenological Stages and Critical Biological Windows}
-The biological impact of a meteorological shock depends decisively on the crop's developmental stage at the time of exposure. The soybean life cycle comprises two broad phases: vegetative development (emergence through flowering, V1--V$n$) and reproductive development (beginning bloom through full maturity, R1--R8). 
+\subsection{Phenological Vulnerability Windows}
+The biological impact of meteorological shocks depends decisively on crop phenology. Soybeans exhibit substantial compensatory plasticity during early vegetative growth (V1--V$n$); moderate moisture deficits or temperature anomalies can often be overcome if favorable weather resumes before flowering \citep{Hoffman2020}.
 
-Empirical research confirms that soybeans exhibit substantial compensatory plasticity during early vegetative growth \citep{Hoffman2020}. Early-season moisture deficits or moderate temperature anomalies can frequently be overcome if favorable weather resumes prior to flowering. Conversely, the mid-season reproductive phases---specifically pod development (R3--R4) and seed filling (R5--R6), which typically occur between mid-July and late August in the U.S. Corn Belt---represent the critical, yield-determining window \citep{Hoffman2020, Yinetal2026}. Severe moisture deficits or heatwaves during pod filling directly reduce the number of pods per plant, the number of seeds per pod, and individual seed weight, resulting in irreversible yield losses. Meteorological anomalies occurring proximate to harvest (September and October) primarily affect grain dry-down, lodging, and mechanical harvesting efficiency rather than biological yield formation.
+Conversely, mid-season reproductive phases---specifically pod development (R3--R4) and seed filling (R5--R6), occurring between mid-July and late August in the U.S. Corn Belt---represent the critical yield-determining window \citep{Hoffman2020, Yinetal2026}. Severe moisture deficits or heatwaves during pod filling directly reduce pod counts, seed numbers, and seed weight, causing irreversible yield losses. Meteorological conditions proximate to harvest (September and October) primarily affect grain dry-down and field machinery access rather than biological yield formation.
 
-\section{Data Sources and the Deliberate Weather-Only Scope}
+\section{Environmental Data Modalities and the Rationale for a Weather-Only Scope}
 \label{sec:lit_data_sources}
 
-Empirical crop forecasting models draw upon diverse historical, meteorological, and environmental data sources. Across the reviewed literature, input data can be categorized into five recurring families:
-\begin{enumerate}
-    \item \textbf{Historical Yield Records:} County-level annual yield statistics maintained by the USDA National Agricultural Statistics Service (NASS) through the annual agricultural SURVEY and quinquennial CENSUS. These records serve as the benchmark ground truth, the basis for detrending, the source of autoregressive past-yield baselines ($Y_{t-1}$), and the empirical distribution for categorical anomaly regimes. Administrative yield data are published with a lag of several months post-harvest (typically appearing in January or February of the following calendar year).
-    \item \textbf{Local and Gridded Meteorological Data:} Surface meteorological variables, including mean, minimum, and maximum temperatures, total precipitation, thermal extremes (GDD, EDD), atmospheric moisture and evaporative demand (VPD, $\text{ET}_0$), surface solar radiation, and multi-layer soil moisture. While historical studies relied on ground weather station networks such as NOAA GSOM \citep{ChenZhang2026}, recent literature increasingly leverages high-resolution atmospheric reanalysis such as ECMWF ERA5 and ERA5-Land \citep{Vijverberg2023, Yinetal2026}. ERA5-Land provides continuous, hourly, physically consistent meteorological fields at 0.1-degree ($\approx 9\text{ km}$) spatial resolution spanning 1950 to the present, eliminating station-drop biases and spatial interpolation artifacts.
-    \item \textbf{Soil and Static Environmental Attributes:} Time-invariant pedological properties from databases such as USGS SSURGO (e.g., available water capacity, organic matter content, soil texture, bulk density, and elevation) \citep{ChenZhang2026, Khaki2020}. These features capture cross-sectional, spatial yield capacity across counties, but provide zero predictive information regarding interannual yield fluctuations.
-    \item \textbf{Satellite Remote Sensing:} Multi-spectral vegetation indices (NDVI, EVI, NIRv) and Solar-Induced Chlorophyll Fluorescence (SIF) from satellite platforms such as MODIS, Landsat, and Sentinel \citep{Yinetal2026}. While optical remote sensing captures the observed canopy response to environmental stress, satellite signals emerge only after substantial vegetative canopy development (typically mid-summer), thereby severely compressing the actionable operational lead time.
-    \item \textbf{Crop Management and Agronomic Practices:} Farm-level data regarding cultivar genetics, planting dates, fertilizer application rates, and irrigation infrastructure \citep{Khaki2020}. While agronomically influential, comprehensive management datasets are rarely available at continuous, long-term county resolution across multidecadal spans.
-\end{enumerate}
+Empirical crop forecasting leverages diverse meteorological, biophysical, and management sources. Gridded atmospheric reanalyses, particularly ECMWF ERA5-Land \citep{Vijverberg2023, Yinetal2026}, provide continuous, physically consistent hourly meteorological fields at $0.1^\circ$ resolution ($\approx 9\text{ km}$), eliminating the station-drop biases, spatial interpolation artifacts, and reporting gaps inherent in ground station networks \citep{ChenZhang2026}.
 
-\subsection{The Deliberate Weather-Only Positioning}
-In this thesis, the experimental architecture deliberately enforces a strict \textbf{weather-only} information scope:
-\begin{itemize}
-    \item Historical yield series are retained exclusively as the modeling target and the source of statistical reference baselines;
-    \item Meteorological inputs are derived exclusively from ECMWF ERA5-Land reanalysis;
-    \item All satellite remote sensing, static soil attributes, management variables, and forward-looking seasonal climate forecast ensembles are deliberately excluded in the primary benchmark.
-\end{itemize}
-While excluding static soil attributes and remote sensing reduces overall input dimensionality, this choice is methodologically essential: it cleanly isolates the genuine, unconfounded predictive skill attributable to observed weather reanalysis, establishing a transparent benchmark for when physical atmospheric signals alone resolve agricultural harvest outcomes.
+A central methodological choice of this thesis is the deliberate restriction of dynamic inputs strictly to observed surface weather. This restriction is justified by four foundational constraints that render alternative modalities methodologically inadmissible for multi-lead-time forecasting over multidecadal panels:
 
-\section{Forecasting Targets, Operational Lead Times, and Baseline Models}
+\paragraph{Ex-Post Reporting of Agronomic Management.} Comprehensive county-level management records (cultivar genetics, planting dates, fertilizer application rates) are typically compiled at annual cadences and released months after harvest. Incorporating these records into intra-seasonal forecasts would induce severe temporal data leakage or operational infeasibility. Furthermore, consistent 75-year historical panels of management practices at county resolution do not exist.
+
+\paragraph{Physiological Latency and Satellite Coverage Limits.} While vegetation indices (NDVI, EVI) and Solar-Induced Chlorophyll Fluorescence (SIF) from MODIS or Sentinel monitor canopy health \citep{Yinetal2026}, their historical depth is limited to the post-2000 era, preventing multi-decadal sampling of climate extremes. Crucially, satellite greenness signals exhibit severe physiological latency, becoming informative only after mid-summer canopy closure (July), offering zero predictive utility during pre-sowing and early vegetative stages ($H \ge 4$).
+
+\paragraph{Temporal Invariance of Pedological Attributes.} Static soil endowments from databases such as USGS SSURGO (water capacity, organic matter, texture) \citep{ChenZhang2026, Khaki2020} explain permanent cross-sectional yield baselines across counties. However, because their values are constant over time ($\text{Var}(X_{it}) = 0$), static soil features contain zero interannual variance to explain temporal yield anomalies.
+
+\paragraph{Avoiding Confounded Climate Model Biases.} While dynamical seasonal weather forecasts (e.g., ECMWF SEAS5) are available in real time, coupling crop models with seasonal atmospheric predictions conflates agronomic sensitivity with long-range climate model biases. Restricting dynamic inputs to realized surface reanalysis isolates the unconfounded, physical upper bound of predictability attributable strictly to atmospheric forcing observed up to the forecast cutoff.
+
+\section{Lead-Time Progression, Categorical Regimes, and Baseline Benchmarking in Literature}
 \label{sec:lit_targets_lead_times}
 
-The formulation of the predictive target, the trajectory of forecast origins, and the selection of reference baselines govern both the empirical validity and practical utility of crop forecasting.
+\subsection{Static Evaluation Horizons versus Progressive Lead-Time Dynamics}
+A prevalent limitation in the crop forecasting literature is evaluating models at isolated calendar cutoffs, such as a single mid-summer date (e.g., July 31) or post-harvest weather. While useful for retrospective estimation, static cutoffs obscure how predictive skill accumulates across the growing cycle. Standardizing evaluation across sequential monthly horizons ($H=12, \dots, 1$) is necessary to determine when atmospheric observations transition from uninformative noise into reliable predictive signals.
 
 \subsection{Continuous Anomaly Forecasting versus Categorical Regimes}
-The predominant paradigm in the literature models continuous crop yield in levels (measured in bushels per acre or tons per hectare). However, as established in Section~\ref{sec:lit_yield_trend_weather}, modeling raw yield levels conflates secular technological trends with annual weather anomalies. A more rigorous formulation models the continuous detrended yield anomaly $\varepsilon_{it}$, evaluating predictive skill directly against the variance of interest.
+While academic research has predominantly focused on continuous point estimates evaluated via $R^2$ or RMSE, agricultural risk managers and supply-chain operators frequently require discrete regime classifications. Distinguishing whether an upcoming harvest will fall into a normal regime, a bumper crop, or a severe shortfall (e.g., lower quartile or negative $z$-score) is often more actionable for forward hedging, storage allocation, and procurement than predicting exact continuous decimals \citep{Iizumietal2021, Vijverberg2023}. Evaluating both formulations allows testing whether categorical regimes can be detected earlier than precise continuous point forecasts.
 
-In parallel, agricultural risk managers and supply-chain coordinators often require categorical classifications rather than continuous point estimates. In practical decision-making, distinguishing whether an upcoming harvest will fall into a normal crop regime, an exceptional bumper harvest, or a severe shortfall is often more actionable than predicting whether yield will be 51.2 or 52.1 bushels per acre. Formulating crop forecasting as a categorical classification problem (e.g., predicting tertiles, quintiles, or extreme shortfall events below the 20th percentile) tests whether broad directional regimes can be identified at earlier lead times than precise continuous magnitudes \citep{Iizumietal2021, Vijverberg2023}.
-
-\subsection{Lead-Time Dynamics and Operational Horizons}
-Forecast lead time defines the temporal horizon between the generation of the forecast (the forecast cutoff) and the harvest reference. Previous studies frequently evaluate models at a single arbitrary cutoff date (such as July 31 or August 31) or report terminal post-harvest performance using the full calendar year's weather. Such designs obscure the progressive accumulation of predictive information over the growing season.
-
-While existing literature establishes the general value of in-season updates \citep{ChenZhang2026, Khaki2020, Yinetal2026} and confirms the existence of early presowing climate precursors \citep{Iizumietal2021, Vijverberg2023}, it does not provide an empirical consensus on the exact cutoff dates for a 12-month progressive trajectory. Consequently, the 12 standardized monthly cutoff dates ($H=12, \dots, 1$) evaluated in this thesis are anchored in official USDA NASS crop progress reports and state-specific phenological calendars, formalizing the sequential progression from post-harvest antecedent conditions through winter dormancy, planting, reproductive flowering, pod filling, and final maturation.
-
-\subsection{Reference Baselines versus Candidate Predictive Models}
-In evaluating machine learning architectures, a fundamental distinction must be drawn between candidate predictive models and baseline reference models. Advanced algorithms such as Random Forests, Gradient Boosting Machines, and Long Short-Term Memory (LSTM) networks are \textit{candidate models} whose predictive efficacy is under test. Conversely, a \textit{baseline} is a parsimonious reference model designed to establish how much variance can be explained using only information available \textit{prior to} incorporating current-season weather.
-
-To rigorously address the incremental predictive value of observed weather, five distinct reference baselines are formalized:
-\begin{enumerate}
-    \item \textbf{County Climatology:} Predicting the historical training-fold mean yield or anomaly for each county. This baseline benchmarks the variance explained purely by permanent spatial climate and soil endowments.
-    \item \textbf{County Technological Trend:} Extrapolating the historical county-specific trend line (linear, polynomial, or spline) fitted strictly on past training years.
-    \item \textbf{Previous-Year Yield ($Y_{t-1}$):} An autoregressive persistence baseline utilizing the preceding year's yield, applied strictly subject to administrative publication lags.
-    \item \textbf{Regularized Linear Model or GAM:} An interpretable benchmark (e.g., Ridge or Lasso regression) establishing whether complex non-linear modeling is empirically necessary.
-    \item \textbf{Monthly Baseline Inspired by Chen \& Zhang (2026):} An integrated reference combining historical trend, county climatology, lagged yield, and coarse monthly weather summaries available up to the forecast cutoff.
-\end{enumerate}
-
-The decisive importance of isolating baseline persistence is demonstrated empirically by \citet{ChenZhang2026}. In their ablation experiment, removing the one-year lagged yield predictor ($Y-1$) caused their holdout test $R^2$ to collapse from $\approx 0.67$ to $0.315$ in 2024 and $0.351$ in 2025. This dramatic reduction proves that more than 50\% of the explained variance in their reported model was driven by historical baseline persistence and secular trend rather than current-season weather. Benchmarking against explicit baselines is therefore essential to avoid mistaking historical inertia for genuine weather-driven forecasting skill.
+\subsection{The Necessity of Parsimonious Reference Baselines}
+Machine learning models are frequently reported with high predictive accuracy without benchmarking against parsimonious historical baselines (deterministic linear trends, county climatology, or autoregressive past yields). In trending series, a baseline establishes how much variance is explained by historical momentum alone. Without explicit baseline benchmarking, high reported accuracy risks mistaking secular technological progress for genuine weather-driven forecasting skill \citep{ChenZhang2026}.
 
 \section{Statistical, Machine Learning, and Sequential Model Architectures}
 \label{sec:lit_model_families}
 
-The literature features a broad spectrum of candidate predictive architectures, exhibiting distinct trade-offs between inductive bias, computational complexity, and interpretability.
+The literature features three prominent model families for tabular and sequential crop forecasting:
 
-\subsection{Regularized Linear Regressions}
-Linear models, including Ordinary Least Squares, Ridge, and Lasso regressions, serve as foundational benchmarks in agricultural economics. Regularized linear models handle multicollinearity among meteorological features and prevent parameter explosion in small samples. However, standard linear specifications cannot capture acute non-linear damage thresholds (such as EDD $>30^\circ\text{C}$) or complex hydrometeorological interactions unless explicit non-linear terms and cross-products are manually engineered into the feature matrix.
+\paragraph{Regularized Linear Models.} Ridge and Lasso regressions provide transparent, computationally efficient baselines that mitigate multicollinearity among highly correlated meteorological features, but cannot capture non-linear thermal thresholds without manual feature cross-products.
 
-\subsection{Tree-Based Ensembles}
-Tree-based ensemble algorithms, notably Random Forests \citep{Jeongetal2016} and Gradient Boosted Decision Trees (XGBoost, LightGBM), have become the predominant workhorses for tabular crop modeling \citep{Sharmaetal2025}. Tree ensembles handle high-dimensional collinear features, automatically model non-linear threshold effects and complex feature interactions without requiring explicit functional form assumptions, and exhibit strong resistance to outliers. Furthermore, methods such as TreeSHAP enable transparent interpretation of feature importance across spatial and temporal dimensions \citep{ChenZhang2026}.
+\paragraph{Tree-Based Ensembles.} Random Forests \citep{Jeongetal2016} and Gradient Boosted Decision Trees (XGBoost) represent predominant workhorses for tabular agro-meteorology \citep{Sharmaetal2025}. They naturally accommodate step-function damage thresholds and multi-way feature interactions without restrictive parametric assumptions, enabling feature attribution via TreeSHAP \citep{ChenZhang2026}.
 
-\subsection{Deep Learning and Sequential Architectures}
-Deep learning architectures have gained widespread prominence in agricultural forecasting. Fully connected Deep Neural Networks (DNNs) have been deployed across large-scale multi-decadal county panels \citep{ChenZhang2026}. To explicitly process the temporal sequence of meteorological shocks, researchers have developed recurrent architectures, particularly Long Short-Term Memory (LSTM) networks, and Convolutional Neural Networks (CNNs) \citep{Khaki2019, Khaki2020, Shooketal2021, Yinetal2026}. In theory, LSTMs are uniquely equipped to process daily meteorological sequences, dynamically capturing the persistence of dry spells, heatwave duration, and phenological timing without requiring manual feature aggregation.
+\paragraph{Sequential Deep Learning.} Recurrent architectures, particularly Long Short-Term Memory (LSTM) networks, are designed to process time-series sequences of meteorological shocks, dynamically capturing spell duration, stress persistence, and intra-seasonal timing \citep{Khaki2020, Yinetal2026}.
 
-However, a fundamental tension exists between model parameterization and effective sample size in agricultural forecasting. Although an empirical panel may contain thousands of county-year records ($N \times T$), observations within any single calendar year are strongly spatially correlated due to synoptic weather systems. Consequently, the effective degrees of freedom are governed primarily by the number of independent growing seasons ($T$), which rarely exceeds 50 to 75 years. In such data-constrained regimes, heavily parameterized sequential networks face severe risks of overfitting to idiosyncratic multidecadal weather patterns unless evaluated under strict out-of-sample temporal validation. The central question for this thesis is therefore whether sequential architectures deliver genuine, statistically significant predictive gains over simpler tree ensembles and regularized linear models under strict leak-free testing.
+\paragraph{The Sample Size Constraint ($T$ vs $N \times T$).} A fundamental statistical constraint governs agricultural forecasting. Although an empirical panel contains thousands of pooled county-year observations ($N \times T$), observations within any single crop year are strongly spatially correlated due to synoptic-scale weather systems. Consequently, effective degrees of freedom are governed primarily by the number of independent growing seasons ($T \approx 75$), creating acute risks of overfitting for heavily parameterized deep networks unless evaluated under strict out-of-sample temporal validation.
 
-\section{Validation Protocols, Data Leakage, and Evaluation Metrics}
+\section{Validation Protocols and Handling Future Weather}
 \label{sec:lit_validation_leakage}
 
-The scientific credibility of any crop forecasting experiment depends entirely on its validation protocol. Methodological flaws in cross-validation have led to pervasive over-optimism in reported model performance.
+\subsection{Spatiotemporal Dependence and Cross-Validation Fallacies}
+In an authoritative empirical study, \citet{Sweetetal2023} demonstrated that cross-validation strategies fundamentally dictate both reported accuracy and feature attributions in Earth system machine learning. Because neighboring counties experience nearly identical synoptic weather shocks in any given year, applying standard random $k$-fold cross-validation allows algorithms to memorize regional climate shocks from training counties and predict neighboring test counties with artificially inflated accuracy. \citet{Sweetetal2023} prove that valid evaluation must keep all counties within a calendar year strictly grouped within either the training or testing fold.
 
-\subsection{Spatiotemporal Dependence and the Fallacy of Random Cross-Validation}
-In an authoritative empirical investigation, \citet{Sweetetal2023} demonstrated that cross-validation strategies fundamentally determine both the reported accuracy and the interpretation of machine learning models in Earth systems. In agricultural datasets, observations exhibit strong spatial autocorrelation (neighboring counties experience nearly identical weather shocks) and temporal autocorrelation (multi-year trends and technological shifts). 
-
-When researchers apply standard random $k$-fold cross-validation or random train/test splits across pooled county-year records, observations from the same calendar year appear simultaneously in both training and testing folds. The machine learning algorithm easily ``memorizes'' the regional climate shock of that year from the training counties and predicts the yield of neighboring test counties with artificially inflated accuracy. \citet{Sweetetal2023} prove that random cross-validation severely overestimates predictive skill and produces unstable, misleading feature importance rankings. To preserve spatial independence, validation folds must keep all counties within a given calendar year strictly intact within either the training fold or the testing fold.
-
-\subsection{Temporal Data Leakage and Expanding Windows}
-Temporal data leakage occurs whenever information from future periods contaminates model estimation. Primary sources of leakage in the existing literature include:
+\subsection{Approaches to Unobserved Future Weather at Forecast Origin}
+At any intermediate forecast origin ($H > 1$), meteorological conditions between the cutoff date and final harvest remain unknown. In the literature, three primary approaches address this missing future information:
 \begin{enumerate}
-    \item \textbf{Full-Sample Detrending:} Estimating deterministic trends or smoothing splines across the entire multi-decadal panel, leaking future yield trajectories into past observations.
-    \item \textbf{Pre-Split Feature Engineering and Selection:} Standardizing features, imputing values, or performing feature selection prior to temporal partitioning.
-    \item \textbf{Full-Sample Anomaly Thresholds:} Computing classification percentiles (e.g., tertiles or extreme shortfall boundaries) on the complete dataset rather than strictly within historical training folds.
-    \item \textbf{Post-Cutoff Meteorological Information:} Utilizing meteorological variables accumulated after the declared forecast cutoff date.
-    \item \textbf{Premature Use of Lagged Yields:} Including previous-year yield $Y_{t-1}$ at early-season cutoffs before official USDA NASS survey estimates are publicly released.
+    \item \textbf{Zero-Future-Weather Truncation:} Conditioning predictions strictly on meteorological features observed up to the cutoff date, setting aside unobserved future periods. This approach cleanly isolates the genuine accumulated predictive information delivered by current observations without confounding forecast skill with downstream weather assumptions.
+    \item \textbf{Naive Persistence or Climatological Imputation:} Imputing unobserved future weeks using historical county climatological averages. While completing the calendar window, it introduces artificial smoothing and assumes average future conditions.
+    \item \textbf{Coupling with Seasonal Numerical Forecasts:} Driving crop models with dynamical seasonal weather forecasts (e.g., ECMWF SEAS5). While operationally relevant, it conflates crop-model skill with the well-known skill limitations and biases of long-range seasonal climate predictions.
 \end{enumerate}
 
-To eliminate these vulnerabilities, this thesis employs a strict complete-year expanding-window validation scheme, wherein all detrending, standardization, classification thresholds, and model training are executed strictly \textit{train-only}. Detailed mathematical formalization of this validation protocol is presented in Chapter~4 (Methodology).
+Evaluating models on trending yield levels using standard $R^2$ predominantly measures the ability to track secular technological growth rather than interannual weather sensitivity. Robust empirical evaluation requires evaluating detrended anomalies against explicit reference baselines under complete-year expanding windows.
 
-\subsection{Evaluation Metrics for Regression and Classification}
-Model performance must be assessed using standardized, comparable statistical metrics:
-\begin{itemize}
-    \item \textbf{Continuous Regression Metrics:} Root Mean Squared Error (RMSE) and Mean Absolute Error (MAE) serve as the primary error metrics, penalizing large anomalies and median deviations, respectively. Out-of-sample coefficient of determination ($R^2_{\text{OOS}}$) and relative RMSE (rRMSE) provide scale-independent comparisons across lead times and geographical regions. Crucially, incremental forecasting skill is evaluated via relative skill scores:
-    \begin{equation}
-        \text{Skill}_{\text{baseline}} = 1 - \frac{\text{RMSE}_{\text{model}}}{\text{RMSE}_{\text{baseline}}}
-    \end{equation}
-    testing whether adding weather reanalysis produces a statistically significant error reduction beyond reference baselines.
-    \item \textbf{Categorical Regime Metrics:} For discrete anomaly classifications (e.g., normal, bumper, or severe shortfall), evaluation relies on Balanced Accuracy and Macro-averaged $F_1$-score to account for class imbalance, alongside ROC-AUC for binary shortfall detection \citep{Vijverberg2023} and Brier scores for probabilistic forecast calibration.
-\end{itemize}
-
-\section{Closest Empirical Studies: A Comparative Analysis}
+\section{Benchmark Studies and Comparative Analysis}
 \label{sec:lit_closest_studies}
 
-To establish the precise academic positioning of this thesis, this section critically examines the empirical studies most directly related to multi-lead-time county-level crop forecasting.
+To establish the precise positioning of this thesis, this section examines the empirical studies most directly related to multi-lead-time county-level crop forecasting.
 
-\subsection{Chen \& Zhang (2026): The Primary Benchmark}
-The most direct and closely aligned benchmark is the recent study by \citet{ChenZhang2026}, entitled \textit{``A Deep Learning Approach to County-Level Soybean Yield Forecasting Using Large-Scale Environmental Data''}. 
+\subsection{Chen \& Zhang (2026): The Primary Empirical Benchmark}
+The most direct benchmark is the multidecadal study by \citet{ChenZhang2026}, who synthesize a 99-year dataset (1927--2025) across 1,309 U.S. counties, combining USDA NASS soybean yields with 31 monthly weather variables from NOAA GSOM stations and 15 static SSURGO soil features. They train a Deep Neural Network alongside a companion Random Forest for TreeSHAP attribution, evaluating monthly updates from May through August.
 
-\paragraph{Study Design and Methodology.} \citet{ChenZhang2026} synthesize a 99-year dataset (1927--2025) across 1,309 U.S. counties, combining county-level soybean yields from USDA NASS with 31 monthly weather variables from NOAA GSOM (totaling 372 monthly weather attributes) and 15 static soil variables from USGS SSURGO. They train a fully connected Deep Neural Network (DNN) alongside a companion Random Forest used for TreeSHAP feature attribution. To reflect in-season forecasting, they evaluate model accuracy using cumulative monthly weather data from May through August.
-
-\paragraph{Reported Performance and Critical Limitations.} On their hold-out test set (2024 and 2025), \citet{ChenZhang2026} report end-of-year $R^2$ values of 0.668 and 0.678, with in-season 2025 $R^2$ rising from 0.516 in May to 0.596 in June, 0.622 in July, and 0.668 in August. However, a detailed critical examination reveals several fundamental methodological caveats:
+On their test holdout (2024 and 2025), \citet{ChenZhang2026} report end-of-year $R^2$ values of 0.668 and 0.678, with in-season 2025 $R^2$ rising from 0.516 in May to 0.668 in August. However, critical methodological limitations emerge upon closer inspection:
 \begin{enumerate}
-    \item \textit{Conflation of Trend and Weather:} \citet{ChenZhang2026} model raw yield levels without detrending, relying on previous-year yield ($Y-1$) as an input feature. As demonstrated by their own ablation experiment, removing $Y-1$ reduces test $R^2$ to $\approx 0.33$, proving that over half of their explained variance stems from historical baseline persistence rather than current-season weather.
-    \item \textit{Validation Protocol and Leakage:} While 2024 and 2025 were reserved as an independent holdout, the preceding 1927--2023 sample was partitioned into 90\% training and 10\% validation via \textit{random splitting}. As established by \citet{Sweetetal2023}, randomly partitioning county-year records over 97 years induces severe spatiotemporal leakage during model hyperparameter tuning.
-    \item \textit{Evaluation on a Two-Year Holdout:} Model generalization was evaluated on only two crop years (2024 and 2025), leaving the stability of performance across varied climatic extremes unverified.
-    \item \textit{Coarse Temporal Granularity:} Weather features were aggregated into monthly averages from ground weather stations (GSOM), smoothing out acute, high-frequency heat and moisture stress events.
-    \item \textit{Absence of Reference Baselines:} The study does not benchmark the DNN against reference statistical baselines (such as linear trends, county climatology, or regularized linear models) on the test holdout.
+    \item \textit{Conflation of Trend and Weather:} By modeling raw yield levels without detrending and including lagged yield ($Y-1$) as an input, historical persistence dominates the prediction. In their ablation test, removing $Y-1$ caused test $R^2$ to collapse from $\approx 0.67$ to $0.315$ in 2024 and $0.351$ in 2025, proving that more than half of their reported explained variance stems from baseline persistence rather than current weather.
+    \item \textit{Validation Protocol:} While 2024 and 2025 were held out, the preceding 1927--2023 sample was partitioned into 90\% training and 10\% validation via random splitting, inducing spatiotemporal data leakage during model tuning \citep{Sweetetal2023}.
+    \item \textit{Sample and Baseline Limitations:} Model generalization was evaluated on only two test years, and predictions were not benchmarked against parsimonious historical baselines (linear trend or climatology).
 \end{enumerate}
 
 \subsection{Vijverberg et al. (2023): Presowing Extreme Event Classification}
-In a distinct methodological direction, \citet{Vijverberg2023} investigate \textit{``Skillful U.S. Soy Yield Forecasts at Presowing Lead Times''}.
+\citet{Vijverberg2023} investigate soybean predictability at presowing horizons (up to 50 days prior to planting), predicting poor-yield events (detrended anomalies below the 33rd percentile) using logistic regression and Random Forests driven by remote Pacific sea surface temperatures and antecedent land soil moisture. They demonstrate statistically significant classification skill at aggregated regional scales, confirming the presence of early precursors. This thesis extends this inquiry by tracking both continuous anomalies and discrete regimes at fine county resolution across the complete growing season using in-season reanalysis.
 
-\paragraph{Design and Contribution.} \citet{Vijverberg2023} focus exclusively on early lead times, predicting poor-yield events (defined as regional yield falling below the 33rd percentile of detrended historical anomalies) up to 50 days prior to planting. Instead of local weather observations, they identify large-scale, remote climate precursors, including sea surface temperature (SST) anomalies in the Pacific and antecedent land surface soil moisture. Using logistic regression and Random Forests, they demonstrate statistically significant classification skill at presowing horizons across broad agricultural sub-regions.
+\subsection{Yin et al. (2026): Temporal Aggregation and Sequential Architectures}
+\citet{Yinetal2026} examine temporal aggregation by comparing models trained on environmental variables summarized at 5-day, 10-day, 15-day, and 30-day intervals. They find that 5-day and 10-day aggregations preserve acute stress signals that monthly averages smooth out, allowing sequential CNN-LSTMs to capture stress timing during flowering and pod filling. However, sequential deep learning exhibited volatility during extreme anomaly years.
 
-\paragraph{Contrast with this Thesis.} While \citet{Vijverberg2023} confirm that early climate signals can inform crop risk, their framework is restricted to binary extreme event classification, evaluated at aggregated multi-county regional scales, using remote ocean-atmosphere precursors. This thesis extends the inquiry to continuous anomalies and multiple regimes, evaluated at fine county resolution, using progressive within-season local weather reanalysis.
+\subsection{Khaki et al. (2020) and Iizumi et al. (2021)}
+\citet{Khaki2020} evaluate hybrid CNN-RNN architectures with weekly in-season updating for Midwest corn and soybeans, illustrating the progression of prediction accuracy as harvest approaches. In a complementary direction, \citet{Iizumietal2021} demonstrate that broad categorical yield regimes can often be detected several months prior to harvest, corroborating the value of dual continuous-categorical modeling.
 
-\subsection{Yin et al. (2026): High-Frequency Reanalysis and Sequential Models}
-\citet{Yinetal2026} explore \textit{``Estimating Soybean Yields from High-Temporal-Resolution Multi-Source Data''}.
-
-\paragraph{Design and Contribution.} \citet{Yinetal2026} address the temporal aggregation problem by comparing yield models trained on environmental features summarized at 5-day, 10-day, 15-day, and 30-day intervals. They demonstrate that higher-frequency temporal summaries (5-day and 10-day intervals) preserve dynamic stress signals, enabling sequential architectures (such as CNN-LSTMs) to capture the exact timing of moisture deficits. They show that predictive skill becomes particularly informative during flowering and pod filling, with gains saturating at temporal resolutions finer than approximately 10 days. However, they observe that sequential deep learning models exhibit volatility during extreme climate anomaly years and require intensive computational tuning.
-
-\subsection{Khaki et al. (2020) and Iizumi et al. (2021): Architectural and Categorical Benchmarks}
-\citet{Khaki2020} develop a hybrid CNN-RNN architecture for county-level corn and soybean yield forecasting across the U.S. Corn Belt, integrating weather, soil, and management variables. They implement weekly in-season weather updating, demonstrating how prediction errors decrease throughout the growing season. In a complementary study, \citet{Iizumietal2021} examine categorical anomaly forecasting, demonstrating that broad directional yield categories can be identified several months prior to harvest, corroborating the value of dual continuous-categorical evaluation.
-
-\subsection{Comprehensive Methodological Comparison}
-Table~\ref{tab:lit_comparison} provides a structured comparative synthesis across the primary empirical studies in the literature and the framework proposed in this thesis, contrasting targets, input data, lead times, architectures, validation protocols, and methodological implications.
+\subsection{Comparative Methodological Synthesis}
+Table~\ref{tab:lit_comparison} synthesizes the methodological dimensions of these primary benchmarks alongside the framework implemented in this thesis.
 
 \begin{table}[htbp]
 \centering
@@ -267,41 +196,21 @@ Requires satellite data; short time span (20 years); high model complexity. &
 \end{tabularx}
 \end{table}
 
-
 \section{Synthesis, Literature Gap, and Hypotheses}
 \label{sec:lit_synthesis_gap}
 
-\subsection{What the Literature Establishes}
-The existing literature provides robust empirical evidence on several foundational aspects of crop forecasting:
-\begin{enumerate}
-    \item Crop yield responses to meteorological forcing are strongly non-linear, characterized by critical thermal thresholds ($>30^\circ\text{C}$) and sensitive water-balance interactions \citep{Schlenker2009}.
-    \item Mid-season meteorological conditions, particularly during the reproductive flowering and pod-filling phases in July and August, exert a dominant influence on interannual soybean yield variability in the U.S. Midwest \citep{Hoffman2020, ChenZhang2026}.
-    \item Machine learning algorithms, including tree ensembles and neural networks, possess sufficient functional capacity to capture non-linear agro-meteorological relationships without requiring manual specification of complex biological interaction terms \citep{Sharmaetal2025}.
-    \item Cross-validation strategies that ignore spatial and temporal dependence yield severely over-optimistic performance estimates and misleading feature rankings \citep{Sweetetal2023}.
-\end{enumerate}
+\subsection{Literature Consensus and the Identified Gap}
+The literature establishes that crop yield responses to weather are non-linear (with severe penalties above $30^\circ\text{C}$ and under elevated vapor pressure deficit), that reproductive stages in July and August dominate Midwest yield variance, that machine learning can capture these relationships, and that random cross-validation induces severe spatiotemporal leakage.
 
-\subsection{The Identified Literature Gap}
-Despite these substantial insights, a critical gap remains across existing studies. Specifically, no existing empirical study simultaneously combines the following ten methodological dimensions:
+However, existing studies leave a critical empirical gap: they provide fragmented evidence on \textit{when} progressively observed local weather begins to add statistically significant and stable predictive skill beyond historical baselines under strict temporal validation. Specifically:
 \begin{enumerate}
-    \item Twelve standardized monthly forecast cutoffs spanning from the preceding harvest year ($Y-1$) to one month prior to harvest ($H=12, \dots, 1$);
-    \item High-resolution, physically consistent atmospheric reanalysis data (ECMWF ERA5-Land);
-    \item A systematic, direct comparison across temporal aggregation granularities (5-day, 10-day, and 30-day windows);
-    \item Continuous detrended yield anomalies and discrete anomaly regimes evaluated within a unified experimental protocol;
-    \item Explicit, formal separation between technological trend, county climatology, lagged past yield, and current observed weather;
-    \item Rigorous statistical quantification of the incremental predictive skill of weather relative to established reference baselines;
-    \item A neutral, balanced comparison across regularized linear models, tree-based ensembles, and sequential deep learning architectures (LSTM);
-    \item Formal empirical definition of the earliest lead time at which forecasts achieve statistically significant and stable predictive skill;
-    \item A strict complete-year expanding-window validation scheme with all preprocessing and detrending executed entirely train-only;
-    \item Dedicated, granular analysis of extreme negative anomaly years and shortfall campaigns across all forecast horizons.
+    \item Lead-time horizons have been evaluated at isolated calendar dates rather than across a standardized twelve-month progression ($H=12, \dots, 1$), leaving signal emergence and temporal stability uncharacterized.
+    \item Past studies frequently conflate secular technological growth and historical inertia with weather skill by modeling raw yields without explicit baseline decoupling.
+    \item The relative benefit of high-frequency temporal summaries (5-day and 10-day vs.\ monthly means) versus model complexity (regularized linear models, tree ensembles, and LSTMs) remains unresolved under the constraint of independent annual growing seasons.
 \end{enumerate}
-
-Accordingly, the overarching research gap addressed by this thesis is formulated as follows:
-\begin{quote}
-\textit{The existing literature demonstrates that crop yield can be forecast using climatic, meteorological, environmental, and historical information, but provides less systematic evidence on when progressively observed local weather begins to add stable predictive skill beyond historical baselines under progressive, strictly temporal and train-only validation.}
-\end{quote}
 
 \subsection{Derivation of Research Hypotheses}
-To directly address this gap, the experimental architecture of this thesis is structured around five formal, testable research hypotheses:
+To address this gap, the empirical investigation is structured around five formal, testable research hypotheses:
 \begin{itemize}
     \item \textbf{Hypothesis 1 (Incremental Weather Skill):} Adding observed high-resolution weather reanalysis features to reference historical baselines produces a statistically significant reduction in out-of-sample prediction error for county-level soybean yield anomalies.
     \item \textbf{Hypothesis 2 (Lead-Time Dependence and Persistence):} Incremental forecasting skill increases monotonically as the forecast origin approaches harvest ($H \to 1$). Furthermore, early predictive gains must persist stably across subsequent monthly cutoffs without reverting to noise to constitute actionable forecasting skill.
@@ -309,6 +218,3 @@ To directly address this gap, the experimental architecture of this thesis is st
     \item \textbf{Hypothesis 4 (Model Complexity under Strict Validation):} Complex sequential deep learning models (such as LSTMs) do not systematically outperform transparent regularized linear models or tree ensembles (Random Forests, Gradient Boosting) when subjected to strict, out-of-sample expanding-window validation.
     \item \textbf{Hypothesis 5 (Early Regime Recognition):} Discrete yield anomaly classes and extreme shortfall regimes can be classified with positive predictive skill at earlier lead times than required for accurate continuous point forecasts.
 \end{itemize}
-
-\subsection{Provisional Character of the Methodological Positioning}
-In accordance with rigorous scientific practice, the methodological positioning, empirical benchmarks, and comparative hypotheses detailed in this chapter remain provisional. While the literature establishes clear theoretical motivations for each design choice, the definitive verification of these propositions depends entirely on the execution of the expanding-window experiments and statistical significance tests formalized in Chapter~4 (Methodology).

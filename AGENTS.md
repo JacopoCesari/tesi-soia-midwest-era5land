@@ -33,6 +33,11 @@
   avoiding redundant modules, documents and copies of the final product. Keep
   technical documentation concise; thesis-oriented explanations may be longer when
   needed to preserve reasoning, attribution and methodological detail.
+- Maintain repository cleanliness and organization: prevent note scattering across
+  disconnected files and eliminate redundant text or boilerplate across thesis chapters.
+  Centralize working notes, research decisions and methodological parameters in designated
+  directories (`work/thesis_notes/` and `output/docs/decisions.md`), ensuring the thesis
+  narrative remains concise, structured, and non-repetitive.
 
 ## Scientific constraints
 
