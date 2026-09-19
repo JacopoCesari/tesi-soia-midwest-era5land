@@ -11,10 +11,8 @@
 ---
 
 ## 2. Modeling Target Priority (Regression vs. Classification)
-- **Original provisional text (Chap 1):** *"Continuous regression and categorical classification are developed in parallel; the designation of a single primary modeling target will be settled after preliminary empirical experiments."*
-- **Operational decision:** Both targets are formally preserved in the research design as dual complementary pillars:
-  - **Primary Quantitative Target:** Continuous detrended yield anomaly (bushels/acre).
-  - **Decision-Support Target:** Categorical regime classification (e.g. negative shortfall events below the 20th percentile / lower quartile) for supply chain risk alerts.
+- **Status (Chap 1):** Continuous regression is established as the primary empirical backbone, while categorical classification (shortfall, normal, bumper regimes) is retained as an exploratory/complementary framework.
+- **Operational decision (Author Review, Sept 2026):** Keep both in Chapter 1 for now. A final evaluation will be made once full empirical runs are analyzed: if classification provides distinct operational signal, retain it as an ablation/secondary analysis; if redundant, drop or streamline before final thesis delivery.
 
 ---
 
@@ -25,11 +23,11 @@
 ---
 
 ## 4. Methodological Contributions Consolidation
-- **Original list of 11 contributions (Chap 1):** Consolidated into 3 core academic contributions:
-  1. Systematic Lead-Time Horizon Mapping ($H=12, \dots, 1$).
-  2. Rigorous Decoupling of Historical Inertia and Weather Skill.
-  3. Multi-Granularity Temporal and Architectural Comparison.
-- **Good practices moved to Methodology (Chap 4):**
+- **Chapter 1 Streamlining (Author Review, Sept 2026):** Consolidated into 2 core research contributions:
+  1. Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12, \dots, 1$).
+  2. Identification of Optimal Model-Aggregation Configurations (winning setup across 5-day, 10-day, and 30-day summaries and model families).
+- **Foundational Modeling Hygiene moved strictly to Methodology (Chap 4):**
+  - Baseline decoupling (detrending and historical inertia isolation) is recognized as foundational data-science hygiene, not an independent headline contribution.
   - Expanding-window chronological validation (Hyndman).
   - Strict train-only fitting (detrending, scaling, quantile thresholds).
   - Standard error metrics (RMSE, MAE, ROC-AUC, Brier score).

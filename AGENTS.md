@@ -39,6 +39,21 @@
   directories (`work/thesis_notes/` and `output/docs/decisions.md`), ensuring the thesis
   narrative remains concise, structured, and non-repetitive.
 
+## Thesis writing protocol and chapter scoping
+
+- **Strict Chapter Role Demarcation**:
+  - *Chapter 1 (Introduction)*: High-level motivation, practical supply-chain value, research questions, high-level objectives, academic contributions, and scope boundaries. Never anticipate detailed experimental recipes, equations, or exhaustive model configurations.
+  - *Chapter 2 (Literature Review)*: Critical review of existing agronomic, econometric, and ML literature, theoretical foundations, and formal derivation of hypotheses H1--H5. Focus strictly on what existing literature has established, where methodological fallacies lie (e.g., trend confounding, spatial leakage, lack of parsimonious baselines), and why specific data modalities are excluded. Do not describe internal implementation mechanics or anticipate Chapter 4 pipelines.
+  - *Chapter 3 (Data and Study Area)*: Complete empirical provenance, spatial coverage, descriptive acreage, quality control, reanalysis extraction, and exploratory climate-yield statistics.
+  - *Chapter 4 (Methodology)*: Mathematical and algorithmic formalization of all workflows: 12 standardized horizons, feature engineering, detrending models, baseline specifications, machine learning architectures, and expanding-window temporal validation protocols.
+  - *Chapters 5--7 (Results, Discussion, Conclusions)*: Empirical findings, baseline comparisons, ablations, operational implications, and syntheses.
+- **Academic Defense of Methodological Exclusions**:
+  - Negative constraints (e.g., weather-only, excluding satellites, management records, static soil features, or dynamical climate forecasts) must be justified through rigorous academic rationale in the thesis narrative: ex-post compilation lags, physiological satellite latency ($H \ge 4$), lack of multidecadal county depth, zero temporal variance of static pedology ($\text{Var}(X_{it})=0$), and avoiding confounded dynamical climate model biases.
+- **Text and Table Coordination (No Redundancy)**:
+  - When comparative or diagnostic tables synthesize empirical dimensions (such as benchmark comparisons or hyperparameter grids), surrounding text must provide critical commentary and analytical synthesis rather than repeating tabular metrics verbatim.
+- **Density Over Expansion (Non-Proliferation Rule)**:
+  - Text revisions must maximize conceptual density, clarity, and grammatical cohesion without expanding word or character counts. Avoid slide-like bullet-point lists where fluent, connected academic prose can express the ideas more cohesively.
+
 ## Scientific constraints
 
 - The main design is weather-only: no markets, futures, macroeconomic data, remote

@@ -350,7 +350,7 @@ def generate_figure_3_1():
         Patch(facecolor="#d0d1e6", edgecolor="#a6bddb", label="Historical Candidate (Incomplete, N=344)"),
         Patch(facecolor="#f5f5f5", edgecolor="#d9d9d9", label="Other Non-Candidate Counties")
     ]
-    ax.legend(handles=legend_elements, loc="lower left", frameon=True, facecolor="white", edgecolor="#cccccc", framealpha=0.95, fontsize=9.5)
+    ax.legend(handles=legend_elements, loc="upper right", frameon=True, facecolor="white", edgecolor="#cccccc", framealpha=0.95, fontsize=9.5)
     
     ax.set_title("Geographic Distribution of the 135 Balanced Study Counties (1951--2025)", fontsize=13, pad=12, fontweight="bold")
     ax.axis("off")
