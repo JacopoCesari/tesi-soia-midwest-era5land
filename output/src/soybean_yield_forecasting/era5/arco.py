@@ -294,7 +294,7 @@ class ARCOClient:
         sub_ds = ds.sel({time_coord: slice(start_date, slice_end)})
 
         # Slice latitude and longitude with striping for robust connection management
-        max_lat_span = 3.5  # Max degrees per latitude strip (~35 points in latitude)
+        max_lat_span = 1.0  # Max degrees per latitude strip (~10 points in latitude)
         if (max_lat - min_lat) > max_lat_span:
             strips = []
             cur_lat = min_lat
@@ -306,19 +306,28 @@ class ARCOClient:
                     else slice(cur_lat, next_lat - 0.01)
                 )
                 lon_slice = slice(min_lon - 0.05, max_lon + 0.05)
-                strip_ds = sub_ds.sel(latitude=lat_slice, longitude=lon_slice)
-                if variables:
-                    available = [v for v in variables if v in strip_ds.data_vars]
-                    strip_ds = strip_ds[available]
-                logging.info(
-                    "Downloading ARCO strip lat [%.2f, %.2f] (shape %s)...",
-                    cur_lat,
-                    next_lat,
-                    dict(strip_ds.sizes),
-                )
                 loaded_strip = None
                 for strip_attempt in range(1, self.max_retries + 1):
                     try:
+                        strip_ds = sub_ds.sel(latitude=lat_slice, longitude=lon_slice)
+                        if variables:
+                            available = [v for v in variables if v in strip_ds.data_vars]
+                            strip_ds = strip_ds[available]
+                        if strip_attempt == 1:
+                            logging.info(
+                                "Downloading ARCO strip lat [%.2f, %.2f] (shape %s)...",
+                                cur_lat,
+                                next_lat,
+                                dict(strip_ds.sizes),
+                            )
+                        else:
+                            logging.info(
+                                "Attempt %d/%d downloading ARCO strip lat [%.2f, %.2f]...",
+                                strip_attempt,
+                                self.max_retries,
+                                cur_lat,
+                                next_lat,
+                            )
                         loaded_strip = strip_ds.load()
                         has_nan = any(np.isnan(loaded_strip[v].values).any() for v in loaded_strip.data_vars)
                         if has_nan:
@@ -327,7 +336,7 @@ class ARCOClient:
                     except Exception as err:
                         if strip_attempt == self.max_retries:
                             raise
-                        sleep_time = self.backoff_factor**strip_attempt
+                        sleep_time = max(3.0, self.backoff_factor**strip_attempt)
                         logging.warning(
                             "Retry %d/%d downloading strip [%.2f, %.2f] after %.1fs due to: %s",
                             strip_attempt,
@@ -347,15 +356,18 @@ class ARCOClient:
         else:
             lat_slice = slice(min_lat - 0.05, max_lat + 0.05)
             lon_slice = slice(min_lon - 0.05, max_lon + 0.05)
-            sub_ds = sub_ds.sel(latitude=lat_slice, longitude=lon_slice)
-            if variables:
-                available = [v for v in variables if v in sub_ds.data_vars]
-                sub_ds = sub_ds[available]
-            logging.info("Downloading slice %s (shape %s)...", tag, dict(sub_ds.sizes))
             loaded = None
             for single_attempt in range(1, self.max_retries + 1):
                 try:
-                    loaded = sub_ds.load()
+                    slice_ds = sub_ds.sel(latitude=lat_slice, longitude=lon_slice)
+                    if variables:
+                        available = [v for v in variables if v in slice_ds.data_vars]
+                        slice_ds = slice_ds[available]
+                    if single_attempt == 1:
+                        logging.info("Downloading slice %s (shape %s)...", tag, dict(slice_ds.sizes))
+                    else:
+                        logging.info("Attempt %d/%d downloading slice %s...", single_attempt, self.max_retries, tag)
+                    loaded = slice_ds.load()
                     has_nan = any(np.isnan(loaded[v].values).any() for v in loaded.data_vars)
                     if has_nan:
                         raise ValueError(f"Slice {tag} contains unexpected NaNs")
@@ -363,7 +375,7 @@ class ARCOClient:
                 except Exception as err:
                     if single_attempt == self.max_retries:
                         raise
-                    sleep_time = self.backoff_factor**single_attempt
+                    sleep_time = max(3.0, self.backoff_factor**single_attempt)
                     logging.warning(
                         "Retry %d/%d downloading slice %s after %.1fs due to: %s",
                         single_attempt,
