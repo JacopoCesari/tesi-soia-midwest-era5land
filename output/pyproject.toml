@@ -7,7 +7,7 @@ name = "soybean-yield-forecasting"
 version = "0.1.0"
 description = "Weather-only county-level soybean yield forecasting research"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 authors = [
     { name = "Jacopo Cesari" }
 ]
