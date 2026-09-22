@@ -238,6 +238,43 @@ def test_arco_pipeline_idempotence(
     assert mock_client.fetch_slice.call_count == fetch_count
 
 
+def test_arco_client_replaces_incomplete_cache(tmp_path: Path) -> None:
+    """An interrupted cache directory must be discarded before a fresh fetch."""
+    cache_dir = tmp_path / "cache"
+    client = ARCOClient(cache_dir=cache_dir)
+    times = pd.date_range("1950-06-01", periods=24, freq="1h")
+    fresh = xr.Dataset(
+        {"t2m": (("valid_time", "latitude", "longitude"), np.full((24, 2, 2), 293.15))},
+        coords={
+            "valid_time": times,
+            "latitude": [40.0, 40.1],
+            "longitude": [-90.0, -89.9],
+        },
+    )
+    client.open_store_lazy = MagicMock(return_value=fresh)
+
+    fetch_arguments = {
+        "store_name": "sfc-2m-temperature",
+        "start_date": "1950-06-01",
+        "end_date": "1950-06-01",
+        "lat_bounds": (40.0, 40.1),
+        "lon_bounds": (-90.0, -89.9),
+        "variables": ["t2m"],
+    }
+    client.fetch_slice(**fetch_arguments)
+    cache_path = next(cache_dir.glob("*.zarr"))
+    (cache_path / ".zmetadata").unlink()
+    client.open_store_lazy.reset_mock()
+
+    result = client.fetch_slice(
+        **fetch_arguments,
+    )
+
+    assert result.sizes == {"valid_time": 24, "latitude": 2, "longitude": 2}
+    assert (cache_path / ".zmetadata").exists()
+    client.open_store_lazy.assert_called_once_with("sfc-2m-temperature")
+
+
 def test_run_year_engine_routing(
     tmp_path: Path, sample_weights_file: Path, mock_hourly_slice: xr.Dataset
 ) -> None:
@@ -260,6 +297,28 @@ def test_run_year_engine_routing(
     )
     assert out_file.exists()
     assert out_file.name == "county_daily_1950.parquet"
+
+
+def test_safe_replace_directory(tmp_path: Path) -> None:
+    """_safe_replace_directory should swap directories cleanly even if target exists."""
+    from soybean_yield_forecasting.era5.arco import _safe_remove, _safe_replace_directory
+
+    src = tmp_path / "temp_dir"
+    src.mkdir()
+    (src / "file.txt").write_text("new content", encoding="utf-8")
+
+    dst = tmp_path / "dest_dir"
+    dst.mkdir()
+    (dst / "file.txt").write_text("old content", encoding="utf-8")
+
+    _safe_replace_directory(src, dst)
+
+    assert not src.exists()
+    assert dst.exists()
+    assert (dst / "file.txt").read_text(encoding="utf-8") == "new content"
+
+    _safe_remove(dst)
+    assert not dst.exists()
 
 
 @pytest.mark.network

@@ -12,12 +12,15 @@ This module implements:
 
 from __future__ import annotations
 
+import gc
 import json
 import logging
 import os
+import shutil
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -88,6 +91,76 @@ def get_arco_credentials() -> str | None:
         except OSError:
             pass
     return None
+
+
+def _safe_remove(path: Path, max_attempts: int = 5, base_delay: float = 0.2) -> None:
+    """Safely remove a file or directory tree, retrying if temporarily locked on Windows."""
+    if not path.exists():
+        return
+
+    gc.collect()
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+            return
+        except (PermissionError, OSError):
+            gc.collect()
+            time.sleep(base_delay * attempt)
+
+    # If direct removal failed, rename to a temporary trash name to free the destination path
+    try:
+        trash = path.parent / f".trash_{path.name}_{int(time.time())}"
+        path.rename(trash)
+        if trash.is_dir():
+            shutil.rmtree(trash, ignore_errors=True)
+        else:
+            trash.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def _safe_replace_directory(src: Path, dst: Path, max_attempts: int = 15, base_delay: float = 0.5) -> None:
+    """Safely replace dst directory with src directory on Windows.
+
+    Windows-specific environments (especially OneDrive synced folders and active
+    antivirus/indexer services) can transiently hold read locks on newly written
+    chunk files. This function invokes garbage collection to release any internal
+    Python handles and performs retries with exponential backoff. If direct rename
+    is persistently denied, it falls back to copying the directory contents.
+    """
+    gc.collect()
+
+    if dst.exists():
+        _safe_remove(dst)
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            gc.collect()
+            src.rename(dst)
+            return
+        except (PermissionError, OSError) as err:
+            if attempt == max_attempts:
+                logging.warning(
+                    "Direct rename of %s to %s failed after %d attempts (%s). Attempting fallback copy...",
+                    src.name,
+                    dst.name,
+                    max_attempts,
+                    err,
+                )
+                try:
+                    if not dst.exists():
+                        shutil.copytree(src, dst)
+                    _safe_remove(src)
+                    return
+                except Exception as fallback_err:
+                    raise PermissionError(
+                        f"Failed to replace directory {dst.name} with {src.name} after {max_attempts} retries: {fallback_err}"
+                    ) from err
+            gc.collect()
+            time.sleep(min(3.0, base_delay * (1.3 ** attempt)))
 
 
 class ARCOClient:
@@ -276,11 +349,28 @@ class ARCOClient:
         min_lat, max_lat = round(min(lat_bounds), 2), round(max(lat_bounds), 2)
         min_lon, max_lon = round(min(lon_bounds), 2), round(max(lon_bounds), 2)
         tag = f"{store_name}_{start_date[:10]}_{end_date[:10]}_lat{min_lat}_{max_lat}_lon{min_lon}_{max_lon}"
-        cache_path = self.cache_dir / f"{tag}.zarr" if self.cache_dir else None
+        variable_key = ",".join(sorted(variables or ()))
+        cache_digest = sha256(f"{tag}|{variable_key}".encode()).hexdigest()[:16]
+        cache_name = f"{store_name}_{start_date[:10]}_{end_date[:10]}_{cache_digest}.zarr"
+        cache_path = self.cache_dir / cache_name if self.cache_dir else None
 
         if use_cache and cache_path and cache_path.exists():
             logging.info("Loading cached ARCO slice: %s", cache_path.name)
-            return xr.open_zarr(cache_path).load()
+            try:
+                cached = xr.open_zarr(cache_path, consolidated=True).load()
+                if not cached.data_vars:
+                    raise ValueError("cache contains no data variables")
+                for variable in cached.data_vars:
+                    if np.isnan(cached[variable].values).any():
+                        raise ValueError(f"cached variable {variable} contains unexpected NaNs")
+                return cached
+            except Exception as err:
+                logging.warning(
+                    "Discarding incomplete or invalid ARCO cache %s: %s",
+                    cache_path.name,
+                    err,
+                )
+                _safe_remove(cache_path)
 
         ds = self.open_store_lazy(store_name)
 
@@ -395,15 +485,13 @@ class ARCOClient:
                 )
 
         if use_cache and cache_path:
-            temp_path = cache_path.with_suffix(".zarr.part")
+            # Keep the temporary component short enough for Windows/Zarr atomic
+            # metadata filenames while retaining the descriptive final cache key.
+            temp_path = cache_path.parent / f".{cache_digest}.zarr.part"
             if temp_path.exists():
-                import shutil
-                shutil.rmtree(temp_path, ignore_errors=True)
+                _safe_remove(temp_path)
             loaded.to_zarr(temp_path, consolidated=True)
-            if cache_path.exists():
-                import shutil
-                shutil.rmtree(cache_path, ignore_errors=True)
-            temp_path.rename(cache_path)
+            _safe_replace_directory(temp_path, cache_path)
             logging.info("Cached ARCO slice: %s", cache_path.name)
 
         return loaded
