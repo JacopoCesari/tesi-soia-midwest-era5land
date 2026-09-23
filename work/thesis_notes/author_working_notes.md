@@ -31,3 +31,22 @@
   - Expanding-window chronological validation (Hyndman).
   - Strict train-only fitting (detrending, scaling, quantile thresholds).
   - Standard error metrics (RMSE, MAE, ROC-AUC, Brier score).
+
+---
+
+## 5. Table 3.4 (Historical Yield Shocks and Macro-Climatic Benchmarks) Evaluation Status
+- **Status (Author Review, Sept 2026):** Marked for evaluation. To be revisited upon completion of empirical experiments in Chapter 5.
+- **Rationale:** The table compiles historical benchmark shock years (severe shortfall years $\le -10\%$ and bumper harvest years $\ge +10\%$) along with their meteorological drivers. The author noted skepticism regarding whether this specific tabular format is necessary in Chapter 3 or should be restructured, simplified, or moved/integrated directly into Chapter 5 where out-of-sample stress-testing of candidate model predictions across historical shock cohorts actually takes place.
+- **Operational decision:** Retain provisionally in Chapter 3 with clean, unambiguous column headers and grouped cohort narrative; make a final decision on whether to keep, streamline, or relocate to Chapter 5 once full out-of-sample empirical results are available.
+
+---
+
+## 6. Chapter 3 Structural Principles & Panel Selection Logic
+- **Two-stage county screening logic:** Filter 1 (agronomic significance and historical production stability, avoiding spatial scale-mismatch noise) + Filter 2 (complete 75-year continuity 1951–2025 under strict zero imputation).
+- **Temporal depth vs. geographic expansion trade-off:** Prioritizing multidecadal depth (75 consecutive years capturing macro-climatic historical extremes) over sheer county count; 135 counties provide an even, uniform geographic distribution across the Corn and Soybean Belt.
+- **1950 target yield boundary exclusion:** ERA5-Land begins Jan 1, 1950, so the Oct 31, 1949 lookback for $H=12$ is unavailable. 1950 weather is preserved to construct antecedent features for the 1951 campaign.
+- **Auxiliary role of harvested acreage:** Documented strictly for initial screening and historical acreage representation; never used as a predictor, target, or sample weight.
+- **Grouped cohort analysis for extremes:** Meteorological extremes and yield anomalies are analyzed through archetypal multi-event cohorts across the 75-year record (severe drought/heat clusters, pluvial/anoxia regimes, planting delay/frost truncation, and bumper harvest clusters) rather than isolated single-year anecdotes.
+- **Demarcation between Chapter 3 and Chapter 4:** Chapter 3 covers empirical data provenance, basic spatial/temporal aggregation, and exploratory analysis. All predictive feature engineering (12 lead times $H=12, \dots, 1$, multi-granularity 5/10/30-day aggregations, lag windows), machine learning architectures, and expanding-window validation protocols belong strictly to Chapter 4.
+
+

@@ -1,30 +1,32 @@
-% Table 3.3: Historical Macro-Climatic Yield Shocks in the Midwestern Panel (1951-2025)
+% Table 3.4: Historical Macro-Climatic Yield Shocks in the Midwestern Panel (1951-2025)
 \begin{table}[htbp]
 \centering
-\small
-\caption{Historical macro-climatic shock years and associated meteorological drivers (1951--2025).}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\caption{Historical macro-climatic shock years and associated meteorological archetypes (1951--2025).}
 \label{tab:yield_shocks}
-\begin{tabularx}{\textwidth}{c c c c c X}
+\begin{tabularx}{\textwidth}{c c c c c >{\raggedright\arraybackslash}X}
 \toprule
-\textbf{Year} & \textbf{Observed} & \textbf{Trend} & \textbf{Anomaly} & \textbf{Rel. Anomaly} & \textbf{Primary Meteorological / Ecological Driver} \\
- & (bu/ac) & (bu/ac) & (bu/ac) & (\%) & \\
+\textbf{Crop Year} & \textbf{Observed} & \textbf{Linear Trend} & \textbf{Residual} & \textbf{Relative} & \textbf{Dominant Agro-Climatic Hazard / Archetype} \\
+ & $y_t$ (bu/ac) & $\hat{y}_t$ (bu/ac) & $\epsilon_t$ (bu/ac) & Deviation & \\
 \midrule
-\multicolumn{6}{l}{\textit{\textbf{Panel A: Major Adverse Macro-Climatic Yield Shocks (Negative Anomalies)}}} \\[0.5ex]
-1988 & 28.08 & 37.72 & -9.64 & -25.6\% & Historic severe summer drought and persistent heatwave across the Corn Belt. \\
-2003 & 35.26 & 44.98 & -9.72 & -21.6\% & Late-summer heat and moisture stress compounded by widespread soybean aphid outbreak. \\
-1974 & 24.84 & 30.93 & -6.09 & -19.7\% & Excessively wet spring delaying planting, followed by mid-summer drought and early September frost. \\
-2012 & 43.55 & 49.34 & -5.80 & -11.7\% & Extensive summer flash drought and record July heat across the central United States. \\
-1983 & 31.27 & 35.29 & -4.02 & -11.4\% & Prolonged July-August heatwave and severe drought across the Corn and Soybean Belt. \\
-1993 & 35.92 & 40.14 & -4.22 & -10.5\% & Great Upper Mississippi River flood; prolonged waterlogging, root asphyxia, and disease. \\
+\multicolumn{6}{l}{\textbf{Adverse Harvest Shocks: Severe Downside Shortfalls ($\Delta y_t / \hat{y}_t \le -10\%$)}} \\[0.5ex]
+1988 & 28.08 & 37.72 & -9.64 & -25.6\% & Severe summer drought and persistent heatwave under anticyclonic blocking. \\
+2003 & 35.26 & 44.98 & -9.72 & -21.6\% & Late-season moisture stress compounded by widespread soybean aphid epidemic. \\
+1974 & 24.84 & 30.93 & -6.09 & -19.7\% & Saturated spring delaying planting, followed by midsummer drought and early freeze. \\
+2012 & 43.55 & 49.34 & -5.80 & -11.7\% & Summer flash drought and record July heat during flowering and pod development. \\
+1983 & 31.27 & 35.29 & -4.02 & -11.4\% & Prolonged July--August heatwave and drought during critical reproductive pod fill. \\
+1993 & 35.92 & 40.14 & -4.22 & -10.5\% & Great Upper Mississippi River Flood; prolonged waterlogging, root anoxia, and disease. \\
 \midrule
-\multicolumn{6}{l}{\textit{\textbf{Panel B: Prominent Favorable Bumper Harvests (Positive Anomalies)}}} \\[0.5ex]
-1952 & 22.69 & 20.27 & +2.41 & +11.9\% & Exceptionally favorable vegetative and pod-filling moisture across the central belt. \\
-2021 & 59.50 & 53.70 & +5.79 & +10.8\% & Optimal reproductive rainfall and moderate temperatures throughout August. \\
-2016 & 56.81 & 51.28 & +5.53 & +10.8\% & Broadly distributed summer rains and minimal extreme heat stress across the Midwest. \\
-1994 & 44.95 & 40.62 & +4.33 & +10.7\% & Record-setting benign growing conditions with timely August rains and cool nights. \\
+\multicolumn{6}{l}{\textbf{Favorable Harvest Regimes: Bumper Harvests ($\Delta y_t / \hat{y}_t \ge +10\%$)}} \\[0.5ex]
+1952 & 22.69 & 20.27 & +2.41 & +11.9\% & Exceptional reproductive moisture and moderate temperatures across the central belt. \\
+2021 & 59.50 & 53.70 & +5.79 & +10.8\% & Timely August rainfall and minimal extreme heat stress throughout the Midwest. \\
+2016 & 56.81 & 51.28 & +5.53 & +10.8\% & Broadly distributed summer rainfall and optimal thermal conditions during pod fill. \\
+1994 & 44.95 & 40.62 & +4.33 & +10.7\% & Near-perfect growing season with cool nights and frequent convective rain events. \\
+1961 & 27.12 & 24.63 & +2.49 & +10.1\% & Consistent soil moisture replenishment and absence of severe heatwave days. \\
 \bottomrule
 \end{tabularx}
 \vspace{1ex}
 \raggedright
-\footnotesize{\textit{Notes:} Observed represents the unweighted cross-sectional mean yield of all 135 panel counties. Trend is estimated via linear OLS over 1951--2025 ($\hat{y}_t = 0.484t - 925.46$). Anomaly is $y_t - \hat{y}_t$, and Rel. Anomaly is $(y_t - \hat{y}_t)/\hat{y}_t \times 100$. Note that 1988 represents the deepest shortfall in the 75-year record ($-25.6\%$), while 1993 highlights non-drought atmospheric hazards (excess precipitation and soil saturation).}
+\scriptsize{\textit{Notes:} Observed ($y_t$) represents the unweighted cross-sectional mean yield of all 135 panel counties. Linear Trend ($\hat{y}_t$) is estimated via ordinary least squares over the 75-year panel ($\hat{y}_t = 0.484t - 925.46$). Residual anomaly is $\epsilon_t = y_t - \hat{y}_t$, and Relative Deviation is $\epsilon_t / \hat{y}_t \times 100$. The $\pm 10\%$ threshold isolates macro-climatic tail regimes across the 75-year record to benchmark out-of-sample stress testing in Chapter~5. Downside shortfalls exhibit an elongated lower tail down to $-25.6\%$, whereas bumper harvests cluster tightly near $+10\%$ to $+12\%$ due to the biological ceiling of C3 photosynthesis.}
 \end{table}

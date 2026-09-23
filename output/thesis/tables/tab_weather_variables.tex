@@ -1,31 +1,35 @@
+% Table 3.5: ERA5-Land Variables and Derived Agrometeorological Indicators
 \begin{table}[htbp]
 \centering
-\small
-\caption{ERA5-Land surface meteorological variables and derived daily agrometeorological indicators.}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Comprehensive inventory of ECMWF ERA5-Land reanalysis fields and derived daily agrometeorological indicators.}
 \label{tab:weather_variables}
-\begin{tabularx}{\textwidth}{llllX}
+\begin{tabularx}{\textwidth}{p{2.5cm} p{2.8cm} p{1.4cm} X}
 \toprule
-\textbf{Variable Category} & \textbf{Symbol} & \textbf{Physical Variable} & \textbf{Unit} & \textbf{Agronomic Rationale and Formulation} \\
+\textbf{Category} & \textbf{Symbol} & \textbf{Unit} & \textbf{Physical Description and Agronomic Rationale} \\
 \midrule
-\multicolumn{5}{l}{\textit{Panel A: Primary Atmospheric Reanalysis Fields (ECMWF ERA5-Land)}} \\
-Thermal Dynamics & $T_{\text{mean}}$ & Daily mean 2m temperature & $^\circ$C & Thermal accumulation and phenological progression pacing. \\
-& $T_{\text{max}}$ & Daily maximum 2m temperature & $^\circ$C & Acute heat stress; canopy overheating ($>30^\circ$C). \\
-& $T_{\text{min}}$ & Daily minimum 2m temperature & $^\circ$C & Nighttime respiration losses and autumnal frost detection. \\
-& $T_{\text{dew}}$ & Daily mean 2m dewpoint & $^\circ$C & Atmospheric moisture content; vapor pressure baseline. \\
-Hydrological Fluxes & $P$ & Total daily precipitation & mm/day & Surface water supply, recharge, and waterlogging events. \\
-& $PE$ & Potential evaporation & mm/day & Atmospheric drying capacity from land surface. \\
-Radiative Forcing & $SSRD$ & Surface solar radiation downwards & $\text{MJ}/\text{m}^2/\text{d}$ & Photosynthetically active radiation driving biomass assimilation. \\
-Pedological Moisture & $SM_1$ & Volumetric soil water (0--7 cm) & $\text{m}^3/\text{m}^3$ & Topsoil moisture controlling seed emergence and early root set. \\
-& $SM_2$ & Volumetric soil water (7--28 cm) & $\text{m}^3/\text{m}^3$ & Upper root-zone moisture buffering early vegetative growth. \\
-& $SM_3$ & Volumetric soil water (28--100 cm) & $\text{m}^3/\text{m}^3$ & Deep root-zone reservoir sustaining pod-fill during dry spells. \\
+\multicolumn{4}{l}{\textit{Panel A: Primary Atmospheric and Land-Surface Reanalysis Fields (ECMWF ERA5-Land)}} \\
+Atmospheric Thermal & $T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}$ & $^\circ$C & Daily mean, max, and min 2m air temperature; thermal accumulation and heat stress. \\
+& $T_{\text{dew}}$ & $^\circ$C & Daily mean 2m dewpoint temperature; near-surface moisture baseline. \\
+Surface Thermal & $T_{\text{skt}}$ & $^\circ$C & Daily mean and maximum skin temperature of the canopy/soil interface. \\
+Pedological Thermal & $STL_{1\dots4}$ & $^\circ$C & Soil temperature across 4 depth layers ($0$--$7$, $7$--$28$, $28$--$100$, and $100$--$289\text{ cm}$). \\
+Pedological Moisture & $SM_{1\dots4}$ & $\text{m}^3/\text{m}^3$ & Volumetric soil water across 4 depth layers from seedbed to deep subsoil. \\
+Hydrological Fluxes & $P$ & mm/d & Daily cumulative precipitation; surface water supply, recharge, and waterlogging. \\
+Radiative Forcing & $SSRD, STRD$ & $\text{MJ}/\text{m}^2/\text{d}$ & Surface downward solar (shortwave) and thermal (longwave) radiation fluxes. \\
+Cryospheric State & $SC, SD$ & frac, m & Snow cover fraction and snow depth water equivalent; winter insulation and spring melt. \\
+Surface Pressure & $SP$ & kPa & Surface atmospheric pressure; barometric state and psychrometric constant. \\
+Wind Dynamics & $u_{10}, v_{10}, WS_{10}$ & m/s & 10m zonal, meridional, and scalar wind speed; aerodynamic boundary-layer conductance. \\
 \midrule
-\multicolumn{5}{l}{\textit{Panel B: Derived Agrometeorological and Bioclimatic Indicators}} \\
-Evaporative Demand & $VPD$ & Vapor pressure deficit & kPa & $e_s(T_{\text{mean}}) - e_a(T_{\text{dew}})$; atmospheric thirst driving stomatal closure. \\
-Crop Water Demand & $ET_0$ & FAO-56 Penman-Monteith & mm/day & Standardized grass reference evapotranspiration \citep{Allen1998}. \\
-Climatic Balance & $P - ET_0$ & Effective atmospheric water balance & mm/day & Net daily atmospheric moisture deficit or surplus. \\
-Thermal Pacing & $GDD$ & Growing Degree Days ($10$--$30^\circ$C) & $^\circ$C$\cdot$d & $\max(0, \min(T_{\text{mean}}, 30) - 10)$; vegetative and reproductive pacing. \\
-Extreme Heat Stress & $HD_{30}$ & Severe heat day indicator & binary & $\mathbb{I}(T_{\text{max}} \ge 30^\circ\text{C})$; threshold for floral abortion and pollen sterility. \\
-Extreme Heat Stress & $HD_{35}$ & Acute heat day indicator & binary & $\mathbb{I}(T_{\text{max}} \ge 35^\circ\text{C})$; acute leaf desiccation and irreversible pod drop. \\
+\multicolumn{4}{l}{\textit{Panel B: Derived Agrometeorological, Bioclimatic, and Hydrological Indicators}} \\
+Relative Humidity & $RH$ & \% & Daily mean relative humidity in the surface boundary layer. \\
+Evaporative Demand & $VPD$ & kPa & Vapor pressure deficit $e_s(T_{\text{mean}}) - e_a(T_{\text{dew}})$; atmospheric drying power \citep{Grossiord2020}. \\
+Crop Water Demand & $ET_0$ & mm/d & FAO-56 Penman-Monteith reference evapotranspiration \citep{Allen1998}. \\
+Hydrological Balance & $P - ET_0$ & mm/d & Climatic water balance; net daily atmospheric moisture deficit or surplus. \\
+Thermal Pacing & $GDD$ & $^\circ$C$\cdot$d & Growing Degree Days ($10$--$30^\circ$C); phenological development pacing. \\
+Extreme Heat Stress & $HD_{30}, HD_{35}$ & binary & Daily heat day exceedances $\mathbb{I}(T_{\text{max}} \ge 30^\circ\text{C})$ and $\ge 35^\circ\text{C}$ \citep{Schlenker2009}. \\
+Root-Zone Reservoir & $SM_{\text{root}}$ & $\text{m}^3/\text{m}^3$ & Depth-weighted soil water column ($0$--$100\text{ cm}$, Eq.~\eqref{eq:sm_root}); multi-month hydrological buffer. \\
 \bottomrule
 \end{tabularx}
 \end{table}

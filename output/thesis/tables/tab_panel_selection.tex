@@ -1,26 +1,26 @@
-% Table 3.1: Panel Assembly and County Selection Breakdown (1951-2025)
+% Table 3.1: Summary of Balanced Midwestern County Panel (1951-2025)
 \begin{table}[htbp]
 \centering
 \small
-\setlength{\tabcolsep}{4.5pt}
-\caption{Spatial composition and selection summary of the balanced county panel (1951--2025).}
+\setlength{\tabcolsep}{3pt}
+\caption{Descriptive summary of the 135 balanced study counties across the six Midwestern states (1951--2025).}
 \label{tab:panel_selection}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l c c c c c c c r}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l c c c c c r}
 \toprule
-\textbf{State} & \textbf{Cand.} & \textbf{Sel.} & \textbf{Ret.} & \textbf{Obs.} & \textbf{Mean} & \textbf{Std.} & \textbf{Trend} & \textbf{2025 Area} \\
- & ($N_{c}$) & ($N_{s}$) & (\%) & ($N \times 75$) & (bu/ac) & (bu/ac) & (bu/ac/yr) & ($10^3$ ac) \\
+\textbf{State} & \textbf{Counties} & \textbf{Obs.} & \textbf{Mean Yield} & \textbf{Std. Dev.} & \textbf{Linear Trend} & \textbf{2025 Area} \\
+ & ($N$) & ($N \times 75$) & (bu/ac) & (bu/ac) & (bu/ac/yr) & ($10^3$ ac) \\
 \midrule
-Illinois & 98 & 28 & 28.6\% & 2,100 & 38.35 & 13.20 & +0.491 & 3,425.4 \\
-Indiana & 87 & 20 & 23.0\% & 1,500 & 39.52 & 11.82 & +0.488 & 1,376.2 \\
-Iowa & 98 & 35 & 35.7\% & 2,625 & 39.73 & 12.01 & +0.495 & 3,301.0 \\
-Minnesota & 63 & 19 & 30.2\% & 1,425 & 35.10 & 12.70 & +0.509 & 1,914.2 \\
-Missouri & 77 & 6 & 7.8\% & 450 & 29.04 & 10.54 & +0.386 & 629.5 \\
-Ohio & 56 & 27 & 48.2\% & 2,025 & 36.88 & 11.40 & +0.466 & 2,157.2 \\
+Illinois & 28 & 2,100 & 38.35 & 13.20 & +0.491 & 3,425.4 \\
+Indiana & 20 & 1,500 & 39.52 & 11.82 & +0.488 & 1,376.2 \\
+Iowa & 35 & 2,625 & 39.73 & 12.01 & +0.495 & 3,301.0 \\
+Minnesota & 19 & 1,425 & 35.10 & 12.70 & +0.509 & 1,914.2 \\
+Missouri & 6 & 450 & 29.04 & 10.54 & +0.386 & 629.5 \\
+Ohio & 27 & 2,025 & 36.88 & 11.40 & +0.466 & 2,157.2 \\
 \midrule
-\textbf{Panel Total} & \textbf{479} & \textbf{135} & \textbf{28.2\%} & \textbf{10,125} & \textbf{37.72} & \textbf{12.40} & \textbf{+0.484} & \textbf{12,803.5} \\
+\textbf{Panel Total} & \textbf{135} & \textbf{10,125} & \textbf{37.72} & \textbf{12.40} & \textbf{+0.484} & \textbf{12,803.5} \\
 \bottomrule
 \end{tabular*}
 \vspace{1ex}
 \raggedright
-\footnotesize{\textit{Notes:} Cand. ($N_c$) represents the candidate county universe from the USDA NASS survey export across the six Midwestern states. Sel. ($N_s$) denotes counties with strictly uninterrupted, finite yield observations across all 75 crop years (1951--2025). Ret. is the selection retention rate ($N_s/N_c$). Trend is estimated via ordinary least squares over the 75-year panel. 2025 Area represents total harvested soybean acreage in thousand acres.}
+\footnotesize{\textit{Notes:} Counties ($N$) indicates the number of counties selected via the two-stage screening process (agronomic significance/stability and unbroken 75-year continuity, 1951--2025) under a strict zero-imputation protocol. Obs. denotes total finite county-year yield records. Mean Yield and Std. Dev. are computed over the full 75-year panel. Linear Trend reflects the state-level ordinary least squares progress rate. 2025 Area represents total harvested soybean acreage in thousand acres across the selected counties.}
 \end{table}
