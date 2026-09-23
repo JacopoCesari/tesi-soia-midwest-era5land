@@ -34,15 +34,30 @@ Table~\ref{tab:panel_selection} reports candidate counts and retention rates by 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.92\textwidth]{figures/fig_study_area_map.pdf}
+    \includegraphics[width=0.92\textwidth]{figures/fig_study_area_map}
     \caption{Geographic distribution of the 135 balanced study counties (1951--2025) across the six Midwestern states, contrasted against historical candidate counties and non-candidate regions.}
     \label{fig:study_area_map}
 \end{figure}
 
 As shown in Figure~\ref{fig:study_area_map}, the selected panel provides balanced representation across the primary agro-ecological subregions of the Corn Belt: the glacial till plains of central Illinois and northern Indiana, the rolling loess hills of Iowa, the northern prairie boundary in Minnesota, the western fringe and Delta Bootheel in Missouri, and the eastern till plains of western Ohio.
 
+\subsubsection{Conceptual Yield Decomposition}
+\label{sec:data_yield_decomposition}
+
+To formalize the modeling target and clarify the physical drivers of historical crop variation, realized county soybean yield $y_{c,t}$ (in bushels per acre for county $c \in \{1, \dots, 135\}$ and crop year $t \in \{1951, \dots, 2025\}$) is conceptually decomposed into two additive, orthogonal components:
+\begin{equation}
+    y_{c,t} = \tau_{c,t} + \epsilon_{c,t}
+    \label{eq:yield_decomposition}
+\end{equation}
+where $\tau_{c,t}$ represents the deterministic secular trend driven by cumulative technological, agronomic, and genetic innovations, and $\epsilon_{c,t}$ denotes the zero-mean, high-frequency stochastic shock anomaly induced by intra-seasonal atmospheric forcing and environmental extremes.
+
+The secular component $\tau_{c,t}$ encapsulates long-term breeding enhancements (such as improved harvest index, lodging resistance, and maturity group optimization), transgenic traits (glyphosate tolerance, pest resistance), systematic farm mechanization, artificial subsurface tile drainage, and precision agrochemical management. As shown in Section~\ref{sec:data_eda}, this structural trend accounts for over 80\% of the gross interannual variance in regional soybean yields across the 75-year record ($R^2 = 0.81$). However, from an operational and supply-chain perspective, $\tau_{c,t}$ is highly predictable ex-ante from historical trajectories; commercial agribusinesses, logistics operators, and commodity traders already capitalize secular baseline capacity into long-term infrastructure.
+
+In sharp contrast, systemic market volatility, transport bottlenecks, spatial basis risk, and emergency disaster relief expenditures are governed entirely by the unpredictable weather anomaly $\epsilon_{c,t}$. A deterministic trend forecast provides zero advance operational intelligence during catastrophic regional droughts or unexpected bumper harvests. Crucially, the formal mathematical estimation and train-only detrending specifications (e.g., deterministic linear trends, quadratic splines, LOESS filtering, and ridge penalization) are strictly reserved for the predictive methodology detailed in Chapter~\ref{chap:methodology}, ensuring that all parameter estimation respects expanding-window temporal validation without backward data snooping. Within the empirical context of Chapter~\ref{chap:data_and_study_area}, Equation~\eqref{eq:yield_decomposition} establishes the conceptual separation between long-term technological progress and high-frequency climate shock footprints.
+
 \subsection{Methodological Trade-Off and Literature Grounding}
 \label{sec:data_tradeoff}
+
 
 The panel construction embodies a deliberate methodological trade-off: prioritizing a strictly balanced, 75-year historical series over a geographically wider but temporally fragmented and unbalanced sample. 
 
@@ -92,21 +107,70 @@ A central methodological choice of this thesis is the deliberate restriction of 
     \item \textbf{Avoiding Confounded Climate Model Biases:} While dynamical seasonal weather forecasts (e.g., ECMWF SEAS5) are available in real time, coupling crop models with seasonal atmospheric predictions conflates agronomic sensitivity with long-range climate model biases. Restricting dynamic inputs to realized surface reanalysis isolates the unconfounded, physical upper bound of predictability attributable strictly to atmospheric forcing observed up to the forecast cutoff.
 \end{itemize}
 
+\subsection{Derived Agrometeorological Variables and Bioclimatic Indicators}
+\label{sec:data_derived_weather}
+
+Raw atmospheric reanalysis fields (such as 2m ambient air temperature, surface dewpoint, radiation fluxes, and precipitation) describe the thermodynamic state of the lower boundary layer. However, crop physiological response functions operate non-linearly on compound atmospheric-hydrological demands rather than isolated thermodynamic averages \citep{Schlenker2009, Hoffman2020}. To capture the physiological mechanisms that govern soybean transpiration, photosynthetic assimilation, and reproductive stress, the raw hourly ERA5-Land fields are transformed into daily agrometeorological indicators, synthesized in Table~\ref{tab:weather_variables}.
+
+\input{tables/tab_weather_variables}
+
+\paragraph{Vapor Pressure Deficit ($VPD$).} Atmospheric evaporative demand is parameterized via Vapor Pressure Deficit, which quantifies the drying power of the air. Saturation vapor pressure $e_s(T)$ and actual vapor pressure $e_a(T_{\text{dew}})$ (in kPa) are computed using the standard Tetens formulation:
+\begin{align}
+    e_s(T_{\text{mean}}) &= 0.61078 \exp\left( \frac{17.27 \, T_{\text{mean}}}{T_{\text{mean}} + 237.3} \right) \label{eq:tetens_sat} \\
+    e_a(T_{\text{dew}}) &= 0.61078 \exp\left( \frac{17.27 \, T_{\text{dew}}}{T_{\text{dew}} + 237.3} \right) \label{eq:tetens_act} \\
+    VPD &= \max\left(0, \, e_s(T_{\text{mean}}) - e_a(T_{\text{dew}})\right) \label{eq:vpd}
+\end{align}
+In soybean physiology, high $VPD$ ($>1.5$--$2.0\text{ kPa}$) triggers defensive stomatal closure to prevent runaway xylem cavitation and hydraulic failure \citep{Grossiord2020, Lobell2014}. This closure halts transpirational cooling and terminates photosynthetic carbon assimilation, inducing severe yield penalties during flowering and pod development even when root-zone moisture remains nominally adequate.
+
+\paragraph{Reference Evapotranspiration ($ET_0$) and Climatic Water Balance ($P - ET_0$).} Potential crop water consumption is estimated using the standardized FAO-56 Penman-Monteith equation for a short grass reference canopy \citep{Allen1998}:
+\begin{equation}
+    ET_0 = \frac{0.408 \, \Delta \, (R_n - G) + \gamma \, \frac{900}{T_{\text{mean}} + 273} \, u_2 \, (e_s - e_a)}{\Delta + \gamma \, (1 + 0.34 \, u_2)}
+    \label{eq:penman_monteith}
+\end{equation}
+where $R_n$ is net surface radiation ($\text{MJ}/\text{m}^2/\text{day}$), $G$ is soil heat flux density (assumed negligible at daily steps, $G \approx 0$), $u_2$ is 2m wind speed ($\text{m/s}$), $\Delta$ is the slope of the saturation vapor pressure curve, and $\gamma$ is the psychrometric constant. 
+
+Combining $ET_0$ with daily precipitation $P$ yields the daily climatic water balance:
+\begin{equation}
+    P_{\text{net}} = P - ET_0
+    \label{eq:climatic_balance}
+\end{equation}
+Equation~\eqref{eq:climatic_balance} captures the net daily atmospheric moisture deficit ($P_{\text{net}} < 0$) or hydrological recharge surplus ($P_{\text{net}} > 0$).
+
+\paragraph{Thermal Pacing and Extreme Heat Days ($GDD, HD_{30}, HD_{35}$).} Phenological pacing is modeled through Growing Degree Days ($GDD$), evaluated between standard soybean base and upper development thresholds ($T_{\text{base}} = 10^\circ\text{C}$ and $T_{\text{upper}} = 30^\circ\text{C}$):
+\begin{equation}
+    GDD = \max\left(0, \, \frac{\min(T_{\text{max}}, 30) + \max(T_{\text{min}}, 10)}{2} - 10\right)
+    \label{eq:gdd}
+\end{equation}
+To capture the extreme non-linear temperature damage functions established by \citet{Schlenker2009}, thermal exposure is segmented into threshold exceedance indicators:
+\begin{equation}
+    HD_{30} = \max(0, \, T_{\text{max}} - 30), \quad HD_{35} = \max(0, \, T_{\text{max}} - 35)
+    \label{eq:heat_days}
+\end{equation}
+alongside their binary daily occurrences $\mathbb{I}(T_{\text{max}} \ge 30^\circ\text{C})$ and $\mathbb{I}(T_{\text{max}} \ge 35^\circ\text{C})$. Temperatures exceeding $30^\circ\text{C}$ during reproductive stages induce pollen sterility, floral abortion, and pod shedding, while temperatures above $35^\circ\text{C}$ trigger irreversible leaf tissue desiccation.
+
+\paragraph{Integrated Root-Zone Soil Moisture ($SM_{\text{root}}$).} Volumetric soil moisture is extracted across three discrete depth layers from ERA5-Land: Layer 1 ($0$--$7\text{ cm}$), Layer 2 ($7$--$28\text{ cm}$), and Layer 3 ($28$--$100\text{ cm}$). To represent the total soil moisture column accessible to mature soybean taproots, root-zone soil moisture is computed as a depth-weighted average across the upper 100 cm:
+\begin{equation}
+    SM_{\text{root}} = 0.07 \, SM_1 + 0.21 \, SM_2 + 0.72 \, SM_3
+    \label{eq:sm_root}
+\end{equation}
+where the weighting coefficients correspond to the physical layer thicknesses ($7\text{ cm}$, $21\text{ cm}$, and $72\text{ cm}$). This integrated metric buffers transient surface dry spells and tracks the subsoil moisture reservoir sustaining crop water uptake during prolonged summer rainfall deficits, providing essential multi-month hydrological memory for forecasting \citep{Vijverberg2023}.
+
 \section{Exploratory Data Analysis of County Soybean Yields (1951--2025)}
 \label{sec:data_eda}
+
 
 \subsection{Secular Technological Trend and Long-Term Growth}
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory.pdf}
+    \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory}
     \caption{Multidecadal county soybean yield trajectories and secular trend across 135 Midwestern counties (1951--2025). Light lines represent individual county histories; the solid blue line denotes the annual cross-sectional panel mean; the dashed line represents the secular OLS trend; and markers highlight major historical climatic shock anomalies.}
     \label{fig:yield_trajectory}
 \end{figure}
 
 The historical evolution of county soybean yields over the 75-year panel is characterized by persistent, upward technological growth, interrupted periodically by sharp climate-induced downward shocks. Figure~\ref{fig:yield_trajectory} displays the individual yield trajectories for all 135 counties alongside the aggregate panel mean and an estimated linear secular trend.
 
-Across the entire panel, soybean yields expanded from an unweighted cross-sectional mean of $22.77\text{ bu/ac}$ in the 1950s to $57.31\text{ bu/ac}$ in the 2020s, representing a net gain of $+151.7\%$ (Table~\ref{tab:decadal_yields}). An ordinary least squares regression fitted to the annual panel mean yields an average linear rate of technological progress of $+0.484\text{ bu/ac/year}$ ($R^2 = 0.81$):
+Across the entire panel, soybean yields expanded from an unweighted cross-sectional mean of $22.77\text{ bu/ac}$ in the 1950s to $57.31\text{ bu/ac}$ in the 2020s, representing a net gain of $+151.7\%$ (Table~\ref{tab:decadal_yields}). At the individual county-year level ($N = 10{,}125$), a pooled linear secular trend accounts for over 81\% of total yield variance ($R^2 = 0.8122$). When aggregated to the annual regional panel mean ($N = 75$), an ordinary least squares regression yields an average linear rate of technological progress of $+0.484\text{ bu/ac/year}$ ($R^2 = 0.9323$):
 \begin{equation}
     \hat{y}_t = 0.484 \cdot t - 925.46 \quad (t = 1951, \dots, 2025)
     \label{eq:panel_trend}
@@ -116,7 +180,29 @@ Across the entire panel, soybean yields expanded from an unweighted cross-sectio
 
 This steady tripling of land productivity reflects the cumulative impact of agricultural technology: advanced cultivar breeding (improved harvest index, lodging resistance, maturity group optimization), widespread adoption of transgenic traits (glyphosate tolerance, pest resistance), systematic mechanization, subsurface tile drainage in poorly drained soils, and precision agrochemical management. 
 
-While the secular trend accounts for $R^2 = 0.81$ of the historical variance in annual mean yields, this high explanatory power does not diminish the practical value of meteorological forecasting. In agricultural supply chain risk management, grain merchandising, and commodity hedging, the predictable secular trend is already anticipated and factored into long-term infrastructure and baseline capacity planning. Crucially, all systemic market volatility, transport disruptions, and financial default risks stem entirely from unexpected departures from the trend ($\epsilon_{c,t} = y_{c,t} - \hat{y}_{c,t}$). A deterministic trend model provides zero operational advance warning during catastrophic drought years or unexpected bumper harvests. Furthermore, agronomic studies emphasize that historical rates of genetic improvement are increasingly vulnerable to non-linear thermal penalties ($>30^\circ\text{C}$), which threaten to offset breeding gains under accelerated climate warming \citep{Schlenker2009}. Isolating and forecasting these volatile weather-driven anomalies is therefore the central objective of this research.
+While the secular trend accounts for over 81\% of historical yield variance, this high explanatory power does not diminish the practical value of meteorological forecasting. In agricultural supply chain risk management, grain merchandising, and commodity hedging, the predictable secular trend is already anticipated and factored into long-term infrastructure and baseline capacity planning. Crucially, all systemic market volatility, transport disruptions, and financial default risks stem entirely from unexpected departures from the trend ($\epsilon_{c,t} = y_{c,t} - \hat{y}_{c,t}$). A deterministic trend model provides zero operational advance warning during catastrophic drought years or unexpected bumper harvests. Furthermore, agronomic studies emphasize that historical rates of genetic improvement are increasingly vulnerable to non-linear thermal penalties ($>30^\circ\text{C}$), which threaten to offset breeding gains under accelerated climate warming \citep{Schlenker2009}. Isolating and forecasting these volatile weather-driven anomalies is therefore the central objective of this research.
+
+\subsubsection{Econometric Evaluation and Empirical Defense of Detrending Specification}
+\label{sec:data_detrending_defense}
+
+A critical methodological question in agricultural climatology is the choice of detrending specification. Alternative approaches in the econometric and agronomic literature include linear OLS, higher-order polynomials (quadratic, cubic), smoothing splines, local polynomial regression (LOESS), and macro-economic filters such as the Hodrick-Prescott (HP) filter \citep{Schlenker2009, Lobell2014, RavnUhlig2002}. To establish an empirically defensible benchmark, Table~\ref{tab:detrending_comparison} and Figure~\ref{fig:detrending_diagnostics} compare candidate detrending models across the 75-year panel.
+
+\input{tables/tab_detrending_comparison}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/fig_detrending_diagnostics}
+    \caption{Econometric and diagnostic evaluation of candidate detrending specifications across the 75-year Midwestern panel (1951--2025). Panel (a) illustrates fitted multidecadal trajectories and terminal edge behavior (2015--2025). Panel (b) shows residual probability density estimates and stationarity tests ($I(0)$), highlighting significant negative skewness ($-1.12$). Panel (c) tracks out-of-sample cumulative squared prediction errors ($\sum e_{T,\text{OOS}}^2$) across 45 expanding windows ($1981$--$2025$), demonstrating the severe overfitting explosion of polynomial models. Panel (d) displays county-level out-of-sample RMSE distributions across all 135 counties, where Bayesian Information Criterion (BIC) strictly favors Linear OLS in 65.9\% of individual counties (89/135).}
+    \label{fig:detrending_diagnostics}
+\end{figure}
+
+The empirical comparison resolves four foundational justifications for selecting a deterministic linear trend:
+\begin{enumerate}
+    \item \textbf{Model Parsimony and Bayesian Information Criterion (BIC):} In-sample goodness of fit naturally increases with model complexity (Table~\ref{tab:detrending_comparison}, Panel A): moving from Linear OLS ($R^2 = 0.9323$, $\text{RSE} = 2.87\text{ bu/ac}$) to Quadratic ($R^2 = 0.9398$, $\text{RSE} = 2.72\text{ bu/ac}$) and Cubic ($R^2 = 0.9428$, $\text{RSE} = 2.67\text{ bu/ac}$) slightly reduces residual sum of squares. However, information criteria penalize redundant parameterization: the Bayesian Information Criterion strictly favors Linear OLS over Cubic on the aggregate panel ($\text{BIC} = 377.4$ vs $373.4$). Crucially, at the individual county level ($N = 135$), BIC strictly favors Linear OLS over Quadratic in \textbf{65.9\% of counties} (89 of 135), confirming that local technological progress is overwhelmingly linear across the Midwestern heartland.
+    \item \textbf{Out-of-Sample Expanding-Window Generalization:} The paramount test of detrending validity in predictive forecasting is temporal stability under sequential updating. In an expanding-window evaluation spanning 45 test years ($1981$--$2025$, training initiated on $1951$--$1980$, directly mimicking the Chapter~\ref{chap:methodology} validation design across $6{,}075$ county-year forecasts), \textbf{Linear OLS minimizes out-of-sample RMSE} at $5.889\text{ bu/ac}$, outperforming Quadratic ($6.030\text{ bu/ac}$) and Cubic ($6.385\text{ bu/ac}$). As illustrated in Figure~\ref{fig:detrending_diagnostics}c, cumulative squared prediction errors for cubic and quadratic polynomials accelerate dramatically away from Linear OLS, caused by unstable parameter extrapolation.
+    \item \textbf{Boundary Oscillation and Runge's Phenomenon:} Higher-degree polynomials suffer from severe boundary instability (Runge's phenomenon): when fitted on historical windows, polynomial curves bend erratically at sample endpoints to accommodate recent observations (Figure~\ref{fig:detrending_diagnostics}a, boundary region 2015--2025). This curvature artificially shifts the baseline trend upward or downward during recent decades, corrupting estimated anomalies and inflating maximum out-of-sample prediction errors ($27.07\text{ bu/ac}$ for Cubic vs $25.49\text{ bu/ac}$ for Linear). Linear OLS provides an immutable, physically constrained slope that avoids endpoint swings.
+    \item \textbf{Preserving Macro-Climatic Shock Signals vs. Filter Absorption:} Non-parametric filters such as the Hodrick-Prescott filter ($\lambda = 6.25$ for annual series \citep{RavnUhlig2002}) or LOESS smoothing achieve high apparent fit ($R^2 = 0.9586$) by allowing the trend to bend dynamically. However, this flexibility creates a fatal methodological flaw: flexible filters absorb multi-year climatic clusters (such as the 1980s drought cycle or 2010s warm phases) into the "trend", thereby muting the very agro-climatic anomalies that machine learning models are tasked with forecasting. Linear OLS residuals are strictly stationary ($I(0)$ with Augmented Dickey-Fuller unit-root test $p < 0.001$, Figure~\ref{fig:detrending_diagnostics}b), successfully removing deterministic non-stationarity while fully preserving the true amplitude of historical climate shocks.
+\end{enumerate}
 
 \subsection{Spatial Heterogeneity and Regional Productivity Divergence}
 
@@ -124,7 +210,7 @@ While the secular trend is positive across the entire Midwest, regional producti
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.96\textwidth]{figures/fig_state_yield_distributions.pdf}
+    \includegraphics[width=0.96\textwidth]{figures/fig_state_yield_distributions}
     \caption{Spatial heterogeneity of county soybean yields: (a) cross-sectional yield distributions by state ordered by median yield; (b) decadal mean yield trajectories across the six Midwestern states from the 1950s to the 2020s.}
     \label{fig:state_yield_distributions}
 \end{figure}
@@ -139,26 +225,35 @@ A fundamental question in agricultural risk analysis is whether technological mo
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.90\textwidth]{figures/fig_dispersion_dynamics.pdf}
+    \includegraphics[width=0.90\textwidth]{figures/fig_dispersion_dynamics}
     \caption{Dispersion dynamics across the 135 Midwestern study counties (1951--2025). The blue curves illustrate rising absolute cross-county standard deviation ($\sigma_t$, left axis), while the dashed orange curves depict steadily declining relative coefficient of variation ($CV_t$, right axis). Solid thick lines denote 5-year centered rolling averages.}
     \label{fig:dispersion_dynamics}
 \end{figure}
 
 The empirical evidence reveals a clear dichotomy: while absolute standard deviation has expanded from $5.01\text{ bu/ac}$ in the 1950s to $7.57\text{ bu/ac}$ in the 2020s ($r = +0.705$), the coefficient of variation has declined systematically from $22.0\%$ to $13.2\%$ ($r = -0.610$, Table~\ref{tab:decadal_yields}). Modern cultivars, seed treatments, and drainage have dampened \textit{relative} vulnerability to localized micro-stresses. However, because baseline yield levels have nearly tripled, the \textit{absolute} bushel shortfall generated during severe regional droughts is substantially larger today, heightening volume exposure for commercial supply-chain logistics.
 
-\subsection{Macro-Climatic Historical Yield Shocks}
+\subsection{Macro-Climatic Historical Yield Shocks and Biological Asymmetry}
+\label{sec:data_yield_shocks}
 
-The 75-year panel captures numerous macro-climatic shock years that serve as prime test beds for out-of-sample forecast validation. Table~\ref{tab:yield_shocks} details the most prominent negative yield shortfalls and positive bumper harvests relative to the secular trend.
+The 75-year panel captures numerous macro-climatic shock years that serve as prime test beds for out-of-sample forecast validation. To isolate genuine macro-climatic regime shifts from background noise, extreme crop campaigns are identified using an asymmetric relative anomaly threshold of $|\epsilon_t / \hat{y}_t| \ge 10\%$ relative to the secular linear trend. Table~\ref{tab:yield_shocks} synthesizes all historical years meeting this criterion, partitioned into adverse shortfalls and favorable bumper harvests.
 
 \input{tables/tab_yield_shocks}
 
-The historical record identifies distinct atmospheric hazard mechanisms (Table~\ref{tab:yield_shocks}):
+The empirical distribution of extreme yield anomalies reveals a profound \textbf{biological and statistical asymmetry}. While positive bumper harvests cluster tightly within a narrow range between $+10.1\%$ and $+11.9\%$ (Table~\ref{tab:yield_shocks}, Panel B: 1952, 2021, 2016, 1994, 1961), negative yield shortfalls exhibit a severe, elongated lower tail extending down to $-19.7\%$ (1974), $-21.6\%$ (2003), and $-25.6\%$ (1988). Consequently, the empirical detrended yield residual distribution displays significant negative skewness ($-1.12$, Jarque-Bera test $p < 0.001$, Figure~\ref{fig:detrending_diagnostics}b).
+
+This fundamental asymmetry is rooted in crop biophysics and canopy physiology \citep{Schlenker2009, Lobell2014}:
+\begin{itemize}
+    \item \textbf{Asymptotic Biological Ceiling on Bumper Harvests:} Under optimal meteorological conditions (such as 1994, 2016, and 2021), soybean dry matter accumulation is constrained by an asymptotic physiological ceiling. Even with perfectly distributed rainfall, moderate temperatures, and zero heat stress, crop yield cannot exceed the maximum photosynthetic capacity dictated by C3 RuBisCO carboxylation kinetics, canopy radiation interception, and genetic sink strength. Consequently, favorable agro-climatic conditions can elevate regional yields by at most $+10\%$ to $+12\%$ above baseline trend.
+    \item \textbf{Catastrophic Lower Tail Vulnerability:} In sharp contrast, adverse abiotic stressors possess no physiological floor short of total crop destruction. Extreme thermal exposure ($T_{\text{max}} > 30^\circ\text{C}$ and $>35^\circ\text{C}$) during flowering and pod development triggers irreversible floral abscission, pollen sterility, and rapid canopy senescence. Severe atmospheric evaporative demand ($VPD > 1.8\text{ kPa}$) forces stomatal closure and runaway xylem cavitation, while prolonged hydrological saturation (such as the 1993 flood) induces root-zone anoxia and fatal fungal root rots. These compound failure mechanisms can destroy $20\%$ to $30\%$ of total regional harvestable biomass within a matter of weeks.
+\end{itemize}
+
+The historical record identifies four distinct atmospheric and ecological hazard mechanisms (Table~\ref{tab:yield_shocks}):
 \begin{enumerate}
-    \item \textbf{Summer Droughts and Heatwaves (1988, 2012, 1983):} 1988 marks the deepest shortfall in the 75-year record ($-25.6\%$), driven by a persistent blocking ridge, extreme heat, and acute moisture deficits during pod fill. The 2012 flash drought similarly cut yields by $-11.7\%$.
+    \item \textbf{Summer Droughts and Heatwaves (1988, 2012, 1983):} 1988 marks the deepest shortfall in the 75-year record ($-25.6\%$), driven by a persistent blocking ridge, extreme heat, and acute moisture deficits during pod fill. The 2012 flash drought similarly cut yields by $-11.7\%$, while 1983 produced a $-11.4\%$ shortfall.
     \item \textbf{Compound Atmospheric and Biotic Stress (2003):} Late-summer moisture stress compounded by widespread invasive soybean aphid (\textit{Aphis glycines}) outbreaks, causing a $-21.6\%$ shortfall.
     \item \textbf{Planting Delays and Early Freeze (1974):} Excessive spring precipitation delayed sowing, followed by summer drought and an early September hard freeze ($-19.7\%$).
     \item \textbf{Excess Moisture and Soil Waterlogging (1993):} The Great Upper Mississippi River Flood caused widespread inundation, root asphyxiation, and fungal disease ($-10.5\%$).
-    \item \textbf{Optimal Bumper Harvests (1952, 2021, 2016, 1994):} Timely August rainfall, absence of extreme heat ($>32^\circ$C), and cool nights produced positive anomalies exceeding $+10\%$.
+    \item \textbf{Optimal Bumper Harvests (1952, 2021, 2016, 1994, 1961):} Timely August rainfall, absence of extreme heat ($>30^\circ$C), and cool nights produced positive anomalies exceeding $+10\%$.
 \end{enumerate}
 
 These prominent historical shock years serve as a crucial benchmark testbed for empirical model evaluation in Chapter~\ref{chap:empirical_results}. Rather than assessing forecasting skill exclusively through sample-wide aggregate error metrics, Chapter~\ref{chap:empirical_results} specifically investigates whether statistical and deep learning architectures successfully detect these acute tail anomalies across progressive lead times ($H=12, \dots, 1$) or erroneously revert toward baseline historical trends.
@@ -168,3 +263,118 @@ These prominent historical shock years serve as a crucial benchmark testbed for 
 A final crucial property of county-level crop yields is spatial autocorrelation. Because synoptic weather systems (e.g., anticyclonic blocking ridges, frontal boundaries) span hundreds of kilometers, meteorological anomalies affect dozens of contiguous counties simultaneously. Within our panel, the cross-county correlation of detrended yield anomalies between neighboring counties averages above $0.75$.
 
 This high spatial synchrony reinforces our research design. First, it demonstrates that county-year rows cannot be treated as independent identically distributed ($i.i.d.$) samples. Randomly partitioning county-year pairs into training and testing folds (random $K$-fold cross-validation) would cause severe spatial leakage, as the test set would contain counties contemporaneous to training counties, yielding wildly over-optimistic accuracy \citep{Sweetetal2023}. Second, it confirms that large-scale atmospheric reanalysis fields are well matched to the physical scale of agricultural yield variation, establishing the empirical foundation for the predictive modeling formalisms developed in Chapter~\ref{chap:methodology}.
+
+
+\section{Exploratory Agro-Climatic Analysis and Yield Sensitivity}
+\label{sec:data_climate_eda}
+
+\subsection{Intra-Annual Agro-Climatic Seasonality and Phenological Dynamics}
+\label{sec:data_seasonality}
+
+Before examining multi-decadal historical shocks, it is essential to establish the intra-annual baseline climatology that governs crop development across the Midwestern Corn Belt. Utilizing the daily spatially weighted ERA5-Land reanalysis across the 135 study counties over the 1950--present record, Figure~\ref{fig:weather_seasonality} characterizes the seasonal progression of thermal regimes, cumulative water balances, and edaphic moisture depletion across the primary soybean growing cycle (April 1 to October 31).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/fig_weather_seasonality}
+    \caption{Midwestern agro-climatic seasonality and intra-annual phenological dynamics across the 135 study counties (April 1 to October 31). Panel (a) illustrates daily thermal dynamics ($T_{\text{max}}, T_{\text{mean}}, T_{\text{min}}$) alongside 10th--90th percentile envelopes and cardinal damage thresholds ($30^\circ\text{C}$ and $35^\circ\text{C}$), contrasted against the record 1988 severe drought. Vertical shaded bands demarcate the five standardized phenological development stages. Panel (b) depicts the cumulative hydrological budget, highlighting the emergence of the midsummer atmospheric water deficit ($ET_0 > P$) in July and August. Panel (c) tracks volumetric soil moisture depletion across discrete rooting horizons ($SM_1$, $SM_2$, $SM_3$), demonstrating the essential buffering capacity of the deep root zone ($28$--$100\text{ cm}$).}
+    \label{fig:weather_seasonality}
+\end{figure}
+
+The empirical intra-annual climatology synthesizes three foundational agronomic mechanisms:
+
+First, daily thermal progression (Figure~\ref{fig:weather_seasonality}a) aligns with the biological cardinal boundaries of the soybean plant. During the pre-sowing and emergence window (April 15--May 31), mean ambient temperatures rise from $8^\circ\text{C}$ to $18^\circ\text{C}$, safely exceeding the biological base germination threshold ($T_{\text{base}} = 10^\circ\text{C}$). Across the 60-year climatological normal, summer maximum temperatures ($T_{\text{max}}$) peak in mid-July at $28.5^\circ\text{C}$ with an interdecile envelope bounded between $24^\circ\text{C}$ and $32^\circ\text{C}$. However, during catastrophic drought campaigns such as 1988 (crimson dotted curve), daily maxima consistently pierced above the $30^\circ\text{C}$ floral abortion threshold and repeatedly exceeded the $35^\circ\text{C}$ acute damage ceiling throughout flowering (R1--R3) and early pod set.
+
+Second, the cumulative hydrological budget (Figure~\ref{fig:weather_seasonality}b) reveals the emergence of a structural midsummer atmospheric water deficit. In early spring (April and May), cumulative precipitation ($P \approx 200\text{ mm}$) exceeds reference crop evapotranspiration ($ET_0 \approx 180\text{ mm}$), ensuring robust topsoil recharge. However, starting in mid-June and accelerating throughout July and August, rising net radiation and vapor pressure deficits drive cumulative $ET_0$ to surge past cumulative rainfall. Under normal climatological conditions, a net seasonal atmospheric moisture deficit of $\approx 180\text{ mm}$ opens between $ET_0$ ($820\text{ mm}$) and $P$ ($640\text{ mm}$). During acute drought events like 1988, rainfall stalled at barely $450\text{ mm}$ while evaporative demand exceeded $920\text{ mm}$, opening an unprecedented atmospheric moisture deficit of over $400\text{ mm}$.
+
+Third, the edaphic moisture profile (Figure~\ref{fig:weather_seasonality}c) demonstrates the critical buffering role of deep soil horizons. Volumetric moisture in the thin topsoil layer ($SM_1$, $0$--$7\text{ cm}$) exhibits erratic, high-frequency fluctuations driven by individual convective precipitation pulses and rapid surface evaporation. The intermediate layer ($SM_2$, $7$--$28\text{ cm}$) undergoes rapid extraction during vegetative expansion in June. Consequently, during the critical reproductive pod-filling phase in August (R4--R6), the crop becomes overwhelmingly reliant on the deep root-zone moisture reservoir ($SM_3$, $28$--$100\text{ cm}$). In normal seasons, $SM_3$ declines smoothly from $0.38$ to $0.26\text{ m}^3/\text{m}^3$, providing a stable moisture buffer. In 1988, transpirational demand completely depleted $SM_3$ down to $0.18\text{ m}^3/\text{m}^3$, driving the soil column near the permanent wilting point and inducing widespread canopy desiccation.
+
+\subsection{Historical Agro-Climatic Stress and the Yield Shock Nexus (1950--Present)}
+\label{sec:data_climatology}
+
+While intra-annual seasonality describes the average seasonal trajectory, interannual yield volatility is governed by the occurrence of acute atmospheric shocks. Figure~\ref{fig:weather_climatology} synchronizes the 75-year panel yield anomalies with the multi-decadal time series of atmospheric heat stress and evaporative demand across the 135 study counties.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/fig_weather_climatology}
+    \caption{Multi-decadal agro-climatic stress evolution and county soybean yield shock nexus across 135 Midwestern study counties (1950--present). Panel (a) illustrates annual cross-sectional detrended yield anomalies relative to the secular linear trend, with prominent bumper harvests highlighted in emerald green ($\ge +10\%$) and catastrophic negative shortfalls in deep crimson ($\le -10\%$), bounded by explicit $\pm 10\%$ threshold guide lines. Panel (b) depicts annual extreme heat stress days ($HD_{30}$, days with $T_{\text{max}} \ge 30^\circ\text{C}$ per county, orange bars) and summer vapor pressure deficit ($VPD$, July--August mean, purple curve on secondary axis). Shaded vertical guide bands connect extreme anomaly years directly between panels, highlighting distinct thermal, hydrological, and biotic hazard mechanisms.}
+    \label{fig:weather_climatology}
+\end{figure}
+
+The synchronized historical record resolves two foundational insights:
+
+First, catastrophic regional yield collapses are predominantly driven by the compound co-occurrence of extreme heat days ($HD_{30}$) and evaporative demand surges ($VPD$). As highlighted by the vertical guide bands in Figure~\ref{fig:weather_climatology}, the deepest harvest failures in modern history—1988 ($-25.6\%$ shortfall) and 1983 ($-11.4\%$ relative to trend, $-13.7\%$ year-over-year drop)—coincided exactly with historical apexes in atmospheric stress: annual $HD_{30}$ surged past $51$ to $56\text{ days}$ per county, while summer $VPD$ reached historic peaks of $1.2$ to $1.3\text{ kPa}$. A comparable thermal surge drove the severe 1953 harvest collapse ($-12.8\%$ year-over-year; $51\text{ heat days}$). In these compound events, high evaporative demand and intense thermal exposure act simultaneously, exhausting root-zone moisture and aborting reproductive pods \citep{Schlenker2009}. Conversely, favorable bumper years (1952, 1961, 1994, 2016, 2021) consistently coincide with suppressed $HD_{30}$ ($<25\text{ days}$) and moderate summer $VPD$ ($<0.9\text{ kPa}$), preserving canopy hydration throughout flowering and pod fill.
+
+Second, the multi-hazard nexus confirms that severe agricultural shocks do not stem exclusively from summer heatwaves, revealing critical non-thermal hazard mechanisms:
+\begin{enumerate}
+    \item \textbf{Hydrological Excess and Soil Anoxia (1993, $-10.5\%$ shortfall):} In 1993, annual heat days ($HD_{30} \approx 8\text{ days}$) and summer $VPD$ ($0.71\text{ kPa}$) collapsed to historical minimums. Yield losses were driven by relentless inundation from The Great Upper Mississippi River Flood, which induced prolonged root anoxia and widespread fungal blights.
+    \item \textbf{Temporal Sowing Delays and Early Frost (1974, $-19.7\%$ shortfall):} In 1974, summer heat exposure was minimal ($HD_{30} \approx 20\text{ days}$); the shortfall was triggered by compound temporal shocks: record spring rains delayed planting into June, leaving late-maturing crops fully exposed to an unprecedented hard freeze in late September.
+    \item \textbf{Compound Biotic and Late-Summer Moisture Stress (2003, $-21.6\%$ shortfall):} In 2003, moderate late-summer $VPD$ and moisture deficits were catastrophic because they coincided with the premier epidemic of the invasive soybean aphid (\textit{Aphis glycines}), demonstrating the compounding nature of biotic and abiotic pressures.
+\end{enumerate}
+
+\subsection{Intra-Seasonal Phenological Progression of Agro-Climatic Extremes}
+\label{sec:data_intra_seasonal_extremes}
+
+While multi-decadal time series establish the long-term synchrony between atmospheric forcing and crop yields, understanding how meteorological stresses propagate into realized county yield shortfalls requires tracing their intra-seasonal daily trajectories. Across the 214 days of the primary growing cycle (April 1 to October 31), Figure~\ref{fig:intra_seasonal_extremes} details the daily progression of extreme crop years meeting the $\pm 10\%$ relative threshold across four distinct physical dimensions: extreme thermal accumulation ($HD_{30}$), atmospheric evaporative demand ($VPD$), cumulative climatic water balance ($\sum (P - ET_0)$), and depth-weighted root-zone soil moisture ($SM_{\text{root}}$).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/fig_intra_seasonal_extremes}
+    \caption{Intra-seasonal phenological progression of historical extreme soybean yield years ($\pm 10\%$ threshold) across the Midwestern Corn Belt (April 1 to October 31). Panel (a) tracks cumulative extreme heat stress days ($\sum HD_{30}$, $T_{\text{max}} \ge 30^\circ\text{C}$). Panel (b) illustrates atmospheric evaporative demand via 15-day rolling mean $VPD$ against elevated demand ($1.5\text{ kPa}$) and the normal 10th--90th percentile envelope. Panel (c) traces the cumulative climatic water budget ($\sum (P - ET_0)$), contrasting catastrophic drought desiccation against flood waterlogging. Panel (d) displays depth-weighted root-zone soil moisture ($SM_{\text{root}}$, $0$--$100\text{ cm}$) against regional field capacity and incipient wilting stress. Trajectories distinguish individual negative shocks (1988, 1983, 1974, 1993, 2003) and positive bumper crops (1994, 1961, 1952).}
+    \label{fig:intra_seasonal_extremes}
+\end{figure}
+
+The daily intra-seasonal trajectories resolve fundamental differences in the physical pathways governing crop outcomes:
+\begin{enumerate}
+    \item \textbf{Thermal and Evaporative Surges (1988 and 1983):} In 1988, cumulative heat days ($\sum HD_{30}$, Figure~\ref{fig:intra_seasonal_extremes}a) escalated relentlessly from mid-June through August, reaching an unprecedented 56 days. Concurrently, 15-day rolling $VPD$ pierced above $1.5\text{ kPa}$ in early June and remained between $1.6$ and $2.1\text{ kPa}$ throughout flowering and pod fill (Figure~\ref{fig:intra_seasonal_extremes}b). In 1983, conditions remained benign through June; however, an acute thermal and evaporative surge initiated in mid-July ($HD_{30}$ climbing to 51 days), collapsing pod set. In both campaigns, the cumulative climatic water deficit plunged below $-450\text{ mm}$ (Figure~\ref{fig:intra_seasonal_extremes}c), rapidly exhausting root-zone moisture down toward the incipient wilting ceiling ($0.20\text{ m}^3/\text{m}^3$, Figure~\ref{fig:intra_seasonal_extremes}d).
+    \item \textbf{Hydrological Inundation and Root Anoxia (1993):} In direct contrast to thermal droughts, the 1993 campaign accumulated barely 18 heat days, while $VPD$ was heavily suppressed ($0.50$--$0.75\text{ kPa}$) by persistent overcast skies. Instead, relentless summer storms drove cumulative $P - ET_0$ upward to a massive hydrological surplus exceeding $+160\text{ mm}$ by late August (Figure~\ref{fig:intra_seasonal_extremes}c). Root-zone soil moisture remained pinned at absolute saturation ($>0.36$--$0.41\text{ m}^3/\text{m}^3$, near field capacity), inducing prolonged root-zone anoxia and fungal rotting.
+    \item \textbf{Temporal Sowing Delays and Thermal Truncation (1974):} In 1974, cumulative heat days remained low (22 days) and summer moisture balance was moderate. However, as visible in Figure~\ref{fig:intra_seasonal_extremes}c, heavy rainfall during April and May delayed field operations, shifting crop development back by 3--4 weeks. In late September, an unseasonable Arctic blast truncated the cycle before physiological maturity (R7), freezing immature green pods.
+    \item \textbf{Optimal Hydrological and Thermal Balance (1994, 1961, 1952):} Bumper harvest campaigns follow an optimal middle path. In 1994 and 1961, cumulative heat exposure plateaued below 24 days, and $VPD$ hovered smoothly within the climatological normal envelope ($0.75$--$1.0\text{ kPa}$), avoiding stomatal closure. Timely, well-spaced convective rains maintained the cumulative water balance near a moderate, stable deficit ($-140$ to $-180\text{ mm}$), preserving root-zone soil moisture securely in the transpirational sweet spot ($0.27$--$0.34\text{ m}^3/\text{m}^3$) throughout reproductive seed fill.
+\end{enumerate}
+
+\subsection{Multi-Hazard Atmospheric Shock Signatures and Anomaly Footprints}
+\label{sec:data_shocks_footprint}
+
+To complement the absolute trajectory analysis, Figure~\ref{fig:weather_shocks_footprint} isolates the high-frequency 15-day centered rolling anomalies relative to the historical panel climatology across five benchmark archetypes (1988, 1983, 1974, 1993, and 1994). This normalized footprint visualization highlights the synchronized deviations of precipitation ($P$), vapor pressure deficit ($VPD$), root-zone soil moisture ($SM_{\text{root}}$), and extreme heat days ($HD_{30}$).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/fig_weather_shocks_footprint}
+    \caption{Comparative agro-climatic shock anomaly footprints across the soybean growing cycle (April--October) for five historical archetypes: 1988 (severe summer heat and drought), 1983 (late-season pod-fill drought), 1974 (delayed wet sowing and early autumn freeze), 1993 (The Great Midwest Flood / soil waterlogging), and 1994 (climatic optimum / bumper harvest). Curves depict 15-day centered rolling anomalies relative to the historical panel climatology for precipitation ($P$), vapor pressure deficit ($VPD$), root-zone soil moisture ($SM_{\text{root}}$), and extreme heat days ($HD_{30}$).}
+    \label{fig:weather_shocks_footprint}
+\end{figure}
+
+The five archetypes illustrate fundamentally distinct physiological damage pathways:
+\begin{enumerate}
+    \item \textbf{Prolonged Compound Heat and Drought (1988, $-25.6\%$ anomaly):} The 1988 crop year represents the deepest shortfall in modern Midwestern history. A stationary anticyclonic ridge established over the central United States induced severe, synchronized atmospheric forcing starting in May. Precipitation remained deeply suppressed throughout June and July ($-40$ to $-50\text{ mm/month}$), driving root-zone soil moisture down to historic depletion levels ($<-0.12\text{ m}^3/\text{m}^3$). Compounding this moisture deficit, $VPD$ anomalies exceeded $+0.8\text{ kPa}$ continuously through June and July, while $HD_{30}$ surged past $+6\text{ days/month}$ during flowering. The concurrent peak of soil drought and atmospheric desiccation triggered massive floral abortion, stunted vegetative development, and accelerated irreversible canopy firing.
+    \item \textbf{Reproductive Pod-Fill Drought (1983, $-24.5\%$ anomaly):} Unlike 1988, the 1983 campaign experienced near-normal rainfall and moderate thermal conditions throughout the vegetative window (April--June), fostering expansive canopy establishment. However, atmospheric conditions deteriorated precipitously in late July: a sudden blocking pattern collapsed precipitation to near zero and triggered an intense thermal surge ($HD_{30} > +5\text{ days/month}$; $VPD > +0.7\text{ kPa}$) directly coincident with pod fill (R4--R6). Because the vegetative biomass was extensive, transpirational demand rapidly exhausted root-zone soil moisture, causing severe seed abortion and shriveled grain. The 1983 footprint demonstrates that a favorable vegetative phase provides zero insurance against late reproductive moisture collapse.
+    \item \textbf{Compound Planting Delay and Early Hard Freeze (1974, $-19.7\%$ anomaly):} The 1974 shortfall was driven by compound temporal boundary shocks rather than midsummer drought. Record-breaking rainfall throughout April and May produced severe topsoil waterlogging, delaying regional soybean sowing well into June. Although midsummer temperatures were relatively mild, the delayed planting shifted the reproductive window late into August and September. On September 21--23, an unseasonably early Arctic air mass swept across the Upper Midwest, bringing hard freezing temperatures ($T_{\text{min}} < -2^\circ\text{C}$) before crops had achieved physiological maturity (R7). The frost abruptly terminated dry-matter translocation, freezing green, immature seeds in the pods.
+    \item \textbf{Excess Moisture and Soil Waterlogging (1993, $-10.5\%$ anomaly):} The Great Upper Mississippi River Flood of 1993 demonstrates that excess water is an equally pernicious agricultural hazard. Relentless storm tracks deposited massive rainfall surpluses throughout June and July ($+60$ to $+100\text{ mm/month}$ above normal), keeping root-zone soil moisture at absolute saturation ($SM_{\text{root}} > 0.40\text{ m}^3/\text{m}^3$). Persistent cloud cover suppressed incident solar radiation ($SSRD$), while high relative humidity depressed $VPD$ to near zero. Prolonged root-zone anoxia impaired root respiration and symbiotic rhizobial nitrogen fixation, induced extensive denitrification, and triggered widespread Phytophthora root rot.
+    \item \textbf{Climatic Optimum and Bumper Harvest (1994, $+10.2\%$ anomaly):} Immediately following the 1993 flood, the 1994 crop year illustrates the ideal agro-climatic profile. Growing-season temperatures were remarkably mild, with daytime maxima consistently below $28^\circ\text{C}$ and virtually zero heat-stress days ($HD_{30} \approx 0$). Evaporative demand was benign ($VPD < 0.9\text{ kPa}$), preventing midday stomatal closure. Timely, moderate rainfall events replenished root-zone soil moisture at regular 7- to 10-day intervals without creating waterlogged conditions, allowing uninterrupted photosynthesis and maximizing seed pod retention and individual seed weight.
+\end{enumerate}
+
+\subsection{Phenological Climate-Yield Sensitivity}
+\label{sec:data_pheno_sensitivity}
+
+To quantify the evolving empirical dependency between atmospheric anomalies and county soybean yields across the growing season, Figure~\ref{fig:climate_yield_sensitivity} presents bivariate Pearson correlation coefficients ($r$) computed between detrended yield anomalies ($\epsilon_{c,t}$) and monthly atmospheric anomalies across the 135 study counties.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/fig_climate_yield_sensitivity}
+    \caption{Phenological sensitivity of county soybean yields to monthly atmospheric anomalies across the crop cycle (April--October). Bars depict cross-sectional Pearson correlation coefficients ($r$) between detrended yield anomalies ($\epsilon_{c,t}$) and monthly anomalies of maximum temperature ($T_{\text{max}}$), vapor pressure deficit ($VPD$), precipitation ($P$), and root-zone soil moisture ($SM_{\text{root}}$). Yield sensitivity is minimal during pre-sowing and emergence (April--May), escalates sharply during flowering (July), peaks during pod filling (August), and decays rapidly upon physiological maturity (September--October).}
+    \label{fig:climate_yield_sensitivity}
+\end{figure}
+
+The empirical sensitivity profiles display three distinct phenological stages:
+\begin{enumerate}
+    \item \textbf{Pre-Sowing and Emergence Window (April--May):} Correlation coefficients between yield anomalies and weather variables are uniformly low ($|r| < 0.10$). Notably, precipitation and soil moisture exhibit slightly negative correlations with final yield ($r \approx -0.06$ to $-0.09$). This counter-intuitive negative relationship reflects the operational penalties of excessive spring moisture: wet fields delay field preparation and seeding, promote soil compaction, and foster early seedling diseases. Ambient temperature exerts negligible influence during this preparatory phase.
+    \item \textbf{Vegetative Growth and Canopy Closure (June):} As crops establish root systems and leaf area, the sign of environmental sensitivities shifts toward positive moisture dependency. However, correlation magnitudes remain moderate ($r \approx +0.12$ for soil moisture; $r \approx -0.14$ for $VPD$), indicating that soybeans possess sufficient vegetative plasticity to recover from early-season weather aberrations if subsequent reproductive conditions are favorable.
+    \item \textbf{Peak Reproductive Sensitivity (July--August):} Atmospheric sensitivity escalates dramatically during flowering (July, R1--R3) and reaches its maximum amplitude during pod development and seed filling (August, R4--R6). In August, the correlation between yield anomalies and root-zone soil moisture surges to $r = +0.43$, accompanied by precipitation at $r = +0.38$. Concurrently, atmospheric stress metrics exhibit severe negative correlations: $VPD$ reaches $r = -0.46$ and $T_{\text{max}}$ reaches $r = -0.41$. The co-occurrence of maximum evaporative demand ($VPD$) and reproductive seed swelling makes August weather the single most critical determinant of interannual yield variance.
+    \item \textbf{Maturation and Senescence (September--October):} Following the completion of seed fill in late August, soybean leaves undergo rapid monocarpic senescence and yellowing (R7), followed by physiological maturity (R8) and field dry-down. Consequently, correlation coefficients plunge precipitously back toward zero ($|r| \le 0.05$ across all four variables). Atmospheric conditions in September and October affect grain moisture content and combine harvest efficiency, but exert zero biological impact on realized seed quantity.
+\end{enumerate}
+
+\paragraph{Methodological Implications for Progressive Lead-Time Forecasting.} The empirical sensitivity dynamics synthesized in Figure~\ref{fig:climate_yield_sensitivity} provide the direct scientific foundation for the progressive lead-time forecasting framework formalized in Chapter~\ref{chap:methodology}. 
+
+At long presowing lead times ($H = 12, \dots, 6$, October through April), atmospheric forcings exhibit low direct correlation with final yield anomalies; predictive skill at these horizons must rely primarily on persistent antecedent root-zone soil moisture recharge and multi-month hydrological memory \citep{Vijverberg2023}. As the forecast horizon advances through vegetative development ($H = 5, 4$, May and June), incoming meteorological information gradually updates crop potential, but the system remains subject to high downstream epistemic uncertainty. 
+
+The primary leap in physical predictability occurs at mid-season and late-summer horizons ($H = 3, 2$, July 31 and August 31), when predictive models ingest the realized atmospheric stress profile during the critical flowering and pod-fill windows. Finally, at horizon $H = 1$ (September 30), the biological crop yield is essentially fixed; remaining forecast uncertainty is dominated by localized combine harvest losses and late frost hazards rather than physiological yield formation. The mathematical formalization of these twelve discrete forecasting horizons, alongside the multi-granularity feature extraction and expanding-window validation protocols, is developed in Chapter~\ref{chap:methodology}.
+

@@ -1,0 +1,28 @@
+% Table 3.2: Econometric and Diagnostic Evaluation of Detrending Specifications
+\begin{table}[htbp]
+\centering
+\small
+\caption{Econometric and diagnostic comparison of detrending models across the 75-year panel (1951--2025).}
+\label{tab:detrending_comparison}
+\begin{tabularx}{\textwidth}{l c c c c c c c c}
+\toprule
+\textbf{Specification} & \textbf{Params} & \textbf{$R^2$} & \textbf{Adj. $R^2$} & \textbf{RSE} & \textbf{AIC} & \textbf{BIC} & \textbf{ADF $p$} & \textbf{OOS RMSE} \\
+ & ($k$) & & & (bu/ac) & & & & (bu/ac) \\
+\midrule
+\multicolumn{9}{l}{\textit{\textbf{Panel A: Regional Aggregate Mean Yield Trajectory ($N = 75$)}}} \\[0.5ex]
+\textbf{Linear OLS} & 2 & 0.9323 & 0.9313 & 2.87 & 372.7 & 377.4 & < 0.001 & \textbf{3.474} \\
+Quadratic Polynomial & 3 & 0.9398 & 0.9382 & 2.72 & 365.8 & 372.8 & < 0.001 & 3.434 \\
+Cubic Polynomial & 4 & 0.9428 & 0.9404 & 2.67 & 364.1 & 373.4 & < 0.001 & 3.621 \\
+Natural Cubic Spline (df=3) & 4 & 0.9395 & 0.9378 & 2.73 & 366.3 & 373.2 & < 0.001 & --- \\
+Hodrick-Prescott ($\lambda=6.25$) & --- & 0.9586 & --- & 2.21 & --- & --- & < 0.001 & --- \\
+\midrule
+\multicolumn{9}{l}{\textit{\textbf{Panel B: County-Level Generalization ($135\text{ Counties} \times 45\text{ Test Years} = 6{,}075\text{ Forecasts}$)}}} \\[0.5ex]
+Linear OLS (County-Specific) & 2 & 0.8122 & 0.8096 & 5.12 & --- & --- & < 0.001 & \textbf{5.889} \\
+Quadratic (County-Specific) & 3 & 0.8245 & 0.8196 & 4.98 & --- & --- & < 0.001 & 6.030 \\
+Cubic (County-Specific) & 4 & 0.8310 & 0.8239 & 4.92 & --- & --- & < 0.001 & 6.385 \\
+\bottomrule
+\end{tabularx}
+\vspace{1ex}
+\raggedright
+\footnotesize{\textit{Notes:} $k$ denotes parameter count. In Panel A, RSE is residual standard error in bushels per acre; AIC and BIC are Akaike and Bayesian Information Criteria; ADF $p$ is the $p$-value from the Augmented Dickey-Fuller unit-root test on residuals ($H_0$: unit root non-stationary). OOS RMSE evaluates 1-step-ahead out-of-sample forecast accuracy across 45 expanding windows ($1981$--$2025$, training initiated on $1951$--$1980$). In Panel B, out-of-sample RMSE is evaluated across all $6{,}075$ expanding county-year evaluations; BIC strictly favors Linear OLS over Quadratic in $65.9\%$ of counties ($89/135$). Crucially, Linear OLS minimizes out-of-sample forecast error, eliminating the Runge endpoint oscillation inherent in polynomial specifications.}
+\end{table}

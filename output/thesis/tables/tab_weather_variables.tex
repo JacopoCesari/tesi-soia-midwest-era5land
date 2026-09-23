@@ -1,0 +1,31 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{ERA5-Land surface meteorological variables and derived daily agrometeorological indicators.}
+\label{tab:weather_variables}
+\begin{tabularx}{\textwidth}{llllX}
+\toprule
+\textbf{Variable Category} & \textbf{Symbol} & \textbf{Physical Variable} & \textbf{Unit} & \textbf{Agronomic Rationale and Formulation} \\
+\midrule
+\multicolumn{5}{l}{\textit{Panel A: Primary Atmospheric Reanalysis Fields (ECMWF ERA5-Land)}} \\
+Thermal Dynamics & $T_{\text{mean}}$ & Daily mean 2m temperature & $^\circ$C & Thermal accumulation and phenological progression pacing. \\
+& $T_{\text{max}}$ & Daily maximum 2m temperature & $^\circ$C & Acute heat stress; canopy overheating ($>30^\circ$C). \\
+& $T_{\text{min}}$ & Daily minimum 2m temperature & $^\circ$C & Nighttime respiration losses and autumnal frost detection. \\
+& $T_{\text{dew}}$ & Daily mean 2m dewpoint & $^\circ$C & Atmospheric moisture content; vapor pressure baseline. \\
+Hydrological Fluxes & $P$ & Total daily precipitation & mm/day & Surface water supply, recharge, and waterlogging events. \\
+& $PE$ & Potential evaporation & mm/day & Atmospheric drying capacity from land surface. \\
+Radiative Forcing & $SSRD$ & Surface solar radiation downwards & $\text{MJ}/\text{m}^2/\text{d}$ & Photosynthetically active radiation driving biomass assimilation. \\
+Pedological Moisture & $SM_1$ & Volumetric soil water (0--7 cm) & $\text{m}^3/\text{m}^3$ & Topsoil moisture controlling seed emergence and early root set. \\
+& $SM_2$ & Volumetric soil water (7--28 cm) & $\text{m}^3/\text{m}^3$ & Upper root-zone moisture buffering early vegetative growth. \\
+& $SM_3$ & Volumetric soil water (28--100 cm) & $\text{m}^3/\text{m}^3$ & Deep root-zone reservoir sustaining pod-fill during dry spells. \\
+\midrule
+\multicolumn{5}{l}{\textit{Panel B: Derived Agrometeorological and Bioclimatic Indicators}} \\
+Evaporative Demand & $VPD$ & Vapor pressure deficit & kPa & $e_s(T_{\text{mean}}) - e_a(T_{\text{dew}})$; atmospheric thirst driving stomatal closure. \\
+Crop Water Demand & $ET_0$ & FAO-56 Penman-Monteith & mm/day & Standardized grass reference evapotranspiration \citep{Allen1998}. \\
+Climatic Balance & $P - ET_0$ & Effective atmospheric water balance & mm/day & Net daily atmospheric moisture deficit or surplus. \\
+Thermal Pacing & $GDD$ & Growing Degree Days ($10$--$30^\circ$C) & $^\circ$C$\cdot$d & $\max(0, \min(T_{\text{mean}}, 30) - 10)$; vegetative and reproductive pacing. \\
+Extreme Heat Stress & $HD_{30}$ & Severe heat day indicator & binary & $\mathbb{I}(T_{\text{max}} \ge 30^\circ\text{C})$; threshold for floral abortion and pollen sterility. \\
+Extreme Heat Stress & $HD_{35}$ & Acute heat day indicator & binary & $\mathbb{I}(T_{\text{max}} \ge 35^\circ\text{C})$; acute leaf desiccation and irreversible pod drop. \\
+\bottomrule
+\end{tabularx}
+\end{table}

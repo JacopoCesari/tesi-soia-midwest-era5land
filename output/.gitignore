@@ -17,5 +17,7 @@ data/processed/model_datasets/*
 *.lof
 *.lot
 *.pdf
+!thesis/figures/*.pdf
+
 
 
