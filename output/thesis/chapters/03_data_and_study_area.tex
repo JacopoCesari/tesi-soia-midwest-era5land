@@ -169,7 +169,14 @@ To map gridded reanalysis fields into irregularly shaped administrative county p
 \end{equation}
 where $\text{Area}(c \cap g)$ is the planar intersection area between county polygon $c$ and grid cell $g$, and $\mathcal{G}_c$ denotes the set of intersecting grid cells.
 
-This area-weighted polygon integration represents a significant methodological advance over naive centroid sampling. Centroid extraction assumes that a single point can represent an entire county, which introduces severe spatial sampling errors in large Midwestern counties characterized by localized convective precipitation gradients and heterogeneous topography. Exact area weighting accurately integrates the total atmospheric mass, radiation, and precipitation volume falling within county boundaries.
+As illustrated in Figure~\ref{fig:era5_spatial_structure}, this area-weighted polygon integration replaces naive centroid sampling, which conflates localized convective gradients into arbitrary point measurements. Exact area weighting accurately integrates the total atmospheric mass, radiation, and precipitation volume falling within each county polygon.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_era5_spatial_structure}
+    \caption{Spatial architecture and area-weighted grid discretization of ERA5-Land reanalysis. Panel (a) shows the regional study domain across Illinois ($N = 28$ study counties), highlighting Tazewell County. Panel (b) details the micro-scale grid discretization over Tazewell County, illustrating the intersection between the regular $0.1^\circ \times 0.1^\circ$ ($\approx 9\text{ km}$) cardinal grid mesh and the irregular county boundary formed by the Illinois River. Grid cells are weighted strictly by their planar intersection area ($w_{c,g} = \text{Area}(c \cap g) / \text{Area}(c)$, summing to $100\%$), preserving total precipitation volume and heat fluxes across administrative boundaries without centroid sampling distortion.}
+    \label{fig:era5_spatial_structure}
+\end{figure}
 
 \subsection{Temporal Aggregation and Crop Campaign Structure}
 
