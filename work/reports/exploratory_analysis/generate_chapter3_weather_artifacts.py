@@ -793,8 +793,10 @@ def generate_figure_climate_yield_sensitivity():
 
 if __name__ == "__main__":
     generate_table_3_4()
+    generate_figure_3_5()
     generate_figure_3_6()
     daily_by_year, clim_doy, ref_dates, month_ticks, month_labels = generate_figure_intra_seasonal_cumulative()
     generate_figure_shocks_noncumulative(daily_by_year, clim_doy, ref_dates, month_ticks, month_labels)
     generate_figure_climate_yield_sensitivity()
     print("All Chapter 3 weather artifacts generated successfully!")
+

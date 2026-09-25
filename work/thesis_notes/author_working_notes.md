@@ -55,4 +55,51 @@
 - **No external speculation or unwarranted domain digressions:** Avoid unverified domain conjectures (e.g. specific biological diseases, atmospheric jet stream/blocking dynamics, entomological outbreaks) that are not directly captured in our datasets or in our approved literature.
 - **Strict citation perimeter:** Do not search for or add papers by external agronomists, biologists, or meteorologists outside the curated repository catalog.
 
+---
+
+## 8. Approved Spatial Multi-Panel Visualization Pattern (Faceted Comparative Maps)
+- **Author Directive (Author Review, Sept 2026):** Implement high-impact, multi-panel comparative spatial maps ("Small Multiples" / faceted choropleths) accompanied by bottom diagnostic summaries (donut charts, regional share bars, or state-level distributions), inspired by global agricultural trade and acreage distribution layouts.
+- **Approved Comparative Archetypes:**
+  1. **Archetype A: Temporal Progression of the Same Variable (`stessa variabile in diversi periodi/anni/mesi`)**:
+     - *Cross-Year Benchmark Comparison:* Stacked or faceted Midwest maps comparing spatial shock footprints across archetypal historical shock years (e.g. 1988 severe drought vs. 2012 flash drought vs. 1993 Midwestern pluvial vs. 1994/2016 record bumper harvests) using identical, synchronized colorbars.
+     - *Intra-Seasonal Phenological Progression:* Month-by-month spatial propagation of soil-atmospheric stress through critical soybean phenological windows (June vegetative $H=4 \rightarrow$ July flowering $H=3 \rightarrow$ August pod fill $H=2 \rightarrow$ September maturation $H=1$).
+  2. **Archetype B: Multi-Variable Compound Stress Footprint (`diverse variabili nello stesso periodo`)**:
+     - Synchronized multi-panel spatial mapping of compound atmospheric-hydrological drivers during the critical July–August seed-filling window:
+       1. Thermal stress: Extreme heat days ($HD_{30}$, days with $T_{\text{max}} \ge 30^\circ\text{C}$).
+       2. Atmospheric evaporative demand: Vapor pressure deficit ($VPD$, kPa).
+       3. Climatic water balance: Cumulative net water deficit ($P - ET_0$, mm).
+       4. Hydrological memory: Root-zone volumetric soil moisture ($SM_{\text{root}}$, $0$--$100\text{ cm}$).
+  3. **Bottom Diagnostic / Infographic Layer:**
+     - Coordinated sub-cards or donut/bar distributions underneath the maps quantifying regional shares (e.g., percentage of study acreage under severe stress regimes, or state-by-state contrast) to give immediate, high-level executive readability.
+- **Target Chapters:** Chapter 3 (Section 3.4 Climatology & Stress Footprint) and Chapter 5 (Out-of-sample shock ablation and historical cohort stress-testing).
+
+---
+
+## 9. Overarching Editorial Strategy: "Parlare con le Immagini" (Visual Information Density)
+- **Institutional Constraint vs. Opportunity:**
+  - Strict university text limit: Max 100,000 characters (spaces included) $\approx$ 35 pages of prose.
+  - Zero limit on figures, tables, formulas, and visual diagnostics (all strictly excluded from the character count).
+- **Core Directive:** Prioritize rich, self-contained visual artifacts (multi-panel maps, diagnostic infographics, structural badges, workflow flowcharts) to carry the substantive empirical and methodological depth, allowing the prose to remain lean, dense, and non-proliferative.
+- **Operational Rules for Writing & Plotting:**
+  1. *Self-Contained Figures:* Every figure must feature descriptive sub-titles, explicit keys, clean mathematical callout badges, and unambiguous visual hierarchies so it can be understood in seconds without reading paragraphs of prose.
+  2. *Lean Surrounding Narrative:* Text does not describe visual details mechanically (e.g., "the blue bar is at 49.7%"). Instead, prose focuses exclusively on high-level economic/agronomic interpretation, supply-chain implications, and methodological synthesis.
+  3. *Maximum Content per Character:* Whenever a complex mechanism arises (spatial aggregation, expanding-window validation, compound stress indexation, lead-time horizon progression), design an elegant figure rather than writing multiple explanatory paragraphs.
+
+---
+
+## 10. Chapter 3 Revision Roadmap: Visual-First Overhaul (+Images, Essential Tables, Less Prose)
+- **Author Directive (Author Review, Sept 2026):** Revisit and restructure the entire Chapter 3 (`03_data_and_study_area.tex`) following the "parlare con le immagini" philosophy:
+  1. **Visual Primacy:** Prioritize clean, self-contained figures and multi-panel infographics over descriptive textual narrative.
+  2. **Selective, Essential Tables:** Include tables strictly when necessary and highly diagnostic. Avoid table redundancy or bloat.
+  3. **Textual Compression:** Drastically compress textual explanations; replace prose descriptions of empirical facts with direct figure/table cross-references and high-level analytical commentary.
+- **Specific Action - Re-integrate Detrending Comparison Table (`tab_detrending_comparison.tex`):**
+  - *Context:* The diagnostic table comparing detrending models across the 75-year panel (Linear OLS vs. Quadratic vs. Cubic vs. Splines vs. HP filter, evaluating $R^2$, AIC, BIC, ADF unit-root $p$-values, and Out-of-Sample expanding-window RMSE on $6{,}075$ county-year evaluations) was identified as a valuable asset ("era carina").
+  - *Strategic Role:* Re-inserting this table alongside `fig_yield_trajectory.pdf` eliminates multiple paragraphs of dry econometric text explaining the detrending choice. The table immediately and objectively proves to the reader why Linear OLS is chosen (lowest OOS RMSE of 5.889 bu/ac, minimizing Runge boundary oscillations).
+- **Section-by-Section Visual Action Plan for Chapter 3:**
+  - *Section 3.1 & 3.2 (Study Domain & Panel Assembly):* Keep `fig_study_area_map.pdf` and `tab_panel_selection.tex`. Trim narrative prose on historical selection filters.
+  - *Section 3.3 (Yield Trajectories & Detrending):* Anchor around `fig_yield_trajectory.pdf`, `fig_state_yield_distributions.pdf`, `fig_dispersion_dynamics.pdf`, and re-integrated `tab_detrending_comparison.tex`. Slash text discussing polynomial degrees.
+  - *Section 3.4 (ERA5-Land Grid & Spatial Architecture):* Anchored by `fig_era5_spatial_structure.pdf` (already optimized and lean, 43 words of text).
+  - *Section 3.5 & 3.6 (Temporal Structure & Derived Indicators):* Keep `tab_weather_variables.tex` and mathematical definitions.
+  - *Section 3.7 & 3.8 (Agro-Climatic EDA & Weather-Yield Sensitivity):* Consolidate the cumulative vs. non-cumulative narrative. Prepare the implementation of the faceted multi-panel spatial comparison ("Small Multiples" of historical shock footprints or compound variables with bottom diagnostic share charts, as defined in Section 8). Eliminate text redundancy between sections.
+
 
