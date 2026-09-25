@@ -47,6 +47,12 @@
 - **1950 target yield boundary exclusion:** ERA5-Land begins Jan 1, 1950, so the Oct 31, 1949 lookback for $H=12$ is unavailable. 1950 weather is preserved to construct antecedent features for the 1951 campaign.
 - **Auxiliary role of harvested acreage:** Documented strictly for initial screening and historical acreage representation; never used as a predictor, target, or sample weight.
 - **Grouped cohort analysis for extremes:** Meteorological extremes and yield anomalies are analyzed through archetypal multi-event cohorts across the 75-year record (severe drought/heat clusters, pluvial/anoxia regimes, planting delay/frost truncation, and bumper harvest clusters) rather than isolated single-year anecdotes.
-- **Demarcation between Chapter 3 and Chapter 4:** Chapter 3 covers empirical data provenance, basic spatial/temporal aggregation, and exploratory analysis. All predictive feature engineering (12 lead times $H=12, \dots, 1$, multi-granularity 5/10/30-day aggregations, lag windows), machine learning architectures, and expanding-window validation protocols belong strictly to Chapter 4.
+## 7. Data Science Identity Boundary & Evidence-Based Commentary (Author Rule, Sept 2026)
+- **Role and voice:** The narrative voice is strictly that of applied data scientists and economists, NOT agronomists, plant biologists, or synoptic meteorologists.
+- **Evidence-based claims:** All interpretations and comments regarding climatic effects or historical shocks must be strictly grounded in:
+  1. Direct evidence from our own data, tables, and figures (e.g. observed values of $VPD$, precipitation, soil moisture, temperatures).
+  2. Direct citations from the approved reference papers in the repository catalog (`output/docs/references.md`).
+- **No external speculation or unwarranted domain digressions:** Avoid unverified domain conjectures (e.g. specific biological diseases, atmospheric jet stream/blocking dynamics, entomological outbreaks) that are not directly captured in our datasets or in our approved literature.
+- **Strict citation perimeter:** Do not search for or add papers by external agronomists, biologists, or meteorologists outside the curated repository catalog.
 
 
