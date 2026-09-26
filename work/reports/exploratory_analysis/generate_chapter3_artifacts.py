@@ -71,75 +71,56 @@ print(f"Panel loaded: {len(df_panel)} records across {df_panel['county_fips'].nu
 # TABLE 3.1: Panel Assembly and Selection Summary
 # ==============================================================================
 def generate_table_3_1():
-    cand_by_state = df_candidates.groupby("state")["county_fips"].nunique()
-    sel_by_state = df_counties.groupby("state")["county_fips"].nunique()
-    
     state_metrics = []
     for state in sorted(df_counties["state"].unique()):
         st_data = df_panel[df_panel["state"] == state]
-        st_acres_2025 = st_data[st_data["year"] == 2025]["acres_harvested"].sum() / 1000.0
-        n_cand = cand_by_state.get(state, 0)
-        n_sel = sel_by_state.get(state, 0)
-        retention = (n_sel / n_cand) * 100.0 if n_cand > 0 else 0.0
+        n_sel = df_counties[df_counties["state"] == state]["county_fips"].nunique()
         n_obs = len(st_data)
         mean_y = st_data["yield_bu_per_acre"].mean()
         std_y = st_data["yield_bu_per_acre"].std()
         
-        # OLS slope
-        slope, intercept, r_val, p_val, std_err = stats.linregress(st_data["year"], st_data["yield_bu_per_acre"])
-        
         state_metrics.append({
             "State": state,
-            "Candidates": n_cand,
-            "Selected": n_sel,
-            "Retention": f"{retention:.1f}\\%",
+            "Counties": n_sel,
             "Observations": f"{n_obs:,}",
             "Mean Yield": f"{mean_y:.2f}",
-            "Std. Dev.": f"{std_y:.2f}",
-            "Trend": f"+{slope:.3f}",
-            "2025 Harvested": f"{st_acres_2025:,.1f}"
+            "Std. Dev.": f"{std_y:.2f}"
         })
     
-    total_cand = len(df_candidates)
     total_sel = len(df_counties)
-    total_ret = (total_sel / total_cand) * 100.0
     total_obs = len(df_panel)
     total_mean = df_panel["yield_bu_per_acre"].mean()
     total_std = df_panel["yield_bu_per_acre"].std()
-    tot_slope, _, _, _, _ = stats.linregress(df_panel["year"], df_panel["yield_bu_per_acre"])
-    total_acres_2025 = df_panel[df_panel["year"] == 2025]["acres_harvested"].sum() / 1000.0
     
     latex_rows = []
     for row in state_metrics:
         latex_rows.append(
-            f"{row['State']} & {row['Candidates']} & {row['Selected']} & {row['Retention']} & "
-            f"{row['Observations']} & {row['Mean Yield']} & {row['Std. Dev.']} & {row['Trend']} & {row['2025 Harvested']} \\\\"
+            f"{row['State']} & {row['Counties']} & {row['Observations']} & {row['Mean Yield']} & {row['Std. Dev.']} \\\\"
         )
     
     total_row = (
-        f"\\textbf{{Panel Total}} & \\textbf{{{total_cand}}} & \\textbf{{{total_sel}}} & \\textbf{{{total_ret:.1f}\\%}} & "
-        f"\\textbf{{{total_obs:,}}} & \\textbf{{{total_mean:.2f}}} & \\textbf{{{total_std:.2f}}} & \\textbf{{+{tot_slope:.3f}}} & \\textbf{{{total_acres_2025:,.1f}}} \\\\"
+        f"\\textbf{{Panel Total}} & \\textbf{{{total_sel}}} & \\textbf{{{total_obs:,}}} & \\textbf{{{total_mean:.2f}}} & \\textbf{{{total_std:.2f}}} \\\\"
     )
     
     rows_str = "\n".join(latex_rows)
-    tab_latex = r"""% Table 3.1: Panel Assembly and County Selection Breakdown (1951-2025)
+    tab_latex = r"""% Table 3.1: Summary of Balanced Midwestern County Panel (1951-2025)
 \begin{table}[htbp]
 \centering
 \small
-\setlength{\tabcolsep}{4.5pt}
-\caption{Spatial composition and selection summary of the balanced county panel (1951--2025).}
+\setlength{\tabcolsep}{8pt}
+\caption{Descriptive summary of the 135 balanced study counties across the six Midwestern states (1951--2025).}
 \label{tab:panel_selection}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l c c c c c c c r}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l c c c c}
 \toprule
-\textbf{State} & \textbf{Cand.} & \textbf{Sel.} & \textbf{Ret.} & \textbf{Obs.} & \textbf{Mean} & \textbf{Std.} & \textbf{Trend} & \textbf{2025 Area} \\
- & ($N_{c}$) & ($N_{s}$) & (\%) & ($N \times 75$) & (bu/ac) & (bu/ac) & (bu/ac/yr) & ($10^3$ ac) \\
+\textbf{State} & \textbf{Counties} & \textbf{Observations} & \textbf{Mean Yield} & \textbf{Std. Dev.} \\
+ & ($N$) & ($N \times 75$) & (bu/ac) & (bu/ac) \\
 \midrule
 """ + rows_str + "\n" + r"""\midrule
 """ + total_row + "\n" + r"""\bottomrule
 \end{tabular*}
 \vspace{1ex}
 \raggedright
-\footnotesize{\textit{Notes:} Cand. ($N_c$) represents the candidate county universe from the USDA NASS survey export across the six Midwestern states. Sel. ($N_s$) denotes counties with strictly uninterrupted, finite yield observations across all 75 crop years (1951--2025). Ret. is the selection retention rate ($N_s/N_c$). Trend is estimated via ordinary least squares over the 75-year panel. 2025 Area represents total harvested soybean acreage in thousand acres.}
+\footnotesize{\textit{Notes:} Counties ($N$) indicates the number of counties selected across the six Corn Belt states based on unbroken 75-year continuity (1951--2025) under a strict zero-imputation protocol. Observations denotes total finite county-year yield records. Mean Yield and Std. Dev. are computed over the full 75-year panel.}
 \end{table}
 """
     with open(os.path.join(TABLES_DIR, "tab_panel_selection.tex"), "w", encoding="utf-8") as f:
