@@ -18,7 +18,7 @@ We focus on six core states of the United States Corn Belt: Illinois, Indiana, I
 
 We compile county-level soybean yields (in bushels per acre, $1\text{ bu/ac} \approx 67.25\text{ kg/ha}$) from the USDA NASS Quick Stats database. To assemble a balanced and robust panel, we apply two selection criteria: (i) an unbroken 75-year annual historical record from 1951 to 2025 without missing data, enforcing a zero-imputation protocol to preserve genuine historical shock amplitudes; and (ii) high agricultural harvested density. 
 
-High harvested density is essential for spatial weather aggregation. Because we aggregate meteorological fields from ERA5-Land to county boundaries via area-weighted polygon averaging, focusing on agricultural counties ensures that county-wide weather variables reflect crop microclimates rather than unrepresentative non-agricultural surfaces.
+High harvested density is essential for spatial weather aggregation. Because we aggregate meteorological fields from ERA5-Land to county boundaries via area-weighted polygon averaging, focusing on agricultural counties ensures that county-wide weather variables genuinely represent cropland microclimates.
 
 Because our 12-month predictive horizon ($H = 12, \dots, 1$) begins on October 31 of year $Y-1$ and ERA5-Land starts in January 1950, 1951 is the earliest campaign with complete antecedent weather coverage, precluding 1950 yields.
 
@@ -109,7 +109,7 @@ The empirical trajectories reveal a striking divergence: while absolute cross-co
 
 However, because baseline yields nearly tripled, an identical percentage shock translates into a vastly larger physical volume deficit today. For grain merchandisers, transport networks, and processors, absolute volumetric exposure during adverse weather has amplified.
 
-Importantly, this expansion in absolute yield dispersion ($\sigma_t$) is not driven by heightened atmospheric volatility. Historical records confirm that Midwestern summer climate variability remained stationary over the 75-year panel, with stable interannual standard deviations in July--August maximum temperature ($\sigma \approx 1.2^\circ\text{C}$) and vapor pressure deficit ($\sigma \approx 0.15\text{ kPa}$). The widening physical dispersion reflects an endogenous scale effect of higher baseline productivity combined with denser planting populations.
+This widening physical dispersion ($\sigma_t$) is not an artifact of climate volatility. Historical records confirm that Midwestern summer climate variability remained stationary over the 75-year panel, with stable interannual standard deviations in July--August maximum temperature ($\sigma \approx 1.2^\circ\text{C}$) and vapor pressure deficit ($\sigma \approx 0.15\text{ kPa}$). The expanding dispersion reflects an endogenous scale effect of higher baseline productivity combined with denser planting populations.
 
 \subsection{Macro-Climatic Historical Yield Shocks and Biological Asymmetry}
 \label{sec:data_yield_shocks}
@@ -143,7 +143,7 @@ In total, we retain \textbf{17 daily agrometeorological variables} capturing the
 \subsection{Derived Agrometeorological Variables and Bioclimatic Indicators}
 \label{sec:data_derived_weather}
 
-Because crop yields respond non-linearly to compound atmospheric-hydrological demands rather than isolated averages \citep{Schlenker2009}, we transform daily meteorological fields into targeted bioclimatic indicators (Table~\ref{tab:weather_variables}, Panel~B).
+Crop yields respond non-linearly to compound atmospheric-hydrological stress \citep{Schlenker2009}. We therefore transform daily meteorological fields into targeted bioclimatic indicators (Table~\ref{tab:weather_variables}, Panel~B).
 
 \paragraph{Vapor Pressure Deficit ($VPD$).} Atmospheric evaporative demand is parameterized via Vapor Pressure Deficit, which quantifies the drying power of the air. Saturation vapor pressure $e_s(T_{\text{mean}})$ and actual vapor pressure $e_a(T_{\text{dew}})$ (in kPa) are computed via Tetens formulations:
 \begin{align}
@@ -229,7 +229,7 @@ The synchronized historical record reveals two foundational empirical patterns:
 
 First, severe regional shortfalls cluster tightly with peaks in compound atmospheric stress. In major drought campaigns (such as 1953, 1983, 1988, and 2012), annual heat-stress days exceeded 50 days per county, while summer vapor pressure deficit reached historic peaks of $1.2$ to $1.3\text{ kPa}$ (Figure~\ref{fig:weather_climatology}b). Under these compound regimes, elevated temperatures and high evaporative demand trigger stomatal closure, suppressing transpirational cooling and depleting soil moisture during reproductive development \citep{Schlenker2009}. Conversely, prominent bumper harvest clusters (1952, 1961, 1994, 2016, and 2021) consistently coincide with suppressed heat accumulation ($HD_{30} < 20\text{ days}$) and low summer evaporative demand ($VPD < 0.9\text{ kPa}$), preserving transpirational hydration throughout seed fill.
 
-Second, downside yield shocks do not originate exclusively from midsummer thermal drought. Significant regional shortfalls also arise from non-thermal mechanisms—including excessive pluvial inundation and root-zone waterlogging (such as the 1993 flood) or unseasonal cold fronts terminating grain fill (such as 1974)—despite suppressed heat accumulation ($HD_{30} < 10\text{ days}$). Differentiating these distinct mechanisms requires resolving intra-seasonal daily trajectories rather than relying on annual totals.
+Second, downside yield shocks do not originate exclusively from midsummer thermal drought. Significant regional shortfalls also arise from non-thermal mechanisms—including excessive pluvial inundation and root-zone waterlogging (such as the 1993 flood) or unseasonal cold fronts terminating grain fill (such as 1974)—despite suppressed heat accumulation ($HD_{30} < 10\text{ days}$). Differentiating these distinct mechanisms requires resolving intra-seasonal daily trajectories instead of aggregate annual totals.
 
 \subsection{Intra-Seasonal Agro-Climatic Trajectories: Cumulative and Dynamic Shock Archetypes}
 \label{sec:data_intra_seasonal_extremes}

@@ -9,7 +9,7 @@ Agricultural yield becomes definitively observable only at harvest, long after k
 
 Harvest surprises in this region carry severe, asymmetric economic costs. Regional crop shortfalls, typically driven by summer heatwaves or moisture deficits, generate procurement bottlenecks and sharp price spikes for grain crushers, feed millers, and export terminals. Conversely, unexpectedly bumper harvests compress local storage capacity, create barge and rail bottlenecks along the Mississippi corridor, and exert downward pressure on regional cash basis levels.
 
-Crucially, we model county-level crop yield anomalies (in bushels per acre) rather than aggregate production volumes or market prices directly. Total production depends on acreage allocations and spatial aggregation, while price formation is governed by global carryover stocks and trade flows. These supply-chain repercussions establish the practical motivation for our research.
+We focus specifically on county-level soybean yield anomalies, measured in bushels per acre. Aggregate production volumes and market prices fall outside our scope: production totals depend on acreage allocations across counties, while commercial prices reflect global carryover stocks and trade flows. These supply-chain repercussions establish the practical motivation for our research.
 
 In agricultural supply chains, a forecast's utility depends directly on its lead time. In operational trading, procurement, and hedging, an accurate yield estimate delivered immediately prior to harvest provides little managerial flexibility: physical purchasing, storage reservations, and forward pricing have largely concluded. The central intellectual and practical challenge consists in determining \textit{when} atmospheric observations transition from uninformative noise into a reliable forecasting signal. 
 
@@ -25,7 +25,7 @@ To evaluate this progression systematically, we anchor the crop campaign to an O
 \section{Research Question and Target Formulations}
 \label{sec:intro_research_question}
 
-A fundamental empirical challenge in agricultural forecasting is that raw county yields are heavily dominated by secular technological progress (such as seed genetics, fertilizer efficiency, and mechanization). Consequently, predictive models must target yield anomalies rather than raw trends, evaluating how much actionable forecasting skill observed surface weather can provide across successive stages of the crop cycle.
+A fundamental empirical challenge in agricultural forecasting is that raw county yields are heavily dominated by secular technological progress, including genetic improvement, fertilizer efficiency, and mechanization. Consequently, predictive models must isolate weather-induced yield anomalies from the underlying secular trajectory, evaluating how much actionable forecasting skill observed surface weather provides across successive stages of the crop cycle.
 
 The central research question asks: \textit{At what lead times prior to harvest does observed surface weather add statistically significant and stable out-of-sample predictive skill for county-level soybean yield anomalies, and how does this skill vary across model families and temporal aggregations?}
 
@@ -42,18 +42,18 @@ We structure our investigation around four primary objectives: mapping the emerg
 
 The literature on empirical crop modeling encompasses diverse approaches to predicting county-level soybean yields from environmental data. Recent studies have advanced the field from complementary perspectives: \citet{Vijverberg2023} identified pre-sowing climate precursors for extreme yield events; \citet{Yinetal2026} demonstrated the influence of sub-monthly temporal aggregation on modern architectures over recent decades; and the multidecadal benchmark by \citet{ChenZhang2026} examined in-season deep learning across monthly growing-season updates.
 
-However, existing empirical work has largely examined these dimensions in isolation—focusing on specific phenological phases, selected model classes, or restricted historical intervals. Rather than proposing an isolated model variant, we synthesize and expand upon these empirical foundations within a unified benchmarking framework.
+However, existing empirical studies examine these dimensions in isolation, focusing on specific phenological windows, individual model classes, or restricted historical intervals. We synthesize these empirical branches into a unified benchmarking framework.
 
 We address these gaps through two primary methodological contributions:
 \begin{enumerate}
-    \item \textbf{Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12, \dots, 1$):} We establish the empirical boundaries of weather-driven predictability across twelve standardized monthly origins from the preceding autumn through harvest eve. By relying strictly on cumulative observed surface weather from ERA5-Land rather than uncertain dynamical climate forecasts, we track precisely when atmospheric observations begin to generate stable predictive skill.
+    \item \textbf{Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12, \dots, 1$):} We establish the empirical boundaries of weather-driven predictability across twelve standardized monthly origins, spanning from the preceding autumn through harvest eve. By relying strictly on cumulative surface reanalysis from ERA5-Land, we track precisely when observed atmospheric states begin to generate stable predictive skill, avoiding the confounding bias of numerical climate forecasts.
     \item \textbf{Identification of Optimal Model-Aggregation Configurations:} We systematically evaluate multiple model families—regularized linear baselines, tree ensembles (Random Forest, XGBoost), and recurrent architectures (LSTM)—across three temporal aggregations (5-day, 10-day, and 30-day summaries). This establishes whether high-frequency sub-monthly summaries provide superior predictive value over standard monthly averages under identical information constraints.
 \end{enumerate}
 
 \paragraph{Scope Boundaries and Methodological Discipline.}
 While our evaluation framework is transferable to other crops and regions, we deliberately focus on soybean across a balanced panel of 135 counties in six core Midwestern states (Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio) over 1951--2025 ($10{,}125$ county-year observations). This geographic and temporal delimitation provides an unbroken historical record that avoids artificial data imputation.
 
-To maintain methodological discipline, we interpret feature importance strictly as empirical predictive association rather than causal mechanics. Furthermore, because we evaluate retrospective ERA5-Land reanalysis over a historical panel, our primary objective is to delineate the physical limits of weather-driven predictability across lead times, rather than deploying a real-time commercial tool.
+We interpret feature importance strictly as empirical predictive association, without claiming structural causal identification. Furthermore, because we evaluate retrospective ERA5-Land reanalysis over a 75-year panel, our primary objective is to delineate the physical boundaries of weather-driven predictability across lead times.
 
 \section{Structure of the Thesis}
 \label{sec:intro_structure}

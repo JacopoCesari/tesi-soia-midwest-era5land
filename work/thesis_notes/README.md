@@ -1,42 +1,36 @@
-# Master Index delle Note di Lavoro e Documentazione Metodologica
-*Registro unificato di tutte le note di ricerca, decisioni operative e documentazione tecnica*
+# Indice delle Note Metodologiche e Strumenti di Stesura (`work/thesis_notes/`)
 
-Questo file funge da hub centrale per garantire che nessun appunto, decisione metodologica o appunto di lavoro venga disperso durante la redazione della tesi.
-
----
-
-## 1. Note di Lavoro & Protocolli di Ricerca (`work/thesis_notes/`)
-
-| File | Argomento / Contenuto Principale | Stato |
-| :--- | :--- | :--- |
-| [`author_working_notes.md`](./author_working_notes.md) | **Appunti dell'Autore:** Archivio delle scelte metodologiche, parametri aperti (es. sensibilità cutoff), priorità dei target (regressione vs classificazione) e buone pratiche redazionali. | Consolidato / In uso |
-| [`model_progression_tracking.md`](./model_progression_tracking.md) | **Progressione dei Modelli:** Protocollo di tracciamento per Ladder A (feature F0-F5), Ladder B (modelli M0-M3) e Ladder C (ablazioni), per documentare l'intero percorso iterativo nel Capitolo 5. | Attivo |
-| [`antecedent_features_note.md`](./antecedent_features_note.md) | **Feature Antecedenti:** Logica di inclusione del meteo e rese della campagna precedente ($Y-1$) per i lead-time lunghi ($H=12 \dots 8$). | Attivo |
-| [`sample_selection.md`](./sample_selection.md) | **Selezione Campionaria:** Criteri di completezza NASS, resa per acro e bilanciamento delle 135 contee su 6 stati del Midwest (1951–2025). | Consolidato |
-| [`source_map.md`](./source_map.md) | **Mappa delle Fonti:** Provenienza, coordinate e riferimenti dei dati USDA NASS, ERA5-Land e confini amministrativi. | Consolidato |
-| [`thesis_character_budget.md`](./thesis_character_budget.md) | **Budget Caratteri:** Matrice dei range di flessibilità (70k - 130k) e allocazione caratteri per capitolo (Cap 1 max 10k, Cap 2 max 30k). | Riferimento / In uso |
-| [`university_thesis_guide.pdf`](./university_thesis_guide.pdf) | **Linee Guida di Ateneo:** Vincoli formali di redazione (limite 100.000 caratteri / 35 pagine, formattazione 12pt, 13 min presentazione). | Riferimento |
+> **Regole di Progetto e Voce Autoriale:**  
+> Tutte le regole vincolanti di scrittura, perimetro bibliografico e divieto di marker LLM sono formalizzate in [`AGENTS.md`](file:///c:/Users/JacopoCesari-Aret%C3%A9sr/Desktop/Tesi/AGENTS.md).  
+> La documentazione scientifica ufficiale e consolidata risiede in [`output/docs/`](file:///c:/Users/JacopoCesari-Aret%C3%A9sr/Desktop/Tesi/output/docs/).  
+> Questa cartella (`work/thesis_notes/`) contiene gli strumenti pratici di controllo, le note metodologiche di supporto e la to-do list operativa per la stesura.
 
 ---
 
-## 2. Specifiche Metodologiche e Decision Log Ufficiale (`output/docs/`)
+## 1. Strumenti Istituzionali e Controllo Formale
 
-| File | Argomento / Contenuto Principale |
+| File | Descrizione / Funzione |
 | :--- | :--- |
-| [`decisions.md`](../../output/docs/decisions.md) | **Research Decision Log:** Tabella formale di tutte le decisioni metodologiche (stato, data, motivazione, stadi impattati). |
-| [`validation_and_modeling.md`](../../output/docs/validation_and_modeling.md) | **Protocollo di Validazione:** Expanding window strettamente cronologica, split train-only, tassonomia dei modelli. |
-| [`era5_land_methodology.md`](../../output/docs/era5_land_methodology.md) | **Metodologia ERA5-Land:** Formule di aggregazione spaziale, pesi intersezionali, indici termici e idrologici. |
-| [`feature_engineering.md`](../../output/docs/feature_engineering.md) | **Ingegneria delle Feature:** Finestre temporali (5-day, 10-day, 30-day), calcolo GDD, EDD ($>30^\circ\text{C}$), VPD e $P - \text{ET}_0$. |
-| [`data_and_target.md`](../../output/docs/data_and_target.md) | **Target e Dati:** Definizione delle anomalie continue di resa, trend tecnologico e formulazione dei regimi categorici. |
-| [`research_protocol.md`](../../output/docs/research_protocol.md) | **Protocollo di Ricerca:** Schema operativo complessivo della sperimentazione. |
-| [`research_design.md`](../../output/docs/research_design.md) | **Quadro Concettuale:** Inquadramento teorico, motivazione economica e gerarchia degli obiettivi. |
+| [`university_thesis_guide.pdf`](./university_thesis_guide.pdf) | **Vademecum Ufficiale di Ateneo (8 pagine):** Linee guida del docente relatore (limite 100.000 caratteri, struttura cartelle OneDrive, regole su tabelle con `Source:` e formattazione). |
+| [`thesis_character_budget.md`](./thesis_character_budget.md) | **Budget Caratteri per Capitolo:** Matrice di pianificazione con limite massimo operativo a 110.000 caratteri (+10% buffer) e stato di avanzamento attuale dei capitoli 1--3. |
+| [`count_thesis_characters.py`](./count_thesis_characters.py) | **Script di Conteggio Ufficiale:** Script Python che calcola i caratteri effettivi del testo escludendo tabelle, figure, formule e bibliografia in conformità al Vademecum. |
 
 ---
 
-## 3. Note Operative e Ingegneristiche di Pipeline (`work/docs/`)
+## 2. Note Operative e Scoping dei Capitoli
 
-| File | Argomento / Contenuto Principale |
+| File | Descrizione / Funzione |
 | :--- | :--- |
-| [`era5_step2_handoff.md`](../docs/era5_step2_handoff.md) | Note tecniche sul download e pipeline di estrazione da ERA5-Land reanalysis. |
-| [`repository_audit.md`](../docs/repository_audit.md) | Audit approfondito sull'integrità dei dati, controlli di parità e verifiche di coerenza. |
-| [`reorganization_plan.md`](../docs/reorganization_plan.md) | Piano di architettura della cartella di lavoro e separazione tra raw, interim e processed data. |
+| [`author_working_notes.md`](./author_working_notes.md) | **To-Do List e Task Aperti:** Decisioni metodologiche differite (es. target continuo vs regimi nel Cap. 5, collocazione Tabella 3.4), re-run delle mappe/curve del 1988 con dati completi, e promemoria citazioni per il Cap. 4. |
+| [`chapter_boundaries.md`](./chapter_boundaries.md) | **Mappa dei Confini tra Capitoli:** Delineazione di cosa appartiene a ciascun capitolo (Cap. 3 dati/EDA, Cap. 4 formule/algoritmi, Cap. 5 risultati empirici/stress test, Cap. 6 discussione/implicazioni). |
+| [`source_map.md`](./source_map.md) | **Mappa di Raccordo Capitoli--Documentazione:** Matrice che collega ciascun capitolo della tesi ai rispettivi documenti tecnici ufficiali in `output/docs/`. |
+
+---
+
+## 3. Protocolli Metodologici di Supporto per la Modellistica (Cap. 4--5)
+
+| File | Descrizione / Funzione |
+| :--- | :--- |
+| [`model_progression_tracking.md`](./model_progression_tracking.md) | **Protocollo di Tracciamento Iterazioni Modelli:** Schema per registrare e presentare nel Cap. 5 il percorso incrementale di miglioramento dai benchmark storici semplici (Trend, Climatologia) ai modelli ML/DL (Ridge, Random Forest, XGBoost, LSTM). |
+| [`extreme_years_benchmark.md`](./extreme_years_benchmark.md) | **Analisi del Trend e Shock Benchmark:** Fondamenti metodologici sul perché modellare il residuo climatico pur in presenza di un trend tecnologico forte ($R^2=0.81$), con le coorti storiche di shock (1988, 1993, 2012, 1974) per lo stress-test del Cap. 5. |
+| [`antecedent_features_note.md`](./antecedent_features_note.md) | **Lookback Invernale e Feature Antecedenti:** Logica di gestione delle feature a lungo anticipo ($H=12 \dots 8$) prima della semina primaverile. |

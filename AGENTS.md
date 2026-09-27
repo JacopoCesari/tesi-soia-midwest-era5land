@@ -41,26 +41,36 @@
 
 ## Thesis writing protocol and chapter scoping
 
-- **Strict Chapter Role Demarcation**:
-  - *Chapter 1 (Introduction)*: High-level motivation, practical supply-chain value, research questions, high-level objectives, academic contributions, and scope boundaries. Never anticipate detailed experimental recipes, equations, or exhaustive model configurations.
-  - *Chapter 2 (Literature Review)*: Critical review of existing agronomic, econometric, and ML literature, theoretical foundations, and formal derivation of hypotheses H1--H5. Focus strictly on what existing literature has established, where methodological fallacies lie (e.g., trend confounding, spatial leakage, lack of parsimonious baselines), and why specific data modalities are excluded. Do not describe internal implementation mechanics or anticipate Chapter 4 pipelines.
-  - *Chapter 3 (Data and Study Area)*: Complete empirical provenance, spatial coverage, descriptive acreage, quality control, reanalysis extraction, and exploratory climate-yield statistics.
-  - *Chapter 4 (Methodology)*: Mathematical and algorithmic formalization of all workflows: 12 standardized horizons, feature engineering, detrending models, baseline specifications, machine learning architectures, and expanding-window temporal validation protocols.
-  - *Chapters 5--7 (Results, Discussion, Conclusions)*: Empirical findings, baseline comparisons, ablations, operational implications, and syntheses.
-- **Academic Defense of Methodological Exclusions**:
-  - Negative constraints (e.g., weather-only, excluding satellites, management records, static soil features, or dynamical climate forecasts) must be justified through rigorous academic rationale in the thesis narrative: ex-post compilation lags, physiological satellite latency ($H \ge 4$), lack of multidecadal county depth, zero temporal variance of static pedology ($\text{Var}(X_{it})=0$), and avoiding confounded dynamical climate model biases.
-- **Text and Table Coordination (No Redundancy)**:
-  - When comparative or diagnostic tables synthesize empirical dimensions (such as benchmark comparisons or hyperparameter grids), surrounding text must provide critical commentary and analytical synthesis rather than repeating tabular metrics verbatim.
-- **Density Over Expansion (Non-Proliferation Rule)**:
-  - Text revisions must maximize conceptual density, clarity, and grammatical cohesion without expanding word or character counts. Avoid slide-like bullet-point lists where fluent, connected academic prose can express the ideas more cohesively.
-- **Author Voice and Linguistic Register (Lean, Direct C1 English)**:
-  - The author is an Italian data-science MSc student writing in professional C1 English.
-  - Adopt a lean, direct, and "asciutto" (dry) tone. Avoid verbose circumlocutions, nested subordinate clauses, filler transitions, and syntactic complexity ("giri di parole").
-  - Technical terms in Data Science, Machine Learning, and Econometrics must be rigorous and expert-level.
-  - Technical terms in Agrometeorology and Agriculture should be accurate and used strictly where justified, without gratuitous jargon or speculative domain digressions.
-  - Define acronyms once upon first occurrence (e.g., *VPD, GDD, OOS, OLS*); use the acronym exclusively thereafter.
-  - Use the standard scientific authorial "we" (*"We evaluate...", "We observe..."*) and active functional subjects (*"The model estimates..."*); avoid singular "I" and convoluted passive constructions.
-  - Keep chapter/section transitions telegrafic and functional without conversational preambles.
+### 1. Strict Chapter Role Demarcation
+- *Chapter 1 (Introduction)*: Practical supply-chain motivation, research questions, 2 core contributions, and scope boundaries. Never anticipate equations, model hyperparameters, or exhaustive tables.
+- *Chapter 2 (Literature Review)*: Critical review of existing agronomic, econometric, and ML literature, theoretical foundations, and formal derivation of hypotheses H1--H5. Focus strictly on established findings, methodological fallacies (trend confounding, spatial leakage, lack of parsimonious baselines), and why specific modalities are excluded.
+- *Chapter 3 (Data and Study Area)*: Complete empirical provenance, spatial coverage, descriptive acreage, quality control, reanalysis extraction, and exploratory climate-yield statistics.
+- *Chapter 4 (Methodology)*: Mathematical and algorithmic formalization of all workflows: 12 standardized horizons, feature engineering, detrending models, baseline specifications, machine learning architectures, and expanding-window validation protocols.
+- *Chapters 5--7 (Results, Discussion, Conclusions)*: Empirical findings, baseline comparisons, ablations, operational implications, and syntheses.
+
+### 2. Literature and Citation Discipline (Author Rule)
+- **Primary Literature Perimeter**: The active bibliography is strictly limited to the **13 core papers** from `Literature.zip`.
+- **One Paper per Topic**: In narrative reviews, cite **one primary reference paper per mini-topic/paragraph** (e.g., Sharma for tree review, Khaki for sequential models, Yin for sub-monthly aggregation). Avoid dense multi-citation stacking unless explicitly contrasting divergent findings.
+- **Reserve Papers in Repository**: The 3 additional local papers in `work/references/papers/` (`Jeong et al. 2016`, `Iizumi et al. 2018`, `Khaki & Wang 2019`) are kept in reserve. Cite them **only** if a technical concept is uniquely present in them and absent from the 13 primary papers. Never cite them gratuitously and never upload them to the supervisor's OneDrive folder unless cited.
+- **Zero External Additions**: Never add new papers without explicit author authorization.
+
+### 3. Author Voice, Register, and Zero LLM Markers
+- The author is an Italian data-science MSc student writing in professional C1 English.
+- Adopt a lean, direct, and "asciutto" (dry) tone. Avoid verbose circumlocutions, nested subordinate clauses, filler transitions, and syntactic complexity.
+- **Banned LLM Patterns**:
+  - *No contrastive binary structures*: Ban `rather than`, `not X, but Y`, `instead of A, we do B`. State choices assertively and directly.
+  - *No dramatic discourse adverbs*: Ban sentence starters like `Crucially,`, `Importantly,`, `Notably,`, `Remarkably,`, `Intriguingly,`. Start directly with the subject or factual observation.
+  - *No AI cliché vocabulary*: Ban words such as `delve`, `foster`, `testament`, `tapestry`, `pivotal`, `intricate`, `multifaceted`, `nuanced`, `beacon`, `cornerstone`.
+  - *No pre-emptive apologetics*: Ban defensive justifications (`To maintain strict methodological hygiene...`). State research protocols as the normal professional standard.
+  - *Enforce burstiness*: Alternate concise, punchy factual statements with analytical periods; discourage subordinate clauses beyond the first degree (in strict compliance with Vademecum p. 5).
+- Technical terms in Data Science, ML, and Econometrics must be rigorous and expert-level; define acronyms once upon first occurrence (e.g., *VPD, GDD, OOS, OLS*) and use the acronym exclusively thereafter.
+- Use standard scientific authorial "we" (*"We evaluate...", "We observe..."*) and active functional subjects (*"The model estimates..."*); avoid singular "I" and passive convolutions.
+
+### 4. Tables, Figures, and Vademecum Compliance
+- **Source Attribution**: Every table and figure must include an explicit, formal source attribution line immediately below (e.g., `\textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}`).
+- **Self-Contained Captions**: Captions must provide all necessary details for understanding (variables, units, periods, thresholds).
+- **Text and Table Coordination**: Surrounding text must provide critical commentary and analytical synthesis instead of repeating tabular numbers verbatim.
+- **Academic Defense of Exclusions**: Methodological boundaries (weather-only, excluding satellites, management records, static soil features, or dynamical forecasts) must be justified through rigorous academic rationale in the narrative.
 
 
 
