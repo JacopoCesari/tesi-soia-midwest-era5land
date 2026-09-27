@@ -365,14 +365,14 @@ def generate_figure_3_2():
     
     fig, ax = plt.subplots(figsize=(12, 6.4))
     
-    # 1. Individual county trajectories (faint)
+    # 1. Individual county trajectories (clearly visible behind the light band)
     for c_fips, grp in df_panel.groupby("county_fips"):
-        ax.plot(grp["year"], grp["yield_bu_per_acre"], color="#94a3b8", alpha=0.14, linewidth=0.65, zorder=1)
+        ax.plot(grp["year"], grp["yield_bu_per_acre"], color="#64748b", alpha=0.18, linewidth=0.7, zorder=1)
     
-    # 2. Percentile dispersion band (5th--95th percentile, covers 90% of counties)
+    # 2. Lighter percentile dispersion band (#bae6fd with soft alpha so county lines are clearly visible)
     ax.fill_between(
         annual["year"], annual["q05"], annual["q95"],
-        color="#38bdf8", alpha=0.35, label=r"90% Cross-County Dispersion (5th--95th Percentile Band)", zorder=2
+        color="#bae6fd", alpha=0.45, label=r"90% Cross-County Dispersion (5th--95th Percentile Band)", zorder=2
     )
     
     # 3. Panel Mean Yield
@@ -381,7 +381,7 @@ def generate_figure_3_2():
     # 4. Secular Linear Trend (clean label without equation)
     ax.plot(annual["year"], annual["trend"], color="#ea580c", linestyle="--", linewidth=2.0, label="Secular Linear Trend", zorder=3)
     
-    # 5. Historical Climatic Shocks
+    # 5. Historical Climatic Shocks (with clean non-overlapping offsets)
     shocks = [
         (1988, 28.08, "1988 Severe Drought\n(-25.6%)", (-15, -45)),
         (2003, 35.26, "2003 Heat & Aphids\n(-21.6%)", (5, -52)),
@@ -389,8 +389,8 @@ def generate_figure_3_2():
         (2012, 43.55, "2012 Flash Drought\n(-11.7%)", (10, -40)),
         (1993, 35.92, "1993 Great Flood\n(-10.5%)", (15, -42)),
         (1994, 44.95, "1994 Bumper\n(+10.7%)", (-15, 30)),
-        (2016, 56.81, "2016 Bumper\n(+10.8%)", (-25, 25)),
-        (2021, 59.50, "2021 Bumper\n(+10.8%)", (-30, 25)),
+        (2016, 56.81, "2016 Bumper\n(+10.8%)", (-32, 28)),  # Points up-left
+        (2021, 59.50, "2021 Bumper\n(+10.8%)", (22, 28)),   # Points up-right: perfectly separated!
     ]
     
     for yr, val, txt, offset in shocks:
@@ -400,7 +400,7 @@ def generate_figure_3_2():
             xy=(yr, val),
             xytext=offset,
             textcoords="offset points",
-            fontsize=8,
+            fontsize=8.2,
             fontweight="bold",
             color="#991b1b" if "Bumper" not in txt else "#15803d",
             ha="center",

@@ -63,15 +63,25 @@ Our machine learning models in Chapter~4 are trained exclusively to predict the 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory}
-    \caption{Multidecadal county soybean yield trajectories and secular trend across 135 Midwestern counties (1951--2025). Light grey lines represent individual county histories; the solid blue line denotes the annual cross-sectional panel mean; the dashed line represents the secular linear trend; and markers highlight major historical climatic shock anomalies.}
+    \caption{Multidecadal county soybean yield trajectories, secular trend, and expanding spatial dispersion across 135 Midwestern counties (1951--2025). Light grey lines represent individual county histories; the solid blue line denotes the annual cross-sectional panel mean; the shaded blue ribbon traces the 90\% cross-county dispersion envelope (5th--95th percentile band), illustrating expanding spatial heteroskedasticity over time; the dashed orange line depicts the secular linear trend; and markers highlight major historical climatic shock anomalies.}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}}
     \label{fig:yield_trajectory}
 \end{figure}
 
-The secular baseline $\tau_{c,t}$ captures technological progress, including advanced breeding, transgenic traits, mechanization, and precision farming inputs. Across the 75-year panel, regional average soybean yields expanded from $22.77\text{ bu/ac}$ in the 1950s to $57.31\text{ bu/ac}$ in the 2020s (+151.7\%, Table~\ref{tab:decadal_yields}). A pooled linear trend accounts for over 81\% of total county-year yield variance ($R^2 = 0.8122$, $N = 10{,}125$). At the regional annual level ($N = 75$), an ordinary least squares (OLS) regression indicates an average gain of $+0.484\text{ bu/ac/year}$ ($R^2 = 0.9323$, Figure~\ref{fig:yield_trajectory}):
+The secular baseline $\tau_{c,t}$ captures technological progress, including advanced breeding, transgenic traits, mechanization, and precision farming inputs. Across the 75-year panel, regional average soybean yields expanded from $22.77\text{ bu/ac}$ in the 1950s to $57.31\text{ bu/ac}$ in the 2020s (+151.7\%, Table~\ref{tab:decadal_yields}). At the regional annual level ($N = 75$), an ordinary least squares (OLS) regression indicates an average gain of $+0.484\text{ bu/ac/year}$ ($R^2 = 0.9323$, Figure~\ref{fig:yield_trajectory}):
 \begin{equation}
     \hat{y}_t = 0.484 \cdot t - 925.46 \quad (t = 1951, \dots, 2025)
     \label{eq:panel_trend}
 \end{equation}
+
+The high explanatory power ($R^2 = 0.9323$) at the regional aggregate level reflects the deterministic multidecadal drift of technological innovation averaged across the entire Corn Belt. However, this macro-level fit is an aggregation artifact resulting from spatial smoothing across 135 counties, where localized climatic stresses cancel each other out. Commercial grain merchandisers, transport logistics networks, and crop insurance underwriters do not transact regional aggregate averages; physical exposure and delivery obligations occur at the county scale.
+
+Furthermore, our modeling framework in Chapter~4 explicitly operates on geographically disaggregated entities (state and county tiers), fitting entity-specific detrending series to capture localized technological drift (e.g., Minnesota expanding at $+0.509\text{ bu/ac/year}$ versus Missouri at $+0.386\text{ bu/ac/year}$, Section~\ref{sec:data_spatial_heterogeneity}). A single regional trend leaves wide, heteroskedastic county-level variance unexplained. Across the full panel ($N = 10{,}125$), pooled variance explained falls to $R^2 = 0.8122$, leaving an out-of-sample prediction error of $5.889\text{ bu/ac}$ that no static time trend can capture.
+
+Localized variance is non-stationary and expands over time. As illustrated by the shaded 5th--95th percentile ribbon in Figure~\ref{fig:yield_trajectory} and detailed in Table~\ref{tab:decadal_yields}, the 90\% cross-county dispersion envelope expanded from $15.12\text{ bu/ac}$ in the 1950s to $23.05\text{ bu/ac}$ in the 2020s ($+52.4\%$), with total annual cross-county spreads ($y_{\text{max}} - y_{\text{min}}$) widening from $24.28\text{ bu/ac}$ to $41.58\text{ bu/ac}$ ($+71.3\%$). While the relative coefficient of variation ($CV_t$) contracted from $22.0\%$ to $13.2\%$ due to the tripling of mean baseline yields, absolute physical volumetric exposure has amplified. A $13\%$ yield deficit on a modern $60\text{ bu/ac}$ crop represents nearly $8\text{ bu/ac}$ in missing physical grain, compared to $5\text{ bu/ac}$ on a 1950s baseline.
+
+Consequently, isolating and forecasting the stochastic, weather-induced anomaly $\epsilon_{c,t}$ at the local scale represents the core scientific objective of this thesis, rendering simple linear trend extrapolation structurally inadequate for agricultural supply management.
 
 \input{tables/tab_decadal_yields}
 
@@ -82,6 +92,7 @@ Table~\ref{tab:detrending_comparison} evaluates alternative detrending specifica
 In Panel~B (County-Level Generalization across all 135 counties), out-of-sample evaluation across 6,075 county-year expanding predictions shows that county-specific Linear OLS minimizes forecast error. It achieves an out-of-sample RMSE of $5.889\text{ bu/ac}$, compared to $6.030\text{ bu/ac}$ for quadratic and $6.385\text{ bu/ac}$ for cubic polynomials. Penalized model selection via BIC confirms that Linear OLS is strictly preferred in 65.9\% of individual counties ($89/135$). Linear detrending avoids overfitting, eliminates polynomial boundary distortions, and produces residuals that are strictly stationary ($p < 0.001$, Augmented Dickey-Fuller test).
 
 \subsection{Spatial Heterogeneity and Regional Productivity Divergence}
+\label{sec:data_spatial_heterogeneity}
 
 While secular growth is positive throughout the Midwest, regional baseline productivity varies substantially across states (Figure~\ref{fig:state_yield_distributions}). Iowa (historical mean $39.73\text{ bu/ac}$; slope $+0.495\text{ bu/ac/year}$) and Illinois (mean $38.35\text{ bu/ac}$; slope $+0.491\text{ bu/ac/year}$) form the highest-yielding core of the panel, favored by deep soils and reliable thermal regimes. Indiana ($39.52\text{ bu/ac}$) and Ohio ($36.88\text{ bu/ac}$) demonstrate comparable baseline productivity with lower cross-county variance.
 
@@ -89,27 +100,12 @@ While secular growth is positive throughout the Midwest, regional baseline produ
     \centering
     \includegraphics[width=0.96\textwidth]{figures/fig_state_yield_distributions}
     \caption{Spatial heterogeneity of county soybean yields: (a) cross-sectional yield distributions by state ordered by median yield; (b) decadal mean yield trajectories across the six Midwestern states from the 1950s to the 2020s.}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS data.}}
     \label{fig:state_yield_distributions}
 \end{figure}
 
 In contrast, Minnesota displays a lower historical mean ($35.10\text{ bu/ac}$) but the fastest linear acceleration in the panel ($+0.509\text{ bu/ac/year}$). This rapid growth reflects the northward commercial adoption of cold-tolerant varieties with shorter maturity groups. At the southern margin, Missouri records the lowest historical yield ($29.04\text{ bu/ac}$) and lowest slope ($+0.386\text{ bu/ac/year}$), reflecting frequent exposure to midsummer heat and drought.
-
-\subsection{Dispersion Dynamics: Absolute Variance vs. Relative Volatility}
-
-An essential question for agricultural risk management is how multidecadal technological intensification has affected yield stability. Figure~\ref{fig:dispersion_dynamics} investigates this dynamic by tracking cross-county standard deviation ($\sigma_t$) alongside the relative coefficient of variation ($CV_t = 100 \times \sigma_t / \mu_t$).
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.90\textwidth]{figures/fig_dispersion_dynamics}
-    \caption{Dispersion dynamics across the 135 Midwestern study counties (1951--2025). The blue curves illustrate rising absolute cross-county standard deviation ($\sigma_t$, left axis), while the dashed orange curves depict steadily declining relative coefficient of variation ($CV_t$, right axis). Solid thick lines denote 5-year centered rolling averages.}
-    \label{fig:dispersion_dynamics}
-\end{figure}
-
-The empirical trajectories reveal a striking divergence: while absolute cross-county standard deviation expanded from $5.01\text{ bu/ac}$ in the 1950s to $7.57\text{ bu/ac}$ in the 2020s ($r = +0.705$), the relative coefficient of variation declined steadily from $22.0\%$ to $13.2\%$ ($r = -0.610$, Table~\ref{tab:decadal_yields}). Modern breeding and mechanization have successfully dampened relative vulnerability to localized stress. 
-
-However, because baseline yields nearly tripled, an identical percentage shock translates into a vastly larger physical volume deficit today. For grain merchandisers, transport networks, and processors, absolute volumetric exposure during adverse weather has amplified.
-
-This widening physical dispersion ($\sigma_t$) is not an artifact of climate volatility. Historical records confirm that Midwestern summer climate variability remained stationary over the 75-year panel, with stable interannual standard deviations in July--August maximum temperature ($\sigma \approx 1.2^\circ\text{C}$) and vapor pressure deficit ($\sigma \approx 0.15\text{ kPa}$). The expanding dispersion reflects an endogenous scale effect of higher baseline productivity combined with denser planting populations.
 
 \subsection{Macro-Climatic Historical Yield Shocks and Biological Asymmetry}
 \label{sec:data_yield_shocks}

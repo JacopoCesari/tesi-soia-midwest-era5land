@@ -16,6 +16,23 @@
 *   **Current State:** Positioned provisionally in Chapter 3 (`tab_yield_shocks.tex`) listing the major historical shortfall ($\le -10\%$) and bumper ($\ge +10\%$) cohorts.
 *   **Pending Action:** Evaluate in Chapter 5 whether to retain this table in Chapter 3 or relocate/merge it directly into Chapter 5, where candidate models are stress-tested against these exact historical shock cohorts.
 
+### C. Horizon Progression & Pure Naive Trend Baseline ($H=12$ to $H=1$)
+*   **Campaign Start & Origin Cutoff ($H=12$):** Evaluated on October 31 of Year $Y-1$ (12 calendar months before the October 31 harvest reference of Year $Y$).
+*   **Zero-Weather Naive Benchmark at $H=12$:**
+    *   At $H=12$, the model ingests **zero weather data** from the new crop campaign.
+    *   The prediction relies solely on the historical secular trend ($\hat{y}_{c,Y} = \text{Trend}_c(Y)$, or predicted detrended anomaly $\hat{\epsilon}_{c,Y} = 0$).
+    *   This provides a clean, rigorous, naive benchmark against which all subsequent weather-informed horizons are directly benchmarked.
+*   **Progressive Monthly Weather Accumulation ($H=11, \dots, 1$):**
+    *   At each subsequent monthly origin, incoming observed weather data is progressively added to the cumulative information set:
+        *   $H=11$ (November 30): 1 month of antecedent weather (November).
+        *   $H=10$ (December 31): 2 months (Nov–Dec).
+        *   $H=9, \dots, 7$ (Jan–Mar): 3 to 5 months (overwinter recharge).
+        *   $H=6$ (April 30): 6 months (Nov–Apr, overwinter recharge + pre-sowing baseline).
+        *   $H=5, 4$ (May–Jun): 7 to 8 months (sowing and vegetative development).
+        *   $H=3, 2$ (Jul–Aug): 9 to 10 months (critical flowering and pod-filling).
+        *   $H=1$ (September 30): 11 months (Nov–Sep, physiological maturity prior to harvest).
+    *   **Methodological Value:** Isolates the marginal value of information (MVI) as developmental stages unfold, empirically demonstrating the exact lead-time horizon where meteorological signals statistically separate from the pure trend baseline.
+
 ---
 
 ## 2. Weather Dataset (1950–2025) & Figure Synchronization [COMPLETED]
