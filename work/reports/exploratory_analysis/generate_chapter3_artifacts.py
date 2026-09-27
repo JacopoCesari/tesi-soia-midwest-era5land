@@ -16,7 +16,6 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import geopandas as gpd
 from scipy import stats
 
@@ -327,13 +326,13 @@ def generate_figure_3_1():
     # Custom handles for legend
     from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor="#02818a", edgecolor="#01464c", label="Selected Balanced Panel (1951--2025, N=135)"),
-        Patch(facecolor="#d0d1e6", edgecolor="#a6bddb", label="Historical Candidate (Incomplete, N=344)"),
+        Patch(facecolor="#02818a", edgecolor="#01464c", label="Selected Balanced Panel"),
+        Patch(facecolor="#d0d1e6", edgecolor="#a6bddb", label="Historical Candidate Counties"),
         Patch(facecolor="#f5f5f5", edgecolor="#d9d9d9", label="Other Non-Candidate Counties")
     ]
     ax.legend(handles=legend_elements, loc="upper right", frameon=True, facecolor="white", edgecolor="#cccccc", framealpha=0.95, fontsize=9.5)
     
-    ax.set_title("Geographic Distribution of the 135 Balanced Study Counties (1951--2025)", fontsize=13, pad=12, fontweight="bold")
+    ax.set_title("Geographic Distribution of Balanced Study Counties (1951–2025)", fontsize=13, pad=12, fontweight="bold")
     ax.axis("off")
     
     plt.tight_layout()
@@ -343,36 +342,59 @@ def generate_figure_3_1():
     print("Figure 3.1 generated.")
 
 # ==============================================================================
-# FIGURE 3.2: Long-Term Yield Trajectory and Secular Trend (1951–2025)
+# ==============================================================================
+# FIGURE 3.2: Long-Term Yield Trajectory, Secular Trend, and Expanding Dispersion (1951–2025)
 # ==============================================================================
 def generate_figure_3_2():
     annual = df_panel.groupby("year")["yield_bu_per_acre"].agg(["mean", "std", "min", "max"]).reset_index()
     slope, intercept, r_val, _, _ = stats.linregress(annual["year"], annual["mean"])
     annual["trend"] = slope * annual["year"] + intercept
     
-    fig, ax = plt.subplots(figsize=(11, 6))
+    # Decadal pooled std matching Table 3.2
+    df_panel["decade"] = (df_panel["year"] // 10) * 10
+    std_50s = df_panel[df_panel["decade"] == 1950]["yield_bu_per_acre"].std()
+    std_20s = df_panel[df_panel["decade"] == 2020]["yield_bu_per_acre"].std()
     
+    fig, ax = plt.subplots(figsize=(12, 6.4))
+    
+    # 1. Individual county trajectories
     for c_fips, grp in df_panel.groupby("county_fips"):
-        ax.plot(grp["year"], grp["yield_bu_per_acre"], color="#b0c4de", alpha=0.18, linewidth=0.8, zorder=1)
+        ax.plot(grp["year"], grp["yield_bu_per_acre"], color="#94a3b8", alpha=0.15, linewidth=0.7, zorder=1)
     
-    ax.fill_between(annual["year"], annual["min"], annual["max"], color="#e6effa", alpha=0.4, label="Cross-County Min--Max Envelope", zorder=2)
-    ax.plot(annual["year"], annual["mean"], color="#08519c", linewidth=2.2, label="Panel Cross-Sectional Mean Yield", zorder=4)
-    ax.plot(annual["year"], annual["trend"], color="#d94801", linestyle="--", linewidth=2.0, 
-            label=f"Secular OLS Trend (+{slope:.3f} bu/ac/yr, $R^2={r_val**2:.2f}$)", zorder=3)
+    # 2. Outer min-max envelope (faint)
+    ax.fill_between(annual["year"], annual["min"], annual["max"], color="#f1f5f9", alpha=0.5, zorder=2)
     
+    # 3. Cross-County Dispersion: ±1 sigma band
+    ax.fill_between(
+        annual["year"], 
+        annual["mean"] - annual["std"], 
+        annual["mean"] + annual["std"], 
+        color="#38bdf8", 
+        alpha=0.30, 
+        label=r"Cross-County Dispersion ($\mu_t \pm 1\sigma_t$ Band)", 
+        zorder=3
+    )
+    
+    # 4. Panel Mean Yield
+    ax.plot(annual["year"], annual["mean"], color="#0369a1", linewidth=2.4, label="Panel Cross-Sectional Mean Yield", zorder=5)
+    
+    # 5. Secular OLS Trend (clean label without formula)
+    ax.plot(annual["year"], annual["trend"], color="#ea580c", linestyle="--", linewidth=2.0, label="Secular Linear Trend", zorder=4)
+    
+    # 6. Historical Climatic Shocks
     shocks = [
         (1988, 28.08, "1988 Severe Drought\n(-25.6%)", (-15, -45)),
-        (2003, 35.26, "2003 Heat & Aphids\n(-21.6%)", (-10, -45)),
+        (2003, 35.26, "2003 Heat & Aphids\n(-21.6%)", (5, -52)),
         (1974, 24.84, "1974 Early Freeze\n(-19.7%)", (-15, -45)),
         (2012, 43.55, "2012 Flash Drought\n(-11.7%)", (10, -40)),
-        (1993, 35.92, "1993 Great Flood\n(-10.5%)", (-25, -45)),
+        (1993, 35.92, "1993 Great Flood\n(-10.5%)", (15, -42)),
         (1994, 44.95, "1994 Bumper\n(+10.7%)", (-15, 30)),
         (2016, 56.81, "2016 Bumper\n(+10.8%)", (-25, 25)),
         (2021, 59.50, "2021 Bumper\n(+10.8%)", (-30, 25)),
     ]
     
     for yr, val, txt, offset in shocks:
-        ax.scatter([yr], [val], color="#cb181d" if "Bumper" not in txt else "#238b45", s=35, zorder=5)
+        ax.scatter([yr], [val], color="#dc2626" if "Bumper" not in txt else "#16a34a", s=38, zorder=6)
         ax.annotate(
             txt,
             xy=(yr, val),
@@ -380,17 +402,47 @@ def generate_figure_3_2():
             textcoords="offset points",
             fontsize=8,
             fontweight="bold",
-            color="#990000" if "Bumper" not in txt else "#006d2c",
+            color="#991b1b" if "Bumper" not in txt else "#15803d",
             ha="center",
-            arrowprops=dict(arrowstyle="->", color="#525252", lw=0.7, shrinkA=3, shrinkB=3)
+            arrowprops=dict(arrowstyle="->", color="#475569", lw=0.7, shrinkA=3, shrinkB=3)
         )
     
-    ax.set_title("Multidecadal County Soybean Yield Trajectories and Secular Trend (1951--2025)", fontsize=13, fontweight="bold", pad=12)
+    # 7. Legend positioned cleanly at upper left
+    ax.legend(
+        loc="upper left", 
+        bbox_to_anchor=(0.02, 0.98),
+        frameon=True, 
+        facecolor="white", 
+        edgecolor="#cbd5e1", 
+        framealpha=0.95, 
+        fontsize=9.2
+    )
+    
+    # 8. Statistical Callout Box positioned right below the legend
+    stats_box_text = (
+        r"$\mathbf{Regional\ Aggregate\ Trend}$ ($N=75$):" + "\n"
+        rf"$\hat{{y}}_t = {slope:.3f}\cdot t - {-intercept:.1f} \quad (R^2 = {r_val**2:.3f})$" + "\n\n"
+        r"$\mathbf{Cross\text{-}County\ Dispersion}$ ($\pm 1\sigma_t$):" + "\n"
+        rf"$\sigma_{{1950\mathrm{{s}}}} = {std_50s:.2f}\ \mathrm{{bu/ac}} \longrightarrow \sigma_{{2020\mathrm{{s}}}} = {std_20s:.2f}\ \mathrm{{bu/ac}}\ (+51.1\%)$" + "\n\n"
+        r"$\mathbf{County\text{-}Level\ Unexplained\ Risk}$:" + "\n"
+        r"$\mathrm{Pooled}\ R^2 = 0.812 \quad\vert\quad \mathrm{Out\text{-}of\text{-}Sample\ RMSE} = 5.89\ \mathrm{bu/ac}$"
+    )
+    
+    ax.text(
+        0.02, 0.77, stats_box_text,
+        transform=ax.transAxes,
+        fontsize=8.5,
+        verticalalignment='top',
+        bbox=dict(boxstyle='round,pad=0.55', facecolor='#f8fafc', edgecolor='#94a3b8', alpha=0.95, linewidth=0.8),
+        zorder=10
+    )
+    
+    ax.set_title("Multidecadal County Soybean Yield Trajectories, Secular Trend, and Expanding Dispersion (1951--2025)", 
+                 fontsize=12, fontweight="bold", pad=12)
     ax.set_xlabel("Crop Year", fontsize=11, fontweight="bold")
     ax.set_ylabel("Soybean Yield (bushels per acre)", fontsize=11, fontweight="bold")
     ax.set_xlim(1950, 2026)
-    ax.set_ylim(0, 85)
-    ax.legend(loc="upper left", frameon=True, facecolor="white", framealpha=0.9, fontsize=9.5)
+    ax.set_ylim(0, 88)
     
     plt.tight_layout()
     fig.savefig(os.path.join(FIGURES_DIR, "fig_yield_trajectory.pdf"))
@@ -419,7 +471,7 @@ def generate_figure_3_3():
     ax1.plot(annual["year"], sl1 * annual["year"] + ic1, color="#525252", linestyle=":", linewidth=1.5, 
              label=f"Trend (+{sl1*10:.2f} bu/ac/decade, $r=+{r1:.2f}$)")
     
-    ax1.set_title(r"(a) Absolute Cross-County Dispersion ($\sigma_t$)", fontsize=11, fontweight="bold")
+    ax1.set_title(r"(a) Absolute Cross-County Dispersion ($\sigma_t$)", fontsize=11, fontweight="bold", pad=8, y=1.02)
     ax1.set_xlabel("Crop Year", fontsize=10, fontweight="bold")
     ax1.set_ylabel("Standard Deviation (bu/acre)", fontsize=10, fontweight="bold")
     ax1.set_ylim(2, 12)
@@ -434,7 +486,7 @@ def generate_figure_3_3():
     ax2.plot(annual["year"], sl2 * annual["year"] + ic2, color="#525252", linestyle=":", linewidth=1.5, 
              label=f"Trend ({sl2*10:.2f}\\%/decade, $r={r2:.2f}$)")
     
-    ax2.set_title(r"(b) Relative Volatility ($CV_t = 100 \times \sigma_t / \mu_t$)", fontsize=11, fontweight="bold")
+    ax2.set_title(r"(b) Relative Volatility ($CV_t$)", fontsize=11, fontweight="bold", pad=8, y=1.02)
     ax2.set_xlabel("Crop Year", fontsize=10, fontweight="bold")
     ax2.set_ylabel("Coefficient of Variation (%)", fontsize=10, fontweight="bold")
     ax2.set_ylim(5, 32)
@@ -443,7 +495,7 @@ def generate_figure_3_3():
     plt.suptitle("Dispersion Dynamics: Rising Absolute Variance vs. Declining Relative Volatility (1951--2025)", 
                  fontsize=12, fontweight="bold", y=0.98)
     
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     fig.savefig(os.path.join(FIGURES_DIR, "fig_dispersion_dynamics.pdf"))
     fig.savefig(os.path.join(FIGURES_DIR, "fig_dispersion_dynamics.png"))
     plt.close(fig)
@@ -456,10 +508,21 @@ def generate_figure_3_4():
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5.5), gridspec_kw={'width_ratios': [1.2, 1]})
     
     state_order = df_panel.groupby("state")["yield_bu_per_acre"].median().sort_values(ascending=False).index.tolist()
-    palette = sns.color_palette("Blues_r", n_colors=len(state_order))
+    cmap = plt.cm.Blues_r
+    palette = [cmap(0.15 + 0.70 * (i / (len(state_order) - 1))) for i in range(len(state_order))]
     
-    sns.boxplot(data=df_panel, x="state", y="yield_bu_per_acre", order=state_order, palette=palette, ax=ax1, 
-                fliersize=1.5, linewidth=1.0, boxprops=dict(alpha=0.85))
+    boxes_data = [df_panel[df_panel["state"] == st]["yield_bu_per_acre"].values for st in state_order]
+    bp = ax1.boxplot(boxes_data, patch_artist=True, tick_labels=state_order,
+                     flierprops=dict(marker='o', markersize=1.5, markerfacecolor='#555555', markeredgecolor='none', alpha=0.5),
+                     medianprops=dict(color='#000000', linewidth=1.2),
+                     whiskerprops=dict(linewidth=1.0),
+                     capprops=dict(linewidth=1.0))
+    for patch, color in zip(bp['boxes'], palette):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.85)
+        patch.set_edgecolor('#333333')
+        patch.set_linewidth(1.0)
+        
     ax1.set_title("(a) Cross-Sectional Yield Distribution by State", fontsize=11, fontweight="bold")
     ax1.set_xlabel("State", fontsize=10, fontweight="bold")
     ax1.set_ylabel("Soybean Yield (bushels per acre)", fontsize=10, fontweight="bold")
@@ -493,6 +556,6 @@ if __name__ == "__main__":
     generate_table_3_3()
     generate_figure_3_1()
     generate_figure_3_2()
-    generate_figure_3_3()
+    # generate_figure_3_3()  # Replaced by enhanced fig_yield_trajectory.png (expanding dispersion band)
     generate_figure_3_4()
     print("All Chapter 3 artifacts generated successfully!")

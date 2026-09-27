@@ -221,24 +221,27 @@ def generate_figure_3_6():
     
     # Subtle vertical guide bands linking both panels
     for yr in shock_years:
-        ax0.axvspan(yr - 0.45, yr + 0.45, color="#fee8c8", alpha=0.35, zorder=0)
-        ax1.axvspan(yr - 0.45, yr + 0.45, color="#fee8c8", alpha=0.35, zorder=0)
+        ax0.axvspan(yr - 0.45, yr + 0.45, color="#fee8c8", alpha=0.20, zorder=0)
+        ax1.axvspan(yr - 0.45, yr + 0.45, color="#fee8c8", alpha=0.20, zorder=0)
     for yr in bumper_years:
-        ax0.axvspan(yr - 0.45, yr + 0.45, color="#e5f5e0", alpha=0.35, zorder=0)
-        ax1.axvspan(yr - 0.45, yr + 0.45, color="#e5f5e0", alpha=0.35, zorder=0)
+        ax0.axvspan(yr - 0.45, yr + 0.45, color="#e5f5e0", alpha=0.20, zorder=0)
+        ax1.axvspan(yr - 0.45, yr + 0.45, color="#e5f5e0", alpha=0.20, zorder=0)
         
-    # Heat Days bars
-    bars = ax1.bar(df_merged["year"], df_merged["hd30_annual"], width=0.85, color="#fdbb84", alpha=0.60,
-                   label=r"Annual Extreme Heat Days ($HD_{30}$, $T_{\text{max}} \geq 30^\circ$C)")
-    
-    # 5-year rolling trend
-    ax1.plot(df_merged["year"], df_merged["hd30_annual"].rolling(5, center=True, min_periods=1).mean(),
-             color="#b30000", lw=2.2, label=r"Heat Days ($HD_{30}$ 5-yr centered rolling mean)")
+    # Heat Days bars with conditional coloring
+    for _, row in df_merged.iterrows():
+        yr = int(row["year"])
+        hd = row["hd30_annual"]
+        if yr in shock_years:
+            ax1.bar(yr, hd, width=0.85, color="#b2182b", alpha=0.85, edgecolor="#67001f", lw=0.9, zorder=3)
+        elif yr in bumper_years:
+            ax1.bar(yr, hd, width=0.85, color="#1b7837", alpha=0.85, edgecolor="#00441b", lw=0.9, zorder=3)
+        else:
+            ax1.bar(yr, hd, width=0.85, color="#cbd5e1", alpha=0.70, edgecolor="#94a3b8", lw=0.4, zorder=2)
     
     # Secondary Y-axis for summer VPD
     ax1_twin = ax1.twinx()
-    ax1_twin.plot(df_merged["year"], df_merged["vpd_summer"], color="#542788", lw=2.0, ls="--", marker="o", markersize=3.5,
-                  label=r"Summer $VPD$ (July--August Mean, kPa)")
+    ax1_twin.plot(df_merged["year"], df_merged["vpd_summer"], color="#4a148c", lw=1.8, ls="-", marker="o", markersize=3.0,
+                  alpha=0.90, label=r"Summer $VPD$ (July--August Mean, kPa)")
     
     ax1.set_ylabel(r"Heat Days / Year ($T_{\text{max}} \geq 30^\circ$C)")
     ax1_twin.set_ylabel(r"Summer $VPD$ (July--August, kPa)")
@@ -246,11 +249,17 @@ def generate_figure_3_6():
     ax1.set_title(r"(b) Synchronized Agro-Climatic Forcing: Heat Stress Days ($HD_{30}$) and Atmospheric Evaporative Demand ($VPD$)",
                   loc="left", fontweight="bold")
     ax1.set_ylim(0, 75)
-    ax1_twin.set_ylim(0.65, 1.35)
+    ax1_twin.set_ylim(0.65, 1.40)
     ax1_twin.grid(False)
     
-    ax1.legend(loc="upper left", frameon=True, fontsize=8.5)
-    ax1_twin.legend(loc="upper right", frameon=True, fontsize=8.5)
+    from matplotlib.lines import Line2D
+    legend_elements_b = [
+        Patch(facecolor="#b2182b", alpha=0.85, edgecolor="#67001f", label=r"Heat Days: Severe Shocks ($\leq -10\%$)"),
+        Patch(facecolor="#1b7837", alpha=0.85, edgecolor="#00441b", label=r"Heat Days: Bumper Years ($\geq +10\%$)"),
+        Patch(facecolor="#cbd5e1", alpha=0.70, edgecolor="#94a3b8", label=r"Heat Days: Baseline Years"),
+        Line2D([0], [0], color="#4a148c", lw=1.8, marker="o", markersize=3.0, label=r"Summer $VPD$ (July–August, kPa)")
+    ]
+    ax1.legend(handles=legend_elements_b, loc="upper left", frameon=True, fontsize=8.5, ncol=2)
     ax1.set_xlim(1950, 2026)
     
     plt.tight_layout()
@@ -276,8 +285,8 @@ def generate_figure_intra_seasonal_cumulative():
         ("Harvest", pd.to_datetime("2021-09-01"), pd.to_datetime("2021-10-31"), "#f0f0f0")
     ]
     
-    # Balanced 6 Years: 3 Adverse Shocks + 3 Bumper Harvests
-    target_years = [2003, 2012, 1993, 2021, 2016, 1994]
+    # Balanced 4 Archetype Years: 2 Adverse Shocks + 2 Bumper Harvests
+    target_years = [2012, 1993, 2016, 1994]
     
     daily_by_year = {}
     climatology_list = []
@@ -320,21 +329,24 @@ def generate_figure_intra_seasonal_cumulative():
             daily_by_year[yr] = daily_mean
             
     df_all = pd.concat(climatology_list, ignore_index=True)
+    def p10(x): return np.percentile(x, 10)
+    def p90(x): return np.percentile(x, 90)
+    
     clim_doy = df_all.groupby("doy").agg({
-        "cum_p": "median",
-        "cum_et0": "median",
-        "cum_balance": "median",
-        "cum_hd30": "median",
-        "vpd_roll15": ["median", lambda x: np.percentile(x, 10), lambda x: np.percentile(x, 90)],
-        "sm_root": ["median", lambda x: np.percentile(x, 10), lambda x: np.percentile(x, 90)],
-        "tmax_roll15": ["median", lambda x: np.percentile(x, 10), lambda x: np.percentile(x, 90)]
+        "cum_p": ["median", p10, p90],
+        "cum_et0": ["median", p10, p90],
+        "cum_balance": ["median", p10, p90],
+        "cum_hd30": ["median", p10, p90],
+        "vpd_roll15": ["median", p10, p90],
+        "sm_root": ["median", p10, p90],
+        "tmax_roll15": ["median", p10, p90]
     })
     clim_doy.columns = ['_'.join(c).strip() for c in clim_doy.columns]
     clim_doy = clim_doy.reset_index()
     
     ref_dates = pd.to_datetime("2021-01-01") + pd.to_timedelta(clim_doy["doy"] - 1, unit="D")
-    month_ticks = [pd.to_datetime(f"2021-{m:02d}-01") for m in range(4, 11)] + [pd.to_datetime("2021-10-31")]
-    month_labels = ['Apr 1', 'May 1', 'Jun 1', 'Jul 1', 'Aug 1', 'Sep 1', 'Oct 1', 'Oct 31']
+    month_ticks = [pd.to_datetime(f"2021-{m:02d}-01") for m in range(4, 11)]
+    month_labels = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']
     
     fig, axes = plt.subplots(2, 2, figsize=(14, 10.5), sharex=True)
     
@@ -346,68 +358,77 @@ def generate_figure_intra_seasonal_cumulative():
             y_pos = y_lim[0] + (y_lim[1] - y_lim[0]) * 0.93
             for name, start, end, _ in stages:
                 mid = start + (end - start) / 2
-                ax.text(mid, y_pos, name, ha="center", va="center", fontsize=7.6, fontweight="bold",
-                        color="#444444", bbox=dict(boxstyle="round,pad=0.12", facecolor="white", edgecolor="none", alpha=0.80))
+                ax.text(mid, y_pos, name, ha="center", va="center", fontsize=8.0, fontweight="bold",
+                        color="#334155", bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="#cbd5e1", alpha=0.90, lw=0.6))
                 
-    # Unified, harmonized styles across 6 archetypes
+    # Unified high-contrast palettes: Shocks (warm) vs Bumpers (cool) - all solid lines
     styles_cum = {
-        # Shocks
-        2003: {"label": "2003 Shock: Late Deficit (-21.6%)", "color": "#d73027", "lw": 2.2, "ls": "-"},
-        2012: {"label": "2012 Shock: Flash Drought (-11.7%)", "color": "#e08214", "lw": 2.0, "ls": "--"},
-        1993: {"label": "1993 Shock: Midwest Flood (-10.5%)", "color": "#2b83ba", "lw": 2.0, "ls": "-."},
-        # Bumpers
-        2021: {"label": "2021 Bumper: Modern Optimum (+10.8%)", "color": "#006837", "lw": 2.2, "ls": "-"},
-        2016: {"label": "2016 Bumper: High-Yield Buffer (+10.8%)", "color": "#41ab5d", "lw": 2.0, "ls": "--"},
-        1994: {"label": "1994 Bumper: Favorable Balance (+10.7%)", "color": "#78c679", "lw": 1.8, "ls": "-."}
+        # Shocks (Warm/contrasting palette)
+        2012: {"label": "2012 Shock: Flash Drought (-11.7%)", "color": "#d73027", "lw": 2.2, "ls": "-"},
+        1993: {"label": "1993 Shock: Midwest Flood (-10.5%)", "color": "#762a83", "lw": 2.0, "ls": "-"},
+        # Bumpers (Cool/harmonious palette)
+        2016: {"label": "2016 Bumper: Optimum Buffer (+10.8%)", "color": "#006837", "lw": 2.2, "ls": "-"},
+        1994: {"label": "1994 Bumper: Ideal Balance (+10.7%)", "color": "#2171b5", "lw": 2.0, "ls": "-"}
     }
+    target_ordered = [2012, 1993, 2016, 1994]
     
     # (a) Cumulative Heat Stress Days
     ax_a = axes[0, 0]
-    ax_a.plot(ref_dates, clim_doy["cum_hd30_median"], color="black", lw=2.2, ls=":", label="Climatological Normal", zorder=3)
-    for yr in target_years:
+    h_range = ax_a.fill_between(ref_dates, clim_doy["cum_hd30_p10"], clim_doy["cum_hd30_p90"],
+                                color="#cbd5e1", alpha=0.50, label="Climatological Range (10th–90th %ile)", zorder=2)
+    h_med = ax_a.plot(ref_dates, clim_doy["cum_hd30_median"], color="black", lw=2.0, ls="--", label="Climatological Median", zorder=3)[0]
+    
+    line_handles = {}
+    for yr in target_ordered:
         if yr in daily_by_year:
             s = styles_cum[yr]
-            ax_a.plot(ref_dates, daily_by_year[yr]["cum_hd30"], color=s["color"], lw=s["lw"], ls=s["ls"], label=s["label"], zorder=4)
+            line_handles[yr] = ax_a.plot(ref_dates, daily_by_year[yr]["cum_hd30"], color=s["color"], lw=s["lw"], ls=s["ls"], label=s["label"], zorder=4)[0]
     ax_a.set_ylabel(r"Cumulative Heat Days ($T_{\text{max}} \geq 30^\circ\text{C}$)")
-    ax_a.set_title(r"(a) Cumulative Extreme Heat Stress Exposure ($\sum HD_{30}$)", loc="left", fontweight="bold")
-    ax_a.set_ylim(-2, 65)
+    ax_a.set_title(r"(a) Cumulative Extreme Heat Days ($\sum HD_{30}$)", loc="left", fontweight="bold")
+    ax_a.set_ylim(-2, 70)
     add_pheno_clean(ax_a, show_labels=True)
     
     # (b) Cumulative Precipitation
     ax_b = axes[0, 1]
-    ax_b.plot(ref_dates, clim_doy["cum_p_median"], color="black", lw=2.2, ls=":", zorder=3)
-    for yr in target_years:
+    ax_b.fill_between(ref_dates, clim_doy["cum_p_p10"], clim_doy["cum_p_p90"],
+                      color="#cbd5e1", alpha=0.50, zorder=2)
+    ax_b.plot(ref_dates, clim_doy["cum_p_median"], color="black", lw=2.0, ls="--", zorder=3)
+    for yr in target_ordered:
         if yr in daily_by_year:
             s = styles_cum[yr]
             ax_b.plot(ref_dates, daily_by_year[yr]["cum_p"], color=s["color"], lw=s["lw"], ls=s["ls"], zorder=4)
     ax_b.set_ylabel("Cumulative Precipitation (mm)")
-    ax_b.set_title(r"(b) Cumulative Growing Season Precipitation ($\sum P$)", loc="left", fontweight="bold")
-    ax_b.set_ylim(0, 1000)
+    ax_b.set_title(r"(b) Cumulative Precipitation ($\sum P$)", loc="left", fontweight="bold")
+    ax_b.set_ylim(0, 1050)
     add_pheno_clean(ax_b, show_labels=True)
     
     # (c) Cumulative Reference Evapotranspiration
     ax_c = axes[1, 0]
-    ax_c.plot(ref_dates, clim_doy["cum_et0_median"], color="black", lw=2.2, ls=":", zorder=3)
-    for yr in target_years:
+    ax_c.fill_between(ref_dates, clim_doy["cum_et0_p10"], clim_doy["cum_et0_p90"],
+                      color="#cbd5e1", alpha=0.50, zorder=2)
+    ax_c.plot(ref_dates, clim_doy["cum_et0_median"], color="black", lw=2.0, ls="--", zorder=3)
+    for yr in target_ordered:
         if yr in daily_by_year:
             s = styles_cum[yr]
             ax_c.plot(ref_dates, daily_by_year[yr]["cum_et0"], color=s["color"], lw=s["lw"], ls=s["ls"], zorder=4)
     ax_c.set_ylabel(r"Cumulative $ET_0$ (mm)")
-    ax_c.set_title(r"(c) Cumulative Reference Evapotranspiration ($\sum ET_0$)", loc="left", fontweight="bold")
-    ax_c.set_ylim(0, 1000)
+    ax_c.set_title(r"(c) Cumulative Evapotranspiration ($\sum ET_0$)", loc="left", fontweight="bold")
+    ax_c.set_ylim(0, 1050)
     add_pheno_clean(ax_c, show_labels=False)
     
     # (d) Cumulative Climatic Water Budget
     ax_d = axes[1, 1]
     ax_d.axhline(0, color="black", lw=0.9, ls="-", zorder=2)
-    ax_d.plot(ref_dates, clim_doy["cum_balance_median"], color="black", lw=2.2, ls=":", zorder=3)
-    for yr in target_years:
+    ax_d.fill_between(ref_dates, clim_doy["cum_balance_p10"], clim_doy["cum_balance_p90"],
+                      color="#cbd5e1", alpha=0.50, zorder=2)
+    ax_d.plot(ref_dates, clim_doy["cum_balance_median"], color="black", lw=2.0, ls="--", zorder=3)
+    for yr in target_ordered:
         if yr in daily_by_year:
             s = styles_cum[yr]
             ax_d.plot(ref_dates, daily_by_year[yr]["cum_balance"], color=s["color"], lw=s["lw"], ls=s["ls"], zorder=4)
-    ax_d.set_ylabel(r"Cumulative Water Balance $\sum(P - ET_0)$ (mm)")
+    ax_d.set_ylabel(r"Cumulative Water Balance (mm)")
     ax_d.set_title(r"(d) Cumulative Climatic Water Budget ($\sum (P - ET_0)$)", loc="left", fontweight="bold")
-    ax_d.set_ylim(-380, 220)
+    ax_d.set_ylim(-380, 240)
     add_pheno_clean(ax_d, show_labels=False)
     
     for ax in axes.flat:
@@ -415,9 +436,19 @@ def generate_figure_intra_seasonal_cumulative():
         ax.set_xticklabels(month_labels)
         ax.set_xlim(ref_dates.iloc[0], ref_dates.iloc[-1])
         
-    handles, labels = ax_a.get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, -0.05), ncol=4,
-               frameon=True, facecolor="white", edgecolor="#cccccc", fontsize=8.8)
+    # Harmonized 2-row legend (column-first ordering):
+    # Col 0: Climatological Range, Climatological Median
+    # Col 1: 2012 Shock, 1993 Shock
+    # Col 2: 2016 Bumper, 1994 Bumper
+    legend_handles = [
+        h_range, h_med,
+        line_handles[2012], line_handles[1993],
+        line_handles[2016], line_handles[1994]
+    ]
+    legend_labels = [h.get_label() for h in legend_handles]
+    
+    fig.legend(legend_handles, legend_labels, loc="lower center", bbox_to_anchor=(0.5, -0.05), ncol=3,
+               frameon=True, facecolor="white", edgecolor="#cbd5e1", fontsize=9.2)
     
     plt.tight_layout()
     pdf_path = os.path.join(FIGURES_DIR, "fig_intra_seasonal_extremes.pdf")
@@ -430,10 +461,10 @@ def generate_figure_intra_seasonal_cumulative():
 
 
 # ==============================================================================
-# FIGURE 3.8: Non-Cumulative Dynamic States (Harmonized 6 Years)
+# FIGURE 3.8: Non-Cumulative Dynamic States (Harmonized 4 Archetypes)
 # ==============================================================================
 def generate_figure_shocks_noncumulative(daily_by_year, clim_doy, ref_dates, month_ticks, month_labels):
-    print("Generating Figure 3.8 (Non-Cumulative 3x1: Harmonized 6 Years)...")
+    print("Generating Figure 3.8 (Non-Cumulative 3x1: Harmonized 4 Archetypes)...")
     
     stages = [
         ("Sowing", pd.to_datetime("2021-04-01"), pd.to_datetime("2021-05-31"), "#f0f0f0"),
@@ -446,14 +477,14 @@ def generate_figure_shocks_noncumulative(daily_by_year, clim_doy, ref_dates, mon
     fig, axes = plt.subplots(3, 1, figsize=(12, 10.5), sharex=True)
     
     styles_shocks = {
-        2003: {"label": "2003 Shock: Late Deficit (-21.6%)", "color": "#d73027", "lw": 2.2, "ls": "-"},
-        2012: {"label": "2012 Shock: Flash Drought (-11.7%)", "color": "#e08214", "lw": 2.0, "ls": "--"},
-        1993: {"label": "1993 Shock: Midwest Flood (-10.5%)", "color": "#2b83ba", "lw": 2.0, "ls": "-."},
-        2021: {"label": "2021 Bumper: Modern Optimum (+10.8%)", "color": "#006837", "lw": 2.2, "ls": "-"},
-        2016: {"label": "2016 Bumper: High-Yield Buffer (+10.8%)", "color": "#41ab5d", "lw": 2.0, "ls": "--"},
-        1994: {"label": "1994 Bumper: Favorable Balance (+10.7%)", "color": "#78c679", "lw": 1.8, "ls": "-."}
+        # Shocks (Warm/contrasting palette)
+        2012: {"label": "2012 Shock: Flash Drought (-11.7%)", "color": "#d73027", "lw": 2.2, "ls": "-"},
+        1993: {"label": "1993 Shock: Midwest Flood (-10.5%)", "color": "#762a83", "lw": 2.0, "ls": "-"},
+        # Bumpers (Cool/harmonious palette)
+        2016: {"label": "2016 Bumper: Optimum Buffer (+10.8%)", "color": "#006837", "lw": 2.2, "ls": "-"},
+        1994: {"label": "1994 Bumper: Ideal Balance (+10.7%)", "color": "#2171b5", "lw": 2.0, "ls": "-"}
     }
-    target_6 = [2003, 2012, 1993, 2021, 2016, 1994]
+    target_ordered = [2012, 1993, 2016, 1994]
     
     def add_pheno_subtle(ax):
         for name, start, end, col in stages:
@@ -462,65 +493,74 @@ def generate_figure_shocks_noncumulative(daily_by_year, clim_doy, ref_dates, mon
     # (a) Atmospheric Evaporative Demand (VPD, 15-day rolling)
     ax0 = axes[0]
     add_pheno_subtle(ax0)
-    ax0.fill_between(ref_dates, clim_doy["vpd_roll15_<lambda_0>"], clim_doy["vpd_roll15_<lambda_1>"],
-                     color="#cccccc", alpha=0.35, label="Climatological Envelope (10th–90th %ile)", zorder=2)
-    ax0.plot(ref_dates, clim_doy["vpd_roll15_median"], color="black", lw=2.0, ls=":", label="Climatological Median", zorder=3)
-    for yr in target_6:
+    h_range_0 = ax0.fill_between(ref_dates, clim_doy["vpd_roll15_p10"], clim_doy["vpd_roll15_p90"],
+                                 color="#cbd5e1", alpha=0.50, label="Climatological Range (10th–90th %ile)", zorder=2)
+    h_med_0 = ax0.plot(ref_dates, clim_doy["vpd_roll15_median"], color="black", lw=2.0, ls="--", label="Climatological Median", zorder=3)[0]
+    
+    line_handles_0 = {}
+    for yr in target_ordered:
         s = styles_shocks[yr]
-        ax0.plot(ref_dates, daily_by_year[yr]["vpd_roll15"], color=s["color"], lw=s["lw"], ls=s["ls"], label=s["label"], zorder=4)
-    ax0.axhline(1.5, color="#b2182b", ls="--", lw=1.2, alpha=0.8)
-    ax0.text(ref_dates[5], 1.54, r"Elevated Atmospheric Demand / Stomatal Resistance ($VPD \geq 1.5\text{ kPa}$)",
-             color="#b2182b", fontsize=8.2, fontweight="bold")
+        line_handles_0[yr] = ax0.plot(ref_dates, daily_by_year[yr]["vpd_roll15"], color=s["color"], lw=s["lw"], ls=s["ls"], label=s["label"], zorder=4)[0]
+    ax0.axhline(1.5, color="#b2182b", ls=":", lw=1.2, alpha=0.85)
+    ax0.text(ref_dates[4], 1.54, r"Elevated Evaporative Demand Threshold ($1.5\text{ kPa}$)",
+             color="#b2182b", fontsize=8.5, fontweight="bold")
     ax0.set_ylabel(r"15-Day Rolling $VPD$ (kPa)")
-    ax0.set_title(r"(a) Atmospheric Evaporative Demand: 15-Day Rolling Mean Vapor Pressure Deficit ($VPD$)", loc="left", fontweight="bold")
+    ax0.set_title(r"(a) Atmospheric Evaporative Demand (15-Day Rolling $VPD$)", loc="left", fontweight="bold")
     ax0.set_ylim(0.35, 2.15)
-    ax0.legend(loc="upper left", frameon=True, fontsize=8.0, ncol=2, facecolor="white", edgecolor="#cccccc")
     
     # (b) Root-Zone Soil Moisture
     ax1 = axes[1]
     add_pheno_subtle(ax1)
-    ax1.fill_between(ref_dates, clim_doy["sm_root_<lambda_0>"], clim_doy["sm_root_<lambda_1>"],
-                     color="#cccccc", alpha=0.35, label="Climatological Envelope (10th–90th %ile)", zorder=2)
-    ax1.plot(ref_dates, clim_doy["sm_root_median"], color="black", lw=2.0, ls=":", label="Climatological Median", zorder=3)
-    for yr in target_6:
+    ax1.fill_between(ref_dates, clim_doy["sm_root_p10"], clim_doy["sm_root_p90"],
+                     color="#cbd5e1", alpha=0.50, label="Climatological Range (10th–90th %ile)", zorder=2)
+    ax1.plot(ref_dates, clim_doy["sm_root_median"], color="black", lw=2.0, ls="--", label="Climatological Median", zorder=3)
+    for yr in target_ordered:
         s = styles_shocks[yr]
         ax1.plot(ref_dates, daily_by_year[yr]["sm_root"], color=s["color"], lw=s["lw"], ls=s["ls"], zorder=4)
-    ax1.axhline(0.38, color="#2b83ba", ls="--", lw=1.0, alpha=0.8)
-    ax1.text(pd.to_datetime("2021-08-20"), 0.385, r"Regional Field Capacity ($\approx 0.38\ \mathrm{m}^3/\mathrm{m}^3$)",
-             color="#2b83ba", fontsize=8.2, fontweight="bold", ha="right")
-    ax1.axhline(0.18, color="#d73027", ls="--", lw=1.0, alpha=0.8)
-    ax1.text(pd.to_datetime("2021-05-15"), 0.185, r"Incipient Wilting Stress Threshold ($\approx 0.18\ \mathrm{m}^3/\mathrm{m}^3$)",
-             color="#d73027", fontsize=8.2, fontweight="bold")
+    ax1.axhline(0.38, color="#2b83ba", ls=":", lw=1.1, alpha=0.85)
+    ax1.text(pd.to_datetime("2021-08-20"), 0.385, r"Regional Field Capacity ($0.38\ \mathrm{m}^3/\mathrm{m}^3$)",
+             color="#2b83ba", fontsize=8.5, fontweight="bold", ha="right")
+    ax1.axhline(0.18, color="#d73027", ls=":", lw=1.1, alpha=0.85)
+    ax1.text(pd.to_datetime("2021-05-15"), 0.185, r"Incipient Wilting Stress Threshold ($0.18\ \mathrm{m}^3/\mathrm{m}^3$)",
+             color="#d73027", fontsize=8.5, fontweight="bold")
     ax1.set_ylabel(r"Soil Moisture ($\text{m}^3/\text{m}^3$)")
-    ax1.set_title(r"(b) Integrated Root-Zone Soil Moisture Dynamics ($SM_{\text{root}}$, $0$--$100\text{ cm}$ Column)", loc="left", fontweight="bold")
+    ax1.set_title(r"(b) Integrated Root-Zone Soil Moisture Dynamics ($SM_{\text{root}}$, $0$–$100\text{ cm}$)", loc="left", fontweight="bold")
     ax1.set_ylim(0.16, 0.44)
     
     # (c) Maximum Temperature (15-day rolling)
     ax2 = axes[2]
     add_pheno_subtle(ax2)
-    ax2.fill_between(ref_dates, clim_doy["tmax_roll15_<lambda_0>"], clim_doy["tmax_roll15_<lambda_1>"],
-                     color="#cccccc", alpha=0.35, label="Climatological Envelope (10th–90th %ile)", zorder=2)
-    ax2.plot(ref_dates, clim_doy["tmax_roll15_median"], color="black", lw=2.0, ls=":", label="Climatological Median", zorder=3)
-    for yr in target_6:
+    ax2.fill_between(ref_dates, clim_doy["tmax_roll15_p10"], clim_doy["tmax_roll15_p90"],
+                     color="#cbd5e1", alpha=0.50, label="Climatological Range (10th–90th %ile)", zorder=2)
+    ax2.plot(ref_dates, clim_doy["tmax_roll15_median"], color="black", lw=2.0, ls="--", label="Climatological Median", zorder=3)
+    for yr in target_ordered:
         s = styles_shocks[yr]
         ax2.plot(ref_dates, daily_by_year[yr]["tmax_roll15"], color=s["color"], lw=s["lw"], ls=s["ls"], zorder=4)
-    ax2.axhline(30, color="#d73027", ls="--", lw=1.2, alpha=0.8)
+    ax2.axhline(30, color="#d73027", ls=":", lw=1.2, alpha=0.85)
     ax2.text(pd.to_datetime("2021-05-15"), 30.5, r"Reproductive Thermal Stress Ceiling ($30^\circ\text{C}$)",
-             color="#d73027", fontsize=8.2, fontweight="bold")
+             color="#d73027", fontsize=8.5, fontweight="bold")
     ax2.set_ylabel(r"15-Day Rolling $T_{\text{max}}$ ($^\circ$C)")
-    ax2.set_xlabel("Calendar Date Across Growing Season")
-    ax2.set_title(r"(c) Thermal Regimes: 15-Day Rolling Maximum Temperature ($T_{\text{max}}$)", loc="left", fontweight="bold")
+    ax2.set_title(r"(c) Thermal Regimes (15-Day Rolling Maximum Temperature)", loc="left", fontweight="bold")
     ax2.set_ylim(10, 36)
-    
-    # Highlight July-August window header in panel 0
-    axes[0].text(pd.to_datetime("2021-08-01"), 1.95, "Reproductive Peak: Flowering & Pod-Fill (July--August, R1--R6)",
-                 ha="center", fontsize=8.6, fontweight="bold", color="#b2182b",
-                 bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="#e34a33", alpha=0.85, lw=0.8))
     
     for ax in axes:
         ax.set_xticks(month_ticks)
         ax.set_xticklabels(month_labels)
         ax.set_xlim(ref_dates.iloc[0], ref_dates.iloc[-1])
+        
+    # Harmonized 2-row bottom legend (column-first ordering):
+    # Col 0: Climatological Range, Climatological Median
+    # Col 1: 2012 Shock, 1993 Shock
+    # Col 2: 2016 Bumper, 1994 Bumper
+    legend_handles_shocks = [
+        h_range_0, h_med_0,
+        line_handles_0[2012], line_handles_0[1993],
+        line_handles_0[2016], line_handles_0[1994]
+    ]
+    legend_labels_shocks = [h.get_label() for h in legend_handles_shocks]
+    
+    fig.legend(legend_handles_shocks, legend_labels_shocks, loc="lower center", bbox_to_anchor=(0.5, -0.04), ncol=3,
+               frameon=True, facecolor="white", edgecolor="#cbd5e1", fontsize=9.2)
         
     plt.tight_layout()
     pdf_path = os.path.join(FIGURES_DIR, "fig_weather_shocks_footprint.pdf")
@@ -596,28 +636,39 @@ def generate_figure_climate_yield_sensitivity():
         corr_results["vpd"].append(r_vpd)
         corr_results["sm"].append(r_sm)
         
-    fig, ax = plt.subplots(figsize=(11, 5.5))
+    fig, ax = plt.subplots(figsize=(11.5, 6.0))
     x = np.arange(len(months))
     w = 0.20
     
-    rects1 = ax.bar(x - 1.5*w, corr_results["tmax"], w, label=r"Max Temperature ($T_{\text{max}}$)", color="#d95f02", alpha=0.9)
+    rects1 = ax.bar(x - 1.5*w, corr_results["tmax"], w, label=r"Max Temperature ($T_{\text{max}}$)", color="#d95f02", alpha=0.90)
     rects2 = ax.bar(x - 0.5*w, corr_results["vpd"], w, label=r"Vapor Pressure Deficit ($VPD$)", color="#e7298a", alpha=0.85)
-    rects3 = ax.bar(x + 0.5*w, corr_results["precip"], w, label="Precipitation ($P$)", color="#2b83ba", alpha=0.9)
-    rects4 = ax.bar(x + 1.5*w, corr_results["sm"], w, label=r"Root-Zone Soil Moisture ($SM_{\text{root}}$)", color="#1b9e77", alpha=0.9)
+    rects3 = ax.bar(x + 0.5*w, corr_results["precip"], w, label="Precipitation ($P$)", color="#2b83ba", alpha=0.90)
+    rects4 = ax.bar(x + 1.5*w, corr_results["sm"], w, label=r"Root-Zone Soil Moisture ($SM_{\text{root}}$)", color="#1b9e77", alpha=0.90)
     
     ax.axhline(0, color="black", lw=1.0, ls="-")
-    ax.set_ylabel("Pearson Correlation ($r$) with Detrended Yield Anomaly")
-    ax.set_title("Exploratory Climate-Yield Sensitivity: Monthly Bivariate Correlations across Phenological Cycle", loc="left", fontweight="bold")
+    ax.set_ylabel("Pearson Correlation ($r$) with Detrended Yield Anomaly", fontsize=10.5)
+    ax.set_title("Exploratory Climate-Yield Sensitivity: Monthly Bivariate Correlations across Phenological Cycle", loc="left", fontweight="bold", fontsize=12.0)
     ax.set_xticks(x)
-    ax.set_xticklabels(month_names, fontweight="bold")
-    ax.set_ylim(-0.55, 0.55)
-    ax.legend(loc="upper left", frameon=True, ncol=2)
+    ax.set_xticklabels(month_names, fontweight="bold", fontsize=10.5)
+    ax.set_ylim(-0.58, 0.58)
+    ax.legend(loc="upper left", frameon=True, ncol=2, fontsize=9.2, facecolor="white", edgecolor="#cbd5e1")
     
-    ax.text(0, -0.48, "Sowing\nExcess rain", ha="center", fontsize=8.5, fontstyle="italic", color="#555")
-    ax.text(2, -0.48, "Vegetative\nCanopy closure", ha="center", fontsize=8.5, fontstyle="italic", color="#555")
-    ax.text(3, -0.48, "Flowering (R1–R3)\nHeat penalty", ha="center", fontsize=8.5, fontstyle="italic", color="#b2182b", fontweight="bold")
-    ax.text(4, 0.44, "Pod-Fill (R4–R6)\nMoisture critical", ha="center", fontsize=8.5, fontstyle="italic", color="#005a32", fontweight="bold")
-    ax.text(6, -0.48, "Harvest\nDesiccation", ha="center", fontsize=8.5, fontstyle="italic", color="#555")
+    # Prominent, high-contrast phenological stage callout badges
+    ax.text(0.5, -0.49, "Sowing Window\nExcess rain delay", ha="center", va="center",
+            fontsize=8.8, fontweight="bold", color="#334155",
+            bbox=dict(boxstyle="round,pad=0.22", facecolor="#f8fafc", edgecolor="#cbd5e1", lw=0.8))
+    ax.text(2.0, -0.49, "Vegetative\nCanopy closure", ha="center", va="center",
+            fontsize=8.8, fontweight="bold", color="#334155",
+            bbox=dict(boxstyle="round,pad=0.22", facecolor="#f8fafc", edgecolor="#cbd5e1", lw=0.8))
+    ax.text(3.0, -0.49, "Flowering (R1–R3)\nHeat penalty", ha="center", va="center",
+            fontsize=9.0, fontweight="bold", color="#991b1b",
+            bbox=dict(boxstyle="round,pad=0.25", facecolor="#fef2f2", edgecolor="#fca5a5", lw=1.0))
+    ax.text(4.0, 0.45, "Pod-Filling (R4–R6)\nMoisture critical", ha="center", va="center",
+            fontsize=9.0, fontweight="bold", color="#065f46",
+            bbox=dict(boxstyle="round,pad=0.25", facecolor="#f0fdf4", edgecolor="#86efac", lw=1.0))
+    ax.text(6.0, -0.49, "Harvest\nDesiccation window", ha="center", va="center",
+            fontsize=8.8, fontweight="bold", color="#334155",
+            bbox=dict(boxstyle="round,pad=0.22", facecolor="#f8fafc", edgecolor="#cbd5e1", lw=0.8))
     
     plt.tight_layout()
     pdf_path = os.path.join(FIGURES_DIR, "fig_climate_yield_sensitivity.pdf")
@@ -630,7 +681,8 @@ def generate_figure_climate_yield_sensitivity():
 
 if __name__ == "__main__":
     generate_table_3_5()
-    generate_figure_3_6()
+    # Note: generate_figure_3_6() excluded to streamline Chapter 3 narrative
+    # generate_figure_3_6()
     daily_by_year, clim_doy, ref_dates, month_ticks, month_labels = generate_figure_intra_seasonal_cumulative()
     generate_figure_shocks_noncumulative(daily_by_year, clim_doy, ref_dates, month_ticks, month_labels)
     generate_figure_climate_yield_sensitivity()

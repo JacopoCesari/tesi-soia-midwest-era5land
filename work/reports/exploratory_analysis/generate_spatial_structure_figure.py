@@ -108,30 +108,30 @@ ax_macro.add_patch(macro_taz_rect)
 
 # Tazewell County annotation box
 ax_macro.annotate(
-    "Tazewell County, IL\n(Enlarged on right)",
+    "Tazewell County, IL",
     xy=((tb[0] + tb[2]) / 2, (tb[1] + tb[3]) / 2),
     xytext=(-92.0, 40.1),
-    fontsize=8.8, fontweight='bold', color='#99000d',
+    fontsize=9.5, fontweight='bold', color='#99000d',
     arrowprops=dict(arrowstyle='->', color='#99000d', lw=1.3, connectionstyle='arc3,rad=-0.12'),
     bbox=dict(boxstyle='square,pad=0.35', facecolor='white', edgecolor='#99000d', alpha=0.95),
     zorder=8
 )
 
 # Macro Legend
-p_sel = mpatches.Patch(facecolor='#a1dab4', edgecolor='#238b45', label=r'Balanced Study Counties ($N=28$)')
-p_other = mpatches.Patch(facecolor='#ffffff', edgecolor='#d0d0d0', label=r'Other Counties ($N=74$)')
-p_taz = mpatches.Patch(facecolor='#e41a1c', edgecolor='#99000d', label='Tazewell County (Focus)')
+p_sel = mpatches.Patch(facecolor='#a1dab4', edgecolor='#238b45', label='Balanced Study Counties')
+p_other = mpatches.Patch(facecolor='#ffffff', edgecolor='#d0d0d0', label='Other Counties')
+p_taz = mpatches.Patch(facecolor='#e41a1c', edgecolor='#99000d', label='Tazewell County')
 ax_macro.legend(
     handles=[p_sel, p_other, p_taz],
     loc='lower left', bbox_to_anchor=(0.02, 0.02),
-    fontsize=8.5, framealpha=0.95, facecolor='white', edgecolor='#cccccc'
+    fontsize=9.0, framealpha=0.95, facecolor='white', edgecolor='#cccccc'
 )
 
 ax_macro.set_xlim(-92.8, -86.0)
 ax_macro.set_ylim(36.8, 43.5)
 ax_macro.set_xlabel(r'Longitude ($^\circ$W)', fontsize=9.5)
 ax_macro.set_ylabel(r'Latitude ($^\circ$N)', fontsize=9.5)
-ax_macro.set_title(r'(a) Regional Domain: Illinois State ($N=28$ Study Counties)', fontsize=10.5, fontweight='bold', pad=8)
+ax_macro.set_title('(a) Regional Domain: Illinois State', fontsize=11, fontweight='bold', pad=8)
 ax_macro.set_aspect(1.0 / np.cos(np.radians(40.0)))
 
 # ==============================================================================
@@ -158,39 +158,28 @@ for _, r in tw_w.iterrows():
         ax=ax_micro, facecolor='#2b83ba', edgecolor='#08519c', linewidth=0.65, alpha=alpha_val, zorder=4
     )
 
-# 4. Illinois River annotation (highlighting the natural curved boundary without overlapping badge)
-ax_micro.annotate(
-    "Illinois River\n(Natural boundary)",
-    xy=(-89.78, 40.55),
-    xytext=(-89.95, 40.62),
-    fontsize=8.5, fontweight='bold', color='#016c59',
-    arrowprops=dict(arrowstyle='->', color='#016c59', lw=1.2, connectionstyle='arc3,rad=-0.12'),
-    bbox=dict(boxstyle='round,pad=0.3', facecolor='#e5f5f9', edgecolor='#016c59', alpha=0.95),
-    zorder=6
-)
-
-# 5. Fast, crystal-clear explanation badge at the top
+# 4. Explanation badge at the top
 badge_text = (
     r"$\mathbf{Area-Weighted\ Aggregation\ (Eq.\ 3.1)}$" + "\n" +
     r"$\bar{X}_{c,t} = \sum_{g=1}^{29} w_{c,g} \, X_{g,t}, \quad \text{with } \sum w_{c,g} = 100\%$" + "\n" +
-    r"Weights: $w_{c,g} = \frac{\mathrm{Area}(c \cap g)}{\mathrm{Area}(c)}$ (exact geometric fraction)"
+    r"Weights: $w_{c,g} = \frac{\mathrm{Area}(c \cap g)}{\mathrm{Area}(c)}$"
 )
 ax_micro.text(
     0.04, 0.96, badge_text,
-    transform=ax_micro.transAxes, fontsize=8.8, verticalalignment='top',
-    bbox=dict(boxstyle='square,pad=0.4', facecolor='white', edgecolor='#08519c', alpha=0.95),
+    transform=ax_micro.transAxes, fontsize=9.2, verticalalignment='top',
+    bbox=dict(boxstyle='square,pad=0.45', facecolor='white', edgecolor='#08519c', alpha=0.95),
     zorder=7
 )
 
-# 6. Clean, self-explanatory legend at bottom right
+# 5. Clean, self-explanatory legend at bottom right
 leg_bound = Line2D([0], [0], color='#01464c', linewidth=2.4, label='County Boundary (Tazewell, IL)')
 leg_grid = Line2D([0], [0], color='#08519c', linestyle='--', linewidth=1.2, label=r'ERA5-Land Grid ($0.1^\circ \approx 9$ km)')
-leg_cells = mpatches.Patch(facecolor='#2b83ba', edgecolor='#08519c', alpha=0.55, label=r'Intersecting Cells ($N=29$, weighted by area)')
+leg_cells = mpatches.Patch(facecolor='#2b83ba', edgecolor='#08519c', alpha=0.55, label='Intersecting Grid Cells (Area-Weighted)')
 
 ax_micro.legend(
     handles=[leg_bound, leg_grid, leg_cells],
     loc='lower right', bbox_to_anchor=(0.98, 0.03),
-    fontsize=8.5, framealpha=0.95, facecolor='white', edgecolor='#cccccc'
+    fontsize=9.0, framealpha=0.95, facecolor='white', edgecolor='#cccccc'
 )
 
 ax_micro.set_xlim(-89.98, -89.20)
@@ -198,8 +187,8 @@ ax_micro.set_ylim(40.22, 40.80)
 ax_micro.set_xlabel(r'Longitude ($^\circ$W)', fontsize=9.5)
 ax_micro.set_ylabel(r'Latitude ($^\circ$N)', fontsize=9.5)
 ax_micro.set_title(
-    r'(b) ERA5-Land $0.1^\circ$ Grid Discretization (Tazewell County, IL)',
-    fontsize=10.5, fontweight='bold', pad=8
+    r'(b) ERA5-Land Grid Discretization: Tazewell County, IL',
+    fontsize=11, fontweight='bold', pad=8
 )
 ax_micro.set_aspect(1.0 / np.cos(np.radians(40.5)))
 

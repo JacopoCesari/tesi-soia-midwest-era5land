@@ -2,17 +2,17 @@
 Generate Figure 3.9:
 "Spatial Contrast of Benchmark Agro-Climatic Shock Archetypes across the Midwestern Corn Belt"
 Layout: 2x2 grid of maps
-- Row 1: 2012 Severe Drought & Heatwave (Adverse Shock: -11.7%)
-- Row 2: 2021 Modern Climatic Optimum (Bumper Harvest: +10.8%)
-- Column 1: July--August Cumulative Net Climatic Water Balance (P - ET0, mm)
-- Column 2: July--August Mean Vapor Pressure Deficit (VPD, kPa)
+- Row 1: 2012 Midsummer Flash Drought (Severe Shock: -11.7% yield anomaly)
+- Row 2: 2016 Modern Climatic Optimum (Bumper Harvest: +10.8% yield anomaly)
+- Column 1: July--August Total Cumulative Precipitation (P, mm) [YlGnBu]
+- Column 2: July--August Mean Daily Maximum Temperature (T_max, °C) [inferno]
 
 Features:
 - Continuous interpolated spatial field (Rbf thin-plate spline, 300x300 grid)
 - 135 study county boundaries overlaid
 - State borders and labels
 - Coordinate graticules
-- Two separate synchronized colorbars (one for Water Balance, one for VPD)
+- Two separate synchronized colorbars (one for Precipitation, one for Maximum Temperature)
 """
 
 import os
@@ -22,7 +22,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib.colors import TwoSlopeNorm, Normalize
+from matplotlib.colors import Normalize
 from scipy.interpolate import Rbf
 import shapely.geometry
 from shapely.ops import unary_union
@@ -73,149 +73,115 @@ mw_boundary = unary_union(gdf_states.geometry)
 gdf_selected['centroid_x'] = gdf_selected.geometry.centroid.x
 gdf_selected['centroid_y'] = gdf_selected.geometry.centroid.y
 
-# Load metrics for the 2 benchmark years: 2012 (drought) and 2021 (bumper)
-years = [2012, 2021]
-metrics = {}
-for y in years:
-    fpath = os.path.join(WEATHER_DIR, f"county_daily_{y}.parquet")
+# Spatial interpolation grid (300 x 300)
+bounds = mw_boundary.bounds  # minx, miny, maxx, maxy
+grid_x, grid_y = np.mgrid[bounds[0]:bounds[2]:300j, bounds[1]:bounds[3]:300j]
+points_in_mw = [shapely.geometry.Point(x, y).within(mw_boundary) for x, y in zip(grid_x.ravel(), grid_y.ravel())]
+mask_mw = np.array(points_in_mw).reshape(grid_x.shape)
+
+state_coords = {'MN': (-94.6, 46.2), 'IA': (-93.6, 42.1), 'MO': (-92.6, 38.6),
+                'IL': (-89.2, 40.0), 'IN': (-86.2, 40.0), 'OH': (-82.7, 40.3)}
+
+def get_metrics(year):
+    fpath = os.path.join(WEATHER_DIR, f"county_daily_{year}.parquet")
     df = pd.read_parquet(fpath)
     df['date'] = pd.to_datetime(df['date'])
     df_ja = df[df['date'].dt.month.isin([7, 8])].copy()
     agg = df_ja.groupby('county_fips').agg({
-        'p_minus_et0': 'sum',
-        'vapor_pressure_deficit': 'mean',
-        'total_precipitation': 'sum'
+        'total_precipitation': 'sum',
+        'air_temperature_maximum': 'mean'
     }).reset_index()
     agg['county_fips'] = agg['county_fips'].astype(str).str.zfill(5)
-    metrics[y] = agg
+    return agg
 
-# Spatial interpolation grid (300 x 300)
-bounds = mw_boundary.bounds  # minx, miny, maxx, maxy
-grid_x, grid_y = np.mgrid[bounds[0]:bounds[2]:300j, bounds[1]:bounds[3]:300j]
-
-points_in_mw = [shapely.geometry.Point(x, y).within(mw_boundary) for x, y in zip(grid_x.ravel(), grid_y.ravel())]
-mask_mw = np.array(points_in_mw).reshape(grid_x.shape)
-
-interp_water = {}
-interp_vpd = {}
-
-for y in years:
-    merged = gdf_selected.merge(metrics[y], left_on='GEOID', right_on='county_fips')
+def interpolate_var(metrics, var_col):
+    merged = gdf_selected.merge(metrics, left_on='GEOID', right_on='county_fips')
     pts = np.vstack([merged['centroid_x'].values, merged['centroid_y'].values]).T
-    
-    # 1. P - ET0
-    vals_wb = merged['p_minus_et0'].values
-    rbf_wb = Rbf(pts[:, 0], pts[:, 1], vals_wb, function='linear', smooth=0.5)
-    grid_wb = rbf_wb(grid_x, grid_y)
-    grid_wb[~mask_mw] = np.nan
-    interp_water[y] = grid_wb
-    
-    # 2. VPD
-    vals_vpd = merged['vapor_pressure_deficit'].values
-    rbf_vpd = Rbf(pts[:, 0], pts[:, 1], vals_vpd, function='linear', smooth=0.5)
-    grid_vpd = rbf_vpd(grid_x, grid_y)
-    grid_vpd[~mask_mw] = np.nan
-    interp_vpd[y] = grid_vpd
+    vals = merged[var_col].values
+    rbf = Rbf(pts[:, 0], pts[:, 1], vals, function='linear', smooth=0.5)
+    grid = rbf(grid_x, grid_y)
+    grid[~mask_mw] = np.nan
+    return grid
 
-print("Interpolation completed!")
+print("Calculating July--August metrics for 2012 and 2016...")
+m2012 = get_metrics(2012)
+m2016 = get_metrics(2016)
 
-# ==============================================================================
-# BUILD FIGURE: 2x2 Grid of Maps + 2 Horizontal Colorbars at Bottom
-# ==============================================================================
-fig = plt.figure(figsize=(13.5, 12.5), dpi=300)
-gs = gridspec.GridSpec(3, 2, height_ratios=[1.0, 1.0, 0.08], hspace=0.22, wspace=0.10,
-                       top=0.95, bottom=0.06, left=0.06, right=0.94)
+grid_p_2012 = interpolate_var(m2012, 'total_precipitation')
+grid_tmax_2012 = interpolate_var(m2012, 'air_temperature_maximum')
+grid_p_2016 = interpolate_var(m2016, 'total_precipitation')
+grid_tmax_2016 = interpolate_var(m2016, 'air_temperature_maximum')
 
-# Color norms
-norm_wb = TwoSlopeNorm(vmin=-250, vcenter=0, vmax=150)
-cmap_wb = plt.cm.RdYlBu
+norm_p = Normalize(vmin=60, vmax=320)
+norm_tmax = Normalize(vmin=26.0, vmax=35.0)
+cmap_p = plt.cm.YlGnBu
+cmap_tmax = plt.cm.inferno
 
-norm_vpd = Normalize(vmin=0.6, vmax=1.8)
-cmap_vpd = plt.cm.YlOrRd
-
-map_configs = [
-    # (row, col, yr, var_type, grid_data, norm, cmap, title, subtitle)
-    (0, 0, 2012, "wb", interp_water[2012], norm_wb, cmap_wb,
-     "(a) 2012 Shock: Net Water Balance ($P - ET_0$)", "Yield Anomaly: −11.7% | Acute Moisture Deficit"),
-    (0, 1, 2012, "vpd", interp_vpd[2012], norm_vpd, cmap_vpd,
-     "(b) 2012 Shock: Evaporative Demand ($VPD$)", "Yield Anomaly: −11.7% | Severe Atmospheric Vapor Deficit"),
-    (1, 0, 2021, "wb", interp_water[2021], norm_wb, cmap_wb,
-     "(c) 2021 Bumper: Net Water Balance ($P - ET_0$)", "Yield Anomaly: +10.8% | Balanced Moisture Replenishment"),
-    (1, 1, 2021, "vpd", interp_vpd[2021], norm_vpd, cmap_vpd,
-     "(d) 2021 Bumper: Evaporative Demand ($VPD$)", "Yield Anomaly: +10.8% | Benign Transpirational Demand")
+configs = [
+    (0, 0, grid_p_2012, norm_p, cmap_p,
+     r'(a) 2012 Flash Drought: July–August Rainfall ($P$)',
+     r'Negative Downside Shock (-11.7%) | Severe Rainfall Collapse (<80 mm in IL & IA)',
+     ([80, 100, 120, 150], '%d', '#334155')),
+    (0, 1, grid_tmax_2012, norm_tmax, cmap_tmax,
+     r'(b) 2012 Flash Drought: July–August Max Temp ($T_{\mathrm{max}}$)',
+     r'Negative Downside Shock (-11.7%) | Extreme Heat Waves (>33°C in Central/South)',
+     ([28, 30, 32, 34], '%.0f°C', '#ffffff')),
+    (1, 0, grid_p_2016, norm_p, cmap_p,
+     r'(c) 2016 Climatic Optimum: July–August Rainfall ($P$)',
+     r'Positive Bumper Harvest (+10.8%) | Abundant Recharge Waves (>260 mm in Core Belt)',
+     ([180, 220, 260, 300], '%d', '#334155')),
+    (1, 1, grid_tmax_2016, norm_tmax, cmap_tmax,
+     r'(d) 2016 Climatic Optimum: July–August Max Temp ($T_{\mathrm{max}}$)',
+     r'Positive Bumper Harvest (+10.8%) | Consistently Mild Regimes (<29°C Region-Wide)',
+     ([27, 28, 29, 30], '%.0f°C', '#ffffff'))
 ]
 
-state_coords = {"MN": (-94.6, 46.2), "IA": (-93.6, 42.1), "MO": (-92.6, 38.6),
-                "IL": (-89.2, 40.0), "IN": (-86.2, 40.0), "OH": (-82.7, 40.3)}
+print("Rendering 2x2 publication figure...")
+fig = plt.figure(figsize=(14.0, 12.5), dpi=300)
+gs = gridspec.GridSpec(3, 2, height_ratios=[1.0, 1.0, 0.07], hspace=0.25, wspace=0.18,
+                       top=0.96, bottom=0.06, left=0.05, right=0.95)
 
-for r, c, yr, vtype, gdata, norm, cmap, title, subtitle in map_configs:
+for r, c, gdata, norm, cmap, title, subtitle, contour_spec in configs:
     ax = fig.add_subplot(gs[r, c])
-    
-    # 1. Background context states
     gdf_context_states.plot(ax=ax, facecolor='#fafafa', edgecolor='#e2e8f0', linewidth=0.5, zorder=1)
-    # Background Midwest counties
     gdf_mw.plot(ax=ax, facecolor='#f8fafc', edgecolor='#cbd5e1', linewidth=0.35, zorder=2)
-    
-    # 2. Continuous field
     cf = ax.contourf(grid_x, grid_y, gdata, levels=35, cmap=cmap, norm=norm, zorder=3, alpha=0.90)
-    
-    # 3. Contour isolines
-    if vtype == "wb":
-        cs = ax.contour(grid_x, grid_y, gdata, levels=[-200, -150, -100, -50, 0, 50, 100],
-                        colors='#334155', linewidths=0.4, linestyles='-', alpha=0.5, zorder=4)
-        cs_zero = ax.contour(grid_x, grid_y, gdata, levels=[0],
-                             colors='#0f172a', linewidths=0.9, linestyles='--', zorder=4)
-        ax.clabel(cs, inline=True, fmt='%d', fontsize=6.5, colors='#1e293b')
-    else:
-        cs = ax.contour(grid_x, grid_y, gdata, levels=[0.8, 1.0, 1.2, 1.4, 1.6],
-                        colors='#475569', linewidths=0.4, linestyles='-', alpha=0.5, zorder=4)
-        cs_stress = ax.contour(grid_x, grid_y, gdata, levels=[1.5],
-                               colors='#7f1d1d', linewidths=0.9, linestyles='--', zorder=4)
-        ax.clabel(cs, inline=True, fmt='%.1f', fontsize=6.5, colors='#0f172a')
-        
-    # 4. Study county boundaries
-    gdf_selected.plot(ax=ax, facecolor='none', edgecolor='#1e293b', linewidth=0.55, zorder=5)
-    
-    # 5. State borders
-    gdf_states.plot(ax=ax, facecolor='none', edgecolor='#0f172a', linewidth=1.0, zorder=6)
-    
-    # State labels
+
+    # Contours
+    if contour_spec:
+        levels, fmt, colors = contour_spec
+        cs = ax.contour(grid_x, grid_y, gdata, levels=levels, colors=colors, linewidths=0.45, alpha=0.55, zorder=4)
+        ax.clabel(cs, inline=True, fmt=fmt, fontsize=7.5)
+
+    gdf_selected.plot(ax=ax, facecolor='none', edgecolor='#1e293b', linewidth=0.60, zorder=5)
+    gdf_states.plot(ax=ax, facecolor='none', edgecolor='#0f172a', linewidth=1.1, zorder=6)
     for st, (sx, sy) in state_coords.items():
-        ax.text(sx, sy, st, fontsize=8.5, fontweight='bold', color='#0f172a', alpha=0.6, ha='center', zorder=7)
-        
+        ax.text(sx, sy, st, fontsize=9.5, fontweight='bold', color='#0f172a', alpha=0.65, ha='center', zorder=7)
+
     ax.set_xlim(-97.3, -80.5)
     ax.set_ylim(36.0, 49.2)
     ax.set_aspect(1.0 / np.cos(np.radians(42.5)))
-    
-    # Graticules
     ax.set_xticks([-96, -92, -88, -84])
-    ax.set_xticklabels([r'$96^\circ\mathrm{W}$', r'$92^\circ\mathrm{W}$', r'$88^\circ\mathrm{W}$', r'$84^\circ\mathrm{W}$'], fontsize=7.5)
+    ax.set_xticklabels([r'$96^\circ\mathrm{W}$', r'$92^\circ\mathrm{W}$', r'$88^\circ\mathrm{W}$', r'$84^\circ\mathrm{W}$'], fontsize=8.5)
     ax.set_yticks([38, 42, 46])
-    ax.set_yticklabels([r'$38^\circ\mathrm{N}$', r'$42^\circ\mathrm{N}$', r'$46^\circ\mathrm{N}$'], fontsize=7.5)
-    ax.grid(True, linestyle=':', alpha=0.40, color='#94a3b8', zorder=1)
-    
-    ax.set_title(title, fontsize=9.8, fontweight='bold', pad=5, color='#0f172a')
-    ax.text(0.5, -0.065, subtitle, transform=ax.transAxes, ha='center', fontsize=7.6, fontstyle='italic', color='#475569')
+    ax.set_yticklabels([r'$38^\circ\mathrm{N}$', r'$42^\circ\mathrm{N}$', r'$46^\circ\mathrm{N}$'], fontsize=8.5)
+    ax.grid(True, linestyle=':', alpha=0.40, color='#94a3b8')
+    ax.set_title(title, fontsize=11.2, fontweight='bold', pad=7)
+    ax.text(0.5, -0.065, subtitle, transform=ax.transAxes, ha='center', fontsize=9.0, fontstyle='italic', color='#334155')
 
-# Bottom Colorbars
-cbar_ax_wb = fig.add_subplot(gs[2, 0])
-sm_wb = plt.cm.ScalarMappable(cmap=cmap_wb, norm=norm_wb)
-sm_wb.set_array([])
-cb_wb = fig.colorbar(sm_wb, cax=cbar_ax_wb, orientation='horizontal')
-cb_wb.set_label(r'July--August Net Climatic Water Balance: $P - ET_0$ (mm)  [Red = Deficit $\leftarrow\rightarrow$ Blue = Surplus]',
-                fontsize=8.5, fontweight='medium', labelpad=4)
-cb_wb.ax.tick_params(labelsize=7.5)
+# Synchronized bottom colorbars
+cbar_ax_left = fig.add_subplot(gs[2, 0])
+cb_l = fig.colorbar(plt.cm.ScalarMappable(cmap=cmap_p, norm=norm_p), cax=cbar_ax_left, orientation='horizontal')
+cb_l.set_label(r'July--August Total Precipitation: $P$ (mm)', fontsize=10.0, fontweight='bold', labelpad=5)
+cb_l.ax.tick_params(labelsize=8.5)
 
-cbar_ax_vpd = fig.add_subplot(gs[2, 1])
-sm_vpd = plt.cm.ScalarMappable(cmap=cmap_vpd, norm=norm_vpd)
-sm_vpd.set_array([])
-cb_vpd = fig.colorbar(sm_vpd, cax=cbar_ax_vpd, orientation='horizontal')
-cb_vpd.set_label(r'July--August Mean Vapor Pressure Deficit: $VPD$ (kPa)  [Yellow = Benign $\leftarrow\rightarrow$ Red = High Stress]',
-                 fontsize=8.5, fontweight='medium', labelpad=4)
-cb_vpd.ax.tick_params(labelsize=7.5)
+cbar_ax_right = fig.add_subplot(gs[2, 1])
+cb_r = fig.colorbar(plt.cm.ScalarMappable(cmap=cmap_tmax, norm=norm_tmax), cax=cbar_ax_right, orientation='horizontal')
+cb_r.set_label(r'July--August Mean Daily Maximum Temperature: $T_{\mathrm{max}}$ ($^\circ\mathrm{C}$)', fontsize=10.0, fontweight='bold', labelpad=5)
+cb_r.ax.tick_params(labelsize=8.5)
 
-os.makedirs(os.path.dirname(OUTPUT_PNG), exist_ok=True)
+print(f"Saving to {OUTPUT_PNG} and {OUTPUT_PDF}...")
 plt.savefig(OUTPUT_PNG, bbox_inches='tight', dpi=300)
 plt.savefig(OUTPUT_PDF, bbox_inches='tight')
 plt.close()
-print(f"Saved 2x2 publication grade Figure 3.9 to:\n  {OUTPUT_PNG}\n  {OUTPUT_PDF}")
+print("Figure 3.9 generation complete!")
