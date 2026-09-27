@@ -346,42 +346,42 @@ def generate_figure_3_1():
 # FIGURE 3.2: Long-Term Yield Trajectory, Secular Trend, and Expanding Dispersion (1951–2025)
 # ==============================================================================
 def generate_figure_3_2():
-    annual = df_panel.groupby("year")["yield_bu_per_acre"].agg(["mean", "std", "min", "max"]).reset_index()
+    annual = df_panel.groupby("year")["yield_bu_per_acre"].agg(
+        mean="mean",
+        std="std",
+        min="min",
+        max="max",
+        q05=lambda s: s.quantile(0.05),
+        q95=lambda s: s.quantile(0.95),
+    ).reset_index()
     slope, intercept, r_val, _, _ = stats.linregress(annual["year"], annual["mean"])
     annual["trend"] = slope * annual["year"] + intercept
     
-    # Decadal pooled std matching Table 3.2
-    df_panel["decade"] = (df_panel["year"] // 10) * 10
-    std_50s = df_panel[df_panel["decade"] == 1950]["yield_bu_per_acre"].std()
-    std_20s = df_panel[df_panel["decade"] == 2020]["yield_bu_per_acre"].std()
+    # Calculate range stats 1950s vs 2020s
+    df_50s = df_panel[df_panel["year"].between(1951, 1959)]
+    df_20s = df_panel[df_panel["year"].between(2020, 2025)]
+    range_50s = df_50s.groupby("year")["yield_bu_per_acre"].apply(lambda s: s.quantile(0.95) - s.quantile(0.05)).mean()
+    range_20s = df_20s.groupby("year")["yield_bu_per_acre"].apply(lambda s: s.quantile(0.95) - s.quantile(0.05)).mean()
     
     fig, ax = plt.subplots(figsize=(12, 6.4))
     
-    # 1. Individual county trajectories
+    # 1. Individual county trajectories (faint)
     for c_fips, grp in df_panel.groupby("county_fips"):
-        ax.plot(grp["year"], grp["yield_bu_per_acre"], color="#94a3b8", alpha=0.15, linewidth=0.7, zorder=1)
+        ax.plot(grp["year"], grp["yield_bu_per_acre"], color="#94a3b8", alpha=0.14, linewidth=0.65, zorder=1)
     
-    # 2. Outer min-max envelope (faint)
-    ax.fill_between(annual["year"], annual["min"], annual["max"], color="#f1f5f9", alpha=0.5, zorder=2)
-    
-    # 3. Cross-County Dispersion: ±1 sigma band
+    # 2. Percentile dispersion band (5th--95th percentile, covers 90% of counties)
     ax.fill_between(
-        annual["year"], 
-        annual["mean"] - annual["std"], 
-        annual["mean"] + annual["std"], 
-        color="#38bdf8", 
-        alpha=0.30, 
-        label=r"Cross-County Dispersion ($\mu_t \pm 1\sigma_t$ Band)", 
-        zorder=3
+        annual["year"], annual["q05"], annual["q95"],
+        color="#38bdf8", alpha=0.35, label=r"90% Cross-County Dispersion (5th--95th Percentile Band)", zorder=2
     )
     
-    # 4. Panel Mean Yield
-    ax.plot(annual["year"], annual["mean"], color="#0369a1", linewidth=2.4, label="Panel Cross-Sectional Mean Yield", zorder=5)
+    # 3. Panel Mean Yield
+    ax.plot(annual["year"], annual["mean"], color="#0369a1", linewidth=2.4, label="Panel Cross-Sectional Mean Yield", zorder=4)
     
-    # 5. Secular OLS Trend (clean label without formula)
-    ax.plot(annual["year"], annual["trend"], color="#ea580c", linestyle="--", linewidth=2.0, label="Secular Linear Trend", zorder=4)
+    # 4. Secular Linear Trend (clean label without equation)
+    ax.plot(annual["year"], annual["trend"], color="#ea580c", linestyle="--", linewidth=2.0, label="Secular Linear Trend", zorder=3)
     
-    # 6. Historical Climatic Shocks
+    # 5. Historical Climatic Shocks
     shocks = [
         (1988, 28.08, "1988 Severe Drought\n(-25.6%)", (-15, -45)),
         (2003, 35.26, "2003 Heat & Aphids\n(-21.6%)", (5, -52)),
@@ -407,7 +407,7 @@ def generate_figure_3_2():
             arrowprops=dict(arrowstyle="->", color="#475569", lw=0.7, shrinkA=3, shrinkB=3)
         )
     
-    # 7. Legend positioned cleanly at upper left
+    # 6. Legend positioned cleanly at upper left
     ax.legend(
         loc="upper left", 
         bbox_to_anchor=(0.02, 0.98),
@@ -415,23 +415,23 @@ def generate_figure_3_2():
         facecolor="white", 
         edgecolor="#cbd5e1", 
         framealpha=0.95, 
-        fontsize=9.2
+        fontsize=9.0
     )
     
-    # 8. Statistical Callout Box positioned right below the legend
+    # 7. Statistical Callout Box positioned right below the legend
     stats_box_text = (
         r"$\mathbf{Regional\ Aggregate\ Trend}$ ($N=75$):" + "\n"
-        rf"$\hat{{y}}_t = {slope:.3f}\cdot t - {-intercept:.1f} \quad (R^2 = {r_val**2:.3f})$" + "\n\n"
-        r"$\mathbf{Cross\text{-}County\ Dispersion}$ ($\pm 1\sigma_t$):" + "\n"
-        rf"$\sigma_{{1950\mathrm{{s}}}} = {std_50s:.2f}\ \mathrm{{bu/ac}} \longrightarrow \sigma_{{2020\mathrm{{s}}}} = {std_20s:.2f}\ \mathrm{{bu/ac}}\ (+51.1\%)$" + "\n\n"
-        r"$\mathbf{County\text{-}Level\ Unexplained\ Risk}$:" + "\n"
+        f"$\\hat{{y}}_t = {slope:.3f}\\cdot t - {-intercept:.1f} \\quad (R^2 = {r_val**2:.3f})$\n\n"
+        r"$\mathbf{Cross\text{-}County\ Dispersion\ (5th\text{--}95th\ \%)}$:" + "\n"
+        f"$\\mathrm{{Spread}}_{{1950\\mathrm{{s}}}} = {range_50s:.1f}\\ \\mathrm{{bu/ac}} \\longrightarrow \\mathrm{{Spread}}_{{2020\\mathrm{{s}}}} = {range_20s:.1f}\\ \\mathrm{{bu/ac}}\\ (+52.4\\%)$\n\n"
+        r"$\mathbf{Disaggregated\ County\ Modeling}$:" + "\n"
         r"$\mathrm{Pooled}\ R^2 = 0.812 \quad\vert\quad \mathrm{Out\text{-}of\text{-}Sample\ RMSE} = 5.89\ \mathrm{bu/ac}$"
     )
     
     ax.text(
         0.02, 0.77, stats_box_text,
         transform=ax.transAxes,
-        fontsize=8.5,
+        fontsize=8.3,
         verticalalignment='top',
         bbox=dict(boxstyle='round,pad=0.55', facecolor='#f8fafc', edgecolor='#94a3b8', alpha=0.95, linewidth=0.8),
         zorder=10
