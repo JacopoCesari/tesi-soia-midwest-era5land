@@ -59,7 +59,9 @@
   - Technical terms in Data Science, Machine Learning, and Econometrics must be rigorous and expert-level.
   - Technical terms in Agrometeorology and Agriculture should be accurate and used strictly where justified, without gratuitous jargon or speculative domain digressions.
   - Define acronyms once upon first occurrence (e.g., *VPD, GDD, OOS, OLS*); use the acronym exclusively thereafter.
+  - Use the standard scientific authorial "we" (*"We evaluate...", "We observe..."*) and active functional subjects (*"The model estimates..."*); avoid singular "I" and convoluted passive constructions.
   - Keep chapter/section transitions telegrafic and functional without conversational preambles.
+
 
 
 ## Scientific constraints

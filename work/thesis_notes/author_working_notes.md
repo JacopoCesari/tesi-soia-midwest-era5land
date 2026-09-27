@@ -130,7 +130,9 @@
   - *Agrometeorology & Climatology:* Precise and technically sound, but used strictly *where justified and necessary* by the thesis topic (e.g., *vapor pressure deficit, phenological stages, evaporative demand, growing degree days, root-zone soil moisture*). Avoid gratuitous jargon or speculative biological/meteorological digressions outside our data and reference catalog (as mandated in Section 7).
 - **Synergy with Global Constraints:** Reinforces the strict 100,000-character ceiling and the visual-first editorial strategy ("Parlare con le Immagini", Section 9): let tables and figures carry empirical detail, keeping prose minimal, punchy, and dense.
 - **Acronym Discipline:** Define acronyms strictly upon first occurrence (e.g., *Vapor Pressure Deficit (VPD)*, *Growing Degree Days (GDD)*, *Out-of-Sample (OOS)*). Thereafter, use strictly the acronym throughout the narrative to conserve character budget and eliminate repetitive phrasing.
+- **Narrative Voice (Academic "We"):** Adopt the standard scientific authorial "we" (*"We evaluate...", "We observe...", "We formulate..."*) paired with direct functional subjects (*"The model estimates...", "Figure 3.2 illustrates..."*). Completely avoid the first-person singular "I" and eschew heavy passive voice constructions.
 - **Functional Section Transitions:** Keep signposting between chapters, sections, and subsections strictly telegrafic and functional (e.g., *"Section 3.2 details panel construction; Section 3.3 presents the detrending baseline."*), completely eliminating verbose conversational preambles.
+
 
 
 

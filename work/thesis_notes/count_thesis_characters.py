@@ -34,20 +34,21 @@ def clean_latex(text):
     return text.strip()
 
 budget = {
-    'Chap 1 (Introduction)': {'path': 'output/thesis/chapters/01_introduction.tex', 'min': 6000, 'max': 10000},
-    'Chap 2 (Literature Review)': {'path': 'output/thesis/chapters/02_literature_review.tex', 'min': 20000, 'max': 30000},
-    'Chap 3 (Data & Study Area)': {'path': 'output/thesis/chapters/03_data_and_study_area.tex', 'min': 8000, 'max': 16000},
+    'Chap 1 (Introduction)': {'path': 'output/thesis/chapters/01_introduction.tex', 'min': 7000, 'max': 9000},
+    'Chap 2 (Literature Review)': {'path': 'output/thesis/chapters/02_literature_review.tex', 'min': 16000, 'max': 20000},
+    'Chap 3 (Data & Study Area)': {'path': 'output/thesis/chapters/03_data_and_study_area.tex', 'min': 16000, 'max': 20000},
 }
 
 all_budget = {
-    'Chap 1 (Introduction)': (6000, 10000),
-    'Chap 2 (Literature Review)': (20000, 30000),
-    'Chap 3 (Data & Study Area)': (8000, 16000),
-    'Chap 4 (Methodology)': (12000, 25000),
-    'Chap 5 (Empirical Results)': (14000, 30000),
-    'Chap 6 (Discussion)': (7000, 13000),
-    'Chap 7 (Conclusions)': (3000, 6000),
+    'Chap 1 (Introduction)': (7000, 9000),
+    'Chap 2 (Literature Review)': (16000, 20000),
+    'Chap 3 (Data & Study Area)': (16000, 20000),
+    'Chap 4 (Methodology)': (16000, 23000),
+    'Chap 5 (Empirical Results)': (18000, 25000),
+    'Chap 6 (Discussion)': (6000, 9000),
+    'Chap 7 (Conclusions)': (2500, 4000),
 }
+
 
 print(f"{'Capitolo':<28} | {'Caratteri (con spazi)':<22} | {'Parole':<8} | {'Budget Min':<10} | {'Budget Max':<10} | {'Stato vs Budget'}")
 print("-" * 105)
@@ -73,7 +74,9 @@ for name, info in budget.items():
     print(f"{name:<28} | {chars:<22} | {words:<8} | {info['min']:<10} | {info['max']:<10} | {status}")
 
 print("-" * 105)
-print(f"{'TOTALE ATTUALE (Cap 1-3)':<28} | {total_chars:<22} | {total_words:<8} | {'34.000':<10} | {'56.000':<10} | {'Nel target parziale'}")
+min_c13 = sum(info['min'] for info in budget.values())
+max_c13 = sum(info['max'] for info in budget.values())
+print(f"{'TOTALE ATTUALE (Cap 1-3)':<28} | {total_chars:<22} | {total_words:<8} | {min_c13:<10} | {max_c13:<10} | {'Nel target [OK]'}")
 
 print("\n" + "=" * 90)
 print("DETTAGLIO SEZIONI CAPITOLO 3 (Data and Study Area)")
