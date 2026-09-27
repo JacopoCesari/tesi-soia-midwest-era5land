@@ -34,6 +34,7 @@ not fabricated historical approval dates. Earlier selection provenance is unavai
 | 2026-09-19 | consolidated | Deliberate chapter boundary separation (Chapters 3--6) | Ensure clear separation between data/EDA (Chap 3), methodology/detrending/split (Chap 4), out-of-sample results (Chap 5), and survivorship/operational discussions (Chap 6) | Manuscript architecture, work/thesis_notes/chapter_boundaries.md |
 | 2026-09-19 | consolidated | Panel selection justified as within-county temporal trade-off | Literature (Schlenker & Roberts 2009; Khaki et al. 2020; Xie et al. 2025; Yin et al. 2026; Sweet et al. 2023) supports prioritizing 75-year within-county temporal depth and extreme events over broader geographic generalization; rejects naive spatial homogeneity assumption | Chapter 3, Sample provenance |
 | 2026-09-19 | consolidated | R²=0.81 trend rationale and extreme shock years benchmark | High explanatory power of secular trend motivates residual anomaly forecasting; unexpected shock years (1988, 2012, 1974, 2003, 1993 and bumper years) cataloged as core testbed for Chapter 5 model stress-testing | Chapter 3 EDA, Chapter 5 evaluation, work/thesis_notes/extreme_years_benchmark.md |
+| 2026-09-27 | scheduled | Re-run weather artifacts upon extraction of 1965–1990 reanalysis | Update Figures 3.7, 3.8 and 3.9 to spotlight 1988 (historic drought -25.6%) and 1974 (-19.7%) once intermediate 1965–1990 daily parquets are extracted | Chapter 3 figures & narrative, work/reports/exploratory_analysis/ |
 
 
 ## Reorganization implementation choices

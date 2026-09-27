@@ -53,6 +53,14 @@
   - When comparative or diagnostic tables synthesize empirical dimensions (such as benchmark comparisons or hyperparameter grids), surrounding text must provide critical commentary and analytical synthesis rather than repeating tabular metrics verbatim.
 - **Density Over Expansion (Non-Proliferation Rule)**:
   - Text revisions must maximize conceptual density, clarity, and grammatical cohesion without expanding word or character counts. Avoid slide-like bullet-point lists where fluent, connected academic prose can express the ideas more cohesively.
+- **Author Voice and Linguistic Register (Lean, Direct C1 English)**:
+  - The author is an Italian data-science MSc student writing in professional C1 English.
+  - Adopt a lean, direct, and "asciutto" (dry) tone. Avoid verbose circumlocutions, nested subordinate clauses, filler transitions, and syntactic complexity ("giri di parole").
+  - Technical terms in Data Science, Machine Learning, and Econometrics must be rigorous and expert-level.
+  - Technical terms in Agrometeorology and Agriculture should be accurate and used strictly where justified, without gratuitous jargon or speculative domain digressions.
+  - Define acronyms once upon first occurrence (e.g., *VPD, GDD, OOS, OLS*); use the acronym exclusively thereafter.
+  - Keep chapter/section transitions telegrafic and functional without conversational preambles.
+
 
 ## Scientific constraints
 

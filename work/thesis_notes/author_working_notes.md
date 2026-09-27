@@ -102,4 +102,36 @@
   - *Section 3.5 & 3.6 (Temporal Structure & Derived Indicators):* Keep `tab_weather_variables.tex` and mathematical definitions.
   - *Section 3.7 & 3.8 (Agro-Climatic EDA & Weather-Yield Sensitivity):* Consolidate the cumulative vs. non-cumulative narrative. Prepare the implementation of the faceted multi-panel spatial comparison ("Small Multiples" of historical shock footprints or compound variables with bottom diagnostic share charts, as defined in Section 8). Eliminate text redundancy between sections.
 
+---
+
+## 11. Planned Re-Run of Agro-Climatic Figures & Maps Upon Full 1950–2025 Reanalysis Availability
+- **Author Directive (Author Review, Sept 2026):** Note explicitly to re-run the daily agrometeorological artifact generation and update the thesis outputs once complete 1950–2025 daily reanalysis is extracted.
+- **Current Interim State:**
+  - Daily county-aggregated ERA5-Land parquets currently cover 50 years: 1950–1964 and 1991–2025.
+  - The intermediate block (1965–1990) is pending full CDS Copernicus extraction.
+  - Figures 3.7 & 3.8 (cumulative & dynamic intra-seasonal curves) currently plot the top post-1990 available benchmarks: Shocks = 2003 (-21.6%), 2012 (-11.7%), 1993 (-10.5%); Bumpers = 2021 (+10.8%), 2016 (+10.8%), 1994 (+10.7%).
+  - Figure 3.9 (spatial 2x2 contrast) currently maps 2012 (drought shock) vs 2021 (bumper).
+- **Execution Checklist When 1965–1990 Daily Data is Available:**
+  1. *Figure 3.9 (Spatial Shock Comparison):* Re-run `work/reports/exploratory_analysis/generate_spatial_shock_comparison_figure.py` to spotlight **1988** (the absolute historical drought benchmark at -25.6%) against **2021** (bumper, +10.8%), providing the definitive historical contrast.
+  2. *Figures 3.7 & 3.8 (Intra-Seasonal Trajectories):* Re-run `work/reports/exploratory_analysis/generate_chapter3_weather_artifacts.py` to incorporate **1988** (full-season compound thermal-drought desiccation) and **1974** (spring planting delay followed by early Arctic freeze truncation) into the shock curves.
+  3. *Chapter 3 Narrative Synchronization:* Update `output/thesis/chapters/03_data_and_study_area.tex` (Section 3.4.2) to discuss the 1988 and 1974 curves and maps directly.
+
+---
+
+## 12. Author Voice & Linguistic Register Guidelines (Author Directive, Sept 2026)
+- **Target Persona & Proficiency:** Italian university graduate student completing an MSc in English (CEFR C1 level).
+- **Core Tone:** Direct, lean, and "asciutto" (dry). Strictly avoid prolixity, academic fluff, rhetorical padding, or convoluted sentence structures ("giri di parole"). Never expand sentence length for its own sake.
+- **Syntactic Simplicity & Clarity:** 
+  - Favor straightforward, punchy subject-verb-object structures and clear active voice.
+  - Eliminate nested relative clauses, unnecessary subordinate branches, and baroque academic transitions (e.g., replace *"It is of paramount importance to highlight the circumstance that..."* with *"Importantly, ..."* or direct factual statements).
+  - Ensure impeccable grammar, academic rigor, and professional polish without resorting to archaic or overly complex literary vocabulary.
+- **Technical Vocabulary Calibration:**
+  - *Data Science, Machine Learning & Econometrics:* Full expert-level depth. The author is a specialist; use precise, formal terminology without dilution (e.g., *out-of-sample expanding window, baseline decoupling, feature leakage, cross-validation, regularization, loss functions, stationarity*).
+  - *Agrometeorology & Climatology:* Precise and technically sound, but used strictly *where justified and necessary* by the thesis topic (e.g., *vapor pressure deficit, phenological stages, evaporative demand, growing degree days, root-zone soil moisture*). Avoid gratuitous jargon or speculative biological/meteorological digressions outside our data and reference catalog (as mandated in Section 7).
+- **Synergy with Global Constraints:** Reinforces the strict 100,000-character ceiling and the visual-first editorial strategy ("Parlare con le Immagini", Section 9): let tables and figures carry empirical detail, keeping prose minimal, punchy, and dense.
+- **Acronym Discipline:** Define acronyms strictly upon first occurrence (e.g., *Vapor Pressure Deficit (VPD)*, *Growing Degree Days (GDD)*, *Out-of-Sample (OOS)*). Thereafter, use strictly the acronym throughout the narrative to conserve character budget and eliminate repetitive phrasing.
+- **Functional Section Transitions:** Keep signposting between chapters, sections, and subsections strictly telegrafic and functional (e.g., *"Section 3.2 details panel construction; Section 3.3 presents the detrending baseline."*), completely eliminating verbose conversational preambles.
+
+
+
 
