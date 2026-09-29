@@ -49,3 +49,8 @@ preflight directories address verified implementation gaps. The area-intersectio
 formula, evaporation permutation and magnitude-guarded unit conversions are retained.
 New output columns use descriptive English names; old artifacts remain unchanged.
 These engineering corrections do not resolve the open scientific decisions above.
+| 2026-09-29 | consolidated | Harvest cutoff: October 31 (end of month) | Complete 12-month campaign; maximises available weather data at H=1 | Feature engineering, horizon definition, data pipeline |
+| 2026-09-29 | consolidated | Lagged yield strictly excluded from all models | Models are pure weather-driven anomaly estimators; no autoregressive yield predictor at any horizon | Feature engineering, model fitting, Chapter 4/5 |
+| 2026-09-29 | consolidated | Pooled R²_OOS as primary metric; year-averaged R²_OOS as secondary/diagnostic | Pooled metric provides stable aggregate evaluation; year-averaged tracks per-season behaviour and stress cohorts | Evaluation, Chapter 5 tables |
+| 2026-09-29 | consolidated | Antecedent weather: campaign-current only, accumulated from November Y-1 forward; H=12 receives zero features | No previous-campaign weather lookback; each horizon ingests exactly the months elapsed in the current campaign | Feature engineering, horizon pipeline |
+| 2026-09-29 | consolidated | Expanding-window partition: 1951–1984 base training / 1985–1995 validation / 1996–2025 test | Definitive three-phase split; first OOS test year is 1996; no further modifications | Validation protocol, Chapter 4/5 |

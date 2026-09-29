@@ -40,18 +40,28 @@ recorded on 2026-09-15. The date records receipt, not an invented earlier approv
   No model family's superiority is assumed.
 
 
-## Open decisions and implementation boundaries
+## Resolved decisions (2026-09-29)
 
-The harvest date, feature lookback start, metric aggregation/conventions, and target
-publication dates are unresolved. A 12-month origin for crop year Y is in Y-1;
-therefore a provisional fold containing Y-1 yield may contain a label unavailable
-at that origin. The splitter is a crop-year grouping utility, not a claim that such
-labels were already published. Resolve that availability rule before model fitting.
+The following previously open decisions are now consolidated by author approval:
+
+- **Harvest cutoff:** October 31. The campaign for yield year Y spans November 1 (Y-1)
+  through October 31 (Y); H=1 ingests weather through end of October.
+- **Feature lookback:** Current campaign only. Each horizon H ingests exactly the
+  months elapsed in the current campaign (November Y-1 onward). No previous-campaign
+  weather lookback. H=12 (forecast at end of November Y-1) receives zero weather
+  features and predicts ε̂=0 (naive secular trend baseline).
+- **Lagged yield:** Strictly excluded. All models are pure weather-driven anomaly
+  estimators with no autoregressive yield predictor at any horizon.
+- **Metric aggregation:** Pooled R²_OOS is the primary evaluation metric (all 4,050
+  residuals in a single denominator). Year-averaged R²_OOS (mean of 30 annual values)
+  is a secondary diagnostic metric for per-season tracking and stress-cohort analysis.
+- **Expanding-window partition:** 1951–1984 base training / 1985–1995 validation /
+  1996–2025 OOS test. First OOS test year is 1996. Definitive; no further changes.
 
 The author explicitly excludes the 1950 yield target: its October 1949–October
 1950 campaign lacks October–December 1949 weather. The first retained campaign is
 October 1950–October 1951. Keep 1950 weather while excluding 1950 yield. Do not
-impute missing pre-1950 weather. The exact harvest day and feature lookback remain open.
+impute missing pre-1950 weather.
 
 Acres-harvested continuity is verified for the selected sample. The author reports
 an earlier acreage exclusion, but its threshold and reference period are unrecovered. See

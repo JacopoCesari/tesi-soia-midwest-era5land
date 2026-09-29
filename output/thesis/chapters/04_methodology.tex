@@ -36,9 +36,9 @@ This operational protocol guarantees zero look-ahead leakage and avoids repeatin
 \subsection{Temporal Resolution Mismatch: Bridging Daily Weather to Annual Scalar Yield}
 \label{sec:meth_temporal_mismatch}
 
-A central methodological challenge in crop yield modeling is the dimensional mismatch between target and predictor temporal resolutions. While the prediction target is a single annual scalar per county ($\epsilon_{c,Y} \in \mathbb{R}$, realized once at harvest), meteorological forcing operates as continuous high-frequency time series, ingested as daily multivariate sequences across a twelve-month campaign window ($K = 17$ agrometeorological indicators, Section~\ref{sec:meth_meteo_pool}).
+A central methodological challenge in crop yield modeling is the dimensional mismatch between target and predictor temporal resolutions. While the prediction target is a single annual scalar per county ($\epsilon_{c,Y} \in \mathbb{R}$, realized once at harvest), meteorological forcing operates as continuous high-frequency time series, ingested as daily multivariate sequences across a twelve-month campaign window ($K = 16$ agrometeorological indicators, Section~\ref{sec:meth_meteo_pool}).
 
-Standard supervised regression algorithms (ElasticNet, Support Vector Regression, Random Forest, XGBoost) require a two-dimensional cross-sectional tabular design matrix where each row represents a single annual county-campaign instance $(c, Y)$ and each column represents a fixed scalar predictor. Ingesting raw daily meteorological series directly across 365 calendar days generates $365 \times 17 \approx 6{,}205$ features per observation. Against a baseline training pool of $N_{\text{train}} \approx 4{,}590$ county-years, this unconstrained parameterization causes severe curse-of-dimensionality pathologies, extreme collinearity across adjacent calendar days, and catastrophic out-of-sample overfitting.
+Standard supervised regression algorithms (ElasticNet, Support Vector Regression, Random Forest, XGBoost) require a two-dimensional cross-sectional tabular design matrix where each row represents a single annual county-campaign instance $(c, Y)$ and each column represents a fixed scalar predictor. Ingesting raw daily meteorological series directly across 365 calendar days generates $365 \times 16 \approx 5{,}840$ features per observation. Against a baseline training pool of $N_{\text{train}} \approx 4{,}590$ county-years, this unconstrained parameterization causes severe curse-of-dimensionality pathologies, extreme collinearity across adjacent calendar days, and catastrophic out-of-sample overfitting.
 
 To bridge this temporal resolution gap while preserving biophysical timing, daily weather fields are aggregated into structured monthly blocks:
 \begin{equation}
@@ -49,7 +49,7 @@ To bridge this temporal resolution gap while preserving biophysical timing, dail
     \end{cases}
     \label{eq:monthly_aggregation_rule}
 \end{equation}
-where $\mathcal{K}_{\text{flux}} = \{P, PE, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35}\}$ denotes flux integrals (cumulative rainfall, solar radiation, heat degree days, and evaporative demands), $\mathcal{K}_{\text{state}} = \{T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}, SM_1, SM_2, SM_3, VPD, SM_{\text{root}}\}$ designates environmental state variables (temperatures, vapor pressure deficit, and multi-layer soil moisture), and $\mathcal{D}_j$ denotes the set of calendar days in campaign month $j \in \{1, \dots, 12\}$. For each elapsed month $j$, this maps daily dynamics into a compact 17-dimensional meteorological summary vector $\mathbf{w}_{c,Y,j} \in \mathbb{R}^{17}$.
+where $\mathcal{K}_{\text{flux}} = \{P, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35}\}$ denotes flux integrals (cumulative rainfall, solar radiation, heat degree days, and evaporative demands), $\mathcal{K}_{\text{state}} = \{T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}, SM_1, SM_2, SM_3, VPD, SM_{\text{root}}\}$ designates environmental state variables (temperatures, vapor pressure deficit, and multi-layer soil moisture), and $\mathcal{D}_j$ denotes the set of calendar days in campaign month $j \in \{1, \dots, 12\}$. For each elapsed month $j$, this maps daily dynamics into a compact 16-dimensional meteorological summary vector $\mathbf{w}_{c,Y,j} \in \mathbb{R}^{16}$.
 
 \subsection{Crop Campaign Timeline and Multi-Horizon Feature Expansion}
 \label{sec:meth_timeline_horizons}
@@ -66,16 +66,16 @@ Feature dimensionality expands as meteorological records accumulate:
     P_H = 
     \begin{cases}
         P_{\text{geo}} = 2, & \text{for } H = 12 \quad (m = 1, \text{ zero weather}) \\[1ex]
-        P_{\text{geo}} + K \cdot m = 2 + 17 \cdot m, & \text{for } H \in \{11, \dots, 1\} \quad (m = 2, \dots, 12)
+        P_{\text{geo}} + K \cdot m = 2 + 16 \cdot m, & \text{for } H \in \{11, \dots, 1\} \quad (m = 2, \dots, 12)
     \end{cases}
     \label{eq:feature_dimension_formula}
 \end{equation}
 This schedule structures information accumulation:
 \begin{itemize}
     \item \textbf{Horizon $H = 12$ ($m = 1$, Nov 30): Zero-Weather Benchmark.} Ingests spatial coordinates only ($P_{12} = 2, P_{\text{met}} = 0$). Candidate models output $\hat{\epsilon}_{c,Y}^{(12)} = 0$, establishing the unaugmented secular trend baseline ($\hat{y}_{c,Y}^{(12)} = \hat{\tau}_{c,Y}$, $R^2_{\text{OOS}} = 0$).
-    \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather from Month 1 through Month $m$, expanding feature dimensionality from $P_{11} = 36$ to $P_1 = 206$ in October.
+    \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather from Month 1 through Month $m$, expanding feature dimensionality from $P_{11} = 34$ to $P_1 = 194$ in October.
 \end{itemize}
-This formulation evaluates whether antecedent autumn recharge ($H = 11$) provides genuine predictive skill or overfitting noise relative to the secular baseline, while mapping the exact lead time where weather forcing dominates historical trend inertia. Bounding dimensionality to $P_1 = 206$ ensures numerical stability across all tabular estimators.
+This formulation evaluates whether antecedent autumn recharge ($H = 11$) provides genuine predictive skill or overfitting noise relative to the secular baseline, while mapping the exact lead time where weather forcing dominates historical trend inertia. Bounding dimensionality to $P_1 = 194$ ensures numerical stability across all tabular estimators.
 
 \subsection{Direct Horizon-Specific Modeling Paradigm}
 \label{sec:meth_direct_horizon}
@@ -90,7 +90,7 @@ where $\mathbf{\Theta}_H$ denotes the horizon-specific parameter vector. Direct 
 \subsection{Pooled Cross-Sectional Panel Framework}
 \label{sec:meth_pooled_panel}
 
-All candidate models are estimated within a pooled cross-sectional panel framework across all $C = 135$ counties simultaneously. Separate county-by-county estimation with 34 to 74 annual training observations causes immediate parameter collapse ($P_H > T$) and severe variance inflation against multi-horizon feature vectors containing up to 206 variables. Pooling scales sample size to $N_{\text{train}} = 135 \times |\mathcal{T}_{\text{train}}(Y)|$ observations ($N_{\text{train}} = 4{,}590$ on the baseline 1951--1984 partition, expanding to $9{,}990$ at fold 30). This large sample size regularizes parameter estimation while generating county-specific forecasts through localized meteorological trajectories and continuous spatial coordinates.
+All candidate models are estimated within a pooled cross-sectional panel framework across all $C = 135$ counties simultaneously. Separate county-by-county estimation with 34 to 74 annual training observations causes immediate parameter collapse ($P_H > T$) and severe variance inflation against multi-horizon feature vectors containing up to 194 variables. Pooling scales sample size to $N_{\text{train}} = 135 \times |\mathcal{T}_{\text{train}}(Y)|$ observations ($N_{\text{train}} = 4{,}590$ on the baseline 1951--1984 partition, expanding to $9{,}990$ at fold 30). This large sample size regularizes parameter estimation while generating county-specific forecasts through localized meteorological trajectories and continuous spatial coordinates.
 
 % ==============================================================================
 % SECTION 4.2: SPATIAL COVARIATES AND INPUT REPRESENTATION
@@ -119,9 +119,9 @@ Administrative state dummies are excluded. Political state borders do not reflec
 \subsection{Agrometeorological Predictor Space and Functional Partitioning}
 \label{sec:meth_meteo_pool}
 
-The meteorological predictor space builds upon the $K = 17$ daily environmental indicators derived from ECMWF ERA5-Land reanalysis in Section~\ref{sec:data_derived_weather} and cataloged in Table~\ref{tab:weather_variables}. For empirical estimation, we formalize their functional partitioning:
+The meteorological predictor space builds upon the $K = 16$ daily environmental indicators derived from ECMWF ERA5-Land reanalysis in Section~\ref{sec:data_derived_weather} and cataloged in Table~\ref{tab:weather_variables}. For empirical estimation, we formalize their functional partitioning:
 \begin{enumerate}
-    \item \textbf{Flux Integrals ($\mathcal{K}_{\text{flux}}$, 8 variables):} Total precipitation ($P$), potential evaporation ($PE$), surface solar radiation downwards ($SSRD$), reference evapotranspiration ($ET_0$), climatic water balance ($P - ET_0$), growing degree days ($GDD$), moderate heat days ($HD_{30}$), and extreme heat days ($HD_{35}$). These indicators represent volumetric and energy accumulation, aggregated via cumulative summation over temporal windows (Eq.~\eqref{eq:monthly_aggregation_rule}).
+    \item \textbf{Flux Integrals ($\mathcal{K}_{\text{flux}}$, 7 variables):} Total precipitation ($P$), surface solar radiation downwards ($SSRD$), reference evapotranspiration ($ET_0$), climatic water balance ($P - ET_0$), growing degree days ($GDD$), moderate heat days ($HD_{30}$), and extreme heat days ($HD_{35}$). These indicators represent volumetric and energy accumulation, aggregated via cumulative summation over temporal windows (Eq.~\eqref{eq:monthly_aggregation_rule}).
     \item \textbf{Environmental State Variables ($\mathcal{K}_{\text{state}}$, 9 variables):} Daily mean, maximum, minimum, and dewpoint temperatures ($T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}$), volumetric soil water across three horizons ($SM_1, SM_2, SM_3$), vapor pressure deficit ($VPD$), and root-zone soil moisture ($SM_{\text{root}}$). These indicators reflect continuous background ambient stress, aggregated via arithmetic time-averaging (Eq.~\eqref{eq:monthly_aggregation_rule}).
 \end{enumerate}
 This functional grouping maps daily physical reanalysis directly into structured feature matrices without narrative duplication across chapters.
@@ -129,7 +129,7 @@ This functional grouping maps daily physical reanalysis directly into structured
 \subsection{Methodological Trade-offs in Temporal Aggregation Granularity}
 \label{sec:meth_aggregation_tradeoffs}
 
-\citet{Xie2025} and \citet{Yinetal2026} establish that sub-monthly pentad (5-day) and decad (10-day) aggregations capture short-duration heat waves and heavy precipitation events that are smoothed within monthly means. However, in tabular modeling architectures where temporal blocks are concatenated horizontally across columns (Eq.~\eqref{eq:tabular_feature_vector}), sub-monthly partitions induce rapid feature explosion: a 73-pentad schedule yields $2 + 17 \times 73 = 1{,}243$ features, inducing severe multicollinearity and variance inflation on historical sample sizes \citep{Sharmaetal2025, Hoffman2020}. Monthly blocks maintain dimensional stability ($P_H \le 206$). To evaluate high-frequency sequential dynamics without expanding column dimensions, we deploy sequential deep architectures within the candidate portfolio.
+\citet{Xie2025} and \citet{Yinetal2026} establish that sub-monthly pentad (5-day) and decad (10-day) aggregations capture short-duration heat waves and heavy precipitation events that are smoothed within monthly means. However, in tabular modeling architectures where temporal blocks are concatenated horizontally across columns (Eq.~\eqref{eq:tabular_feature_vector}), sub-monthly partitions induce rapid feature explosion: a 73-pentad schedule yields $2 + 16 \times 73 = 1{,}170$ features, inducing severe multicollinearity and variance inflation on historical sample sizes \citep{Sharmaetal2025, Hoffman2020}. Monthly blocks maintain dimensional stability ($P_H \le 194$). To evaluate high-frequency sequential dynamics without expanding column dimensions, we deploy sequential deep architectures within the candidate portfolio.
 
 % ==============================================================================
 % SECTION 4.3: CANDIDATE FORECASTING MODELS AND COMPLEXITY LADDER
@@ -201,20 +201,20 @@ We specify two complementary tree ensembles:
 \subsection{Sequential Deep Learning: Long Short-Term Memory Network}
 \label{sec:meth_lstm}
 
-While tabular algorithms require flattened two-dimensional design matrices $\mathbf{x}_{c,Y}^{(H)} \in \mathbb{R}^{P_H}$ where temporal blocks expand horizontally across columns (reaching $P_1 = 206$ features), sequential deep architectures decouple feature dimensionality from temporal sequence length \citep{Khaki2020, Shooketal2021}. 
+While tabular algorithms require flattened two-dimensional design matrices $\mathbf{x}_{c,Y}^{(H)} \in \mathbb{R}^{P_H}$ where temporal blocks expand horizontally across columns (reaching $P_1 = 194$ features), sequential deep architectures decouple feature dimensionality from temporal sequence length \citep{Khaki2020, Shooketal2021}. 
 
 Instead of concatenating monthly blocks into expanding feature vectors, the Long Short-Term Memory (LSTM) network operates natively on a three-dimensional sequence tensor:
 \begin{equation}
     \mathbf{X}^{(H)} \in \mathbb{R}^{N_{\text{train}} \times T_H \times K}
     \label{eq:tensor_dimensions}
 \end{equation}
-where $N_{\text{train}}$ is sample size, $T_H = 13 - H = m$ is sequence length across elapsed campaign months, and $K = 17$ represents the fixed channel count corresponding directly to the physical agrometeorological indicators. This architectural separation yields two structural advantages:
+where $N_{\text{train}}$ is sample size, $T_H = 13 - H = m$ is sequence length across elapsed campaign months, and $K = 16$ represents the fixed channel count corresponding directly to the physical agrometeorological indicators. This architectural separation yields two structural advantages:
 \begin{enumerate}
-    \item \textbf{Dimensional Invariance Across Horizons:} The input feature dimension remains strictly fixed at $K = 17$ across all lead times. Temporal progression is traversed sequentially along the sequence dimension $t \in \{1, \dots, T_H\}$, preventing parameter inflation and avoiding the curse of dimensionality.
+    \item \textbf{Dimensional Invariance Across Horizons:} The input feature dimension remains strictly fixed at $K = 16$ across all lead times. Temporal progression is traversed sequentially along the sequence dimension $t \in \{1, \dots, T_H\}$, preventing parameter inflation and avoiding the curse of dimensionality.
     \item \textbf{Flexible Temporal Granularity:} The network processes sequential paths natively, enabling evaluation across alternative temporal frequencies (monthly steps, sub-monthly pentads, or continuous multi-day trajectories) without modifying model parameter dimensions.
 \end{enumerate}
 
-At each sequence step $t \in \{1, \dots, T_H\}$, the recurrent cell ingests the meteorological vector $\mathbf{w}_t \in \mathbb{R}^{17}$ and updates its memory state through gated recurrent transitions:
+At each sequence step $t \in \{1, \dots, T_H\}$, the recurrent cell ingests the meteorological vector $\mathbf{w}_t \in \mathbb{R}^{16}$ and updates its memory state through gated recurrent transitions:
 \begin{align}
     \mathbf{f}_t &= \sigma\left(\mathbf{W}_f \mathbf{w}_t + \mathbf{U}_f \mathbf{h}_{t-1} + \mathbf{b}_f\right) \label{eq:lstm_f} \\
     \mathbf{i}_t &= \sigma\left(\mathbf{W}_i \mathbf{w}_t + \mathbf{U}_i \mathbf{h}_{t-1} + \mathbf{b}_i\right) \label{eq:lstm_i} \\

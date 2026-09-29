@@ -20,6 +20,7 @@ data/raw/era5_land/arco_cache/
 work/scratch/
 data/processed/model_datasets/*
 !data/processed/model_datasets/README.md
+!data/processed/model_datasets/feature_manifest.json
 *.nc
 *.nc.part
 *.grib

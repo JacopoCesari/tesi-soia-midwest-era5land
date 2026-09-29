@@ -132,9 +132,9 @@ While major shortfalls are primarily associated with midsummer drought and heat,
 
 We derive meteorological inputs from ECMWF ERA5-Land, which provides continuous hourly surface weather fields at a $0.1^\circ \times 0.1^\circ$ resolution ($\approx 9\text{ km}$) from 1950 to 2025.
 
-Our ingestion pipeline processes \textbf{37 raw physical variables} covering atmospheric states, radiation fluxes, and multilayer soil profiles. Fields such as surface pressure ($SP$) and 10-meter wind vectors ($u_{10}, v_{10}$) serve as intermediate inputs to calculate standardized FAO-56 Penman-Monteith reference evapotranspiration ($ET_0$) with complete thermodynamic consistency.
+The hourly ECMWF ERA5-Land reanalysis provides a comprehensive suite of atmospheric and land-surface fields. From this broader catalogue, raw variables such as surface pressure ($SP$) and 10-meter horizontal wind vectors ($u_{10}, v_{10}$) serve strictly as intermediate thermodynamic inputs to compute standardized FAO-56 Penman-Monteith reference evapotranspiration ($ET_0$, Eq.~\eqref{eq:penman_monteith}) and vapor pressure deficit ($VPD$, Eq.~\eqref{eq:vpd}). Deep soil horizons beyond mature soybean taproot depths ($SM_4 > 1\text{ m}$), soil temperatures (strongly collinear with ambient air temperatures), and snowpack dynamics are excluded a priori to prevent dimensionality inflation and avoid introducing uninformative predictors during the summer vegetative cycle.
 
-In total, we retain \textbf{17 daily agrometeorological variables} capturing the biophysical drivers of soybean yield (Table~\ref{tab:weather_variables}): 10 primary surface fields describing thermal regimes, precipitation, radiation, and root-zone soil moisture (Panel~A), and 7 derived bioclimatic indicators quantifying evaporative demand, thermal pacing, and extreme heat stress (Panel~B).
+In total, we retain a parsimonious set of \textbf{16 daily agrometeorological indicators} capturing the biophysical determinants of Midwestern soybean yields (Table~\ref{tab:weather_variables}): 9 primary surface fields describing thermal pacing, precipitation, solar radiation, and root-accessible soil water layers (Panel~A), and 7 derived bioclimatic indicators isolating atmospheric drying power, cumulative water deficits, and compound heat stress (Panel~B).
 
 \input{tables/tab_weather_variables}
 
