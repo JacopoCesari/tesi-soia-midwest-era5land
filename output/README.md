@@ -61,7 +61,7 @@ validate_balanced_panel(target, "yield_bu_per_acre",
 ```
 
 In the full workspace, `python scripts/prepare_thesis_data.py` reproduces or
-verifies the target and auxiliaries using original sources under `../work/data/`.
+verifies the target and auxiliaries using original sources under `data/raw/`.
 It never rewrites sources or silently replaces conflicting prepared files.
 
 ## Weather acquisition

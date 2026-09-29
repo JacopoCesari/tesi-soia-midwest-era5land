@@ -9,17 +9,44 @@ from soybean_yield_forecasting.data.panel import validate_balanced_panel
 
 
 def test_source_files_preserved_byte_for_byte(project_root):
-    entries = json.loads(
-        (project_root / "../work/data/external/file_migration.json").read_text(encoding="utf-8")
-    )
+    migration_path = project_root / "../data/raw/usda_nass/file_migration.json"
+    if not migration_path.exists():
+        migration_path = project_root / "../work/data/external/file_migration.json"
+    entries = json.loads(migration_path.read_text(encoding="utf-8"))
     assert len(entries) == 40
     for entry in entries:
-        path = project_root.parent / entry["new_path"]
+        rel = (
+            entry["new_path"]
+            .replace(
+                "work/data/external/usda_nass_and_county_boundaries/census_counties",
+                "data/raw/census_counties",
+            )
+            .replace(
+                "work/data/external/usda_nass_and_county_boundaries",
+                "data/raw/usda_nass",
+            )
+            .replace(
+                "work/data/external/supplied_candidate_counties.csv",
+                "data/raw/usda_nass/supplied_candidate_counties.csv",
+            )
+            .replace("work/data/external", "data/raw/usda_nass")
+            .replace("work/data/raw/era5_land", "data/raw/era5_land")
+            .replace("work/data/interim/spatial_weights", "data/auxiliary")
+            .replace(
+                "work/data/interim/county_daily_weather/supplied_preflight",
+                "data/weather/supplied_preflight",
+            )
+        )
+        path = project_root.parent / rel
+        if not path.exists():
+            path = project_root.parent / entry["new_path"]
         assert hashlib.sha256(path.read_bytes()).hexdigest() == entry["sha256"], str(path)
 
 
 def test_primary_panel_continuity_and_optional_separation(project_root):
-    external = project_root / "../work/data/external/usda_nass_and_county_boundaries"
+    external = project_root / "../data/raw/usda_nass"
+    if not external.exists():
+        external = project_root / "../work/data/external/usda_nass_and_county_boundaries"
     yield_file = external / "soybean_yield_479_counties_1950_2025.xlsx"
     acreage_file = external / "soybean_acres_479_counties_1950_2025.xlsx"
     yields = read_survey(yield_file, "yield_bu_per_acre", "historical")

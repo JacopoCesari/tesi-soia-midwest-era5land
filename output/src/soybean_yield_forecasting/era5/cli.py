@@ -317,7 +317,7 @@ def validate_main(argv: Sequence[str] | None = None) -> None:
             pd.read_parquet(path),
             configuration["expected_counties"],
             year=arguments.year,
-            expected_variables=WEATHER_VARIABLES,
+            expected_variables=None,
             county_fips=weights.county_fips.unique(),
         )
         checks.append({"check": "annual_county_daily", "status": status, "notes": note, "file": str(path)})

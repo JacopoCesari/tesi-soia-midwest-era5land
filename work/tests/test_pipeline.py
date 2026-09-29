@@ -15,10 +15,10 @@ from soybean_yield_forecasting.era5.variables import ACCUMULATED_VARIABLES
 
 def test_leap_year_calendar_validation() -> None:
     """Test leap year calendar validation."""
-    dates_common = pd.date_range("1950-01-01", "1950-12-31", freq="D")
+    dates_common = pd.date_range("1951-01-01", "1951-12-31", freq="D")
     assert len(dates_common) == 365
     ds_common = xr.Dataset(coords={"valid_time": dates_common})
-    status, notes = validate_era5_dataset(ds_common, year=1950, is_preflight=False)
+    status, notes = validate_era5_dataset(ds_common, year=1951, is_preflight=False)
     assert status == "PASS"
     dates_leap = pd.date_range("1952-01-01", "1952-12-31", freq="D")
     assert len(dates_leap) == 366
@@ -119,7 +119,9 @@ def test_channel_b_request_field_count() -> None:
 
 def test_spatial_weights_integrity(project_root) -> None:
     """Test spatial weights integrity."""
-    weights_path = project_root / "../work/data/interim/spatial_weights/spatial_weights_479_counties.parquet"
+    weights_path = project_root / "../data/auxiliary/spatial_weights_479_counties.parquet"
+    if not weights_path.exists():
+        weights_path = project_root / "../work/data/interim/spatial_weights/spatial_weights_479_counties.parquet"
     assert weights_path.exists()
     df_w = pd.read_parquet(weights_path)
     assert len(df_w) == 11953

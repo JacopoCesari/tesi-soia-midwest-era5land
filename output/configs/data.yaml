@@ -1,24 +1,24 @@
-# Paths are relative to the parent of this configs directory.
+# Paths are relative to the parent of this configs directory (output/).
 paths:
   repository_root: ..
-  external: ../work/data/external/usda_nass_and_county_boundaries
-  target: data/target/soybean_yield_1951_2025.csv
-  counties: data/auxiliary/counties.csv
-  acreage: data/auxiliary/acres_harvested_1951_2025.csv
-  provenance: data/auxiliary/panel_provenance.json
-  raw: ../work/data/raw/era5_land/production
-  preflight: ../work/data/raw/era5_land/preflight
-  supplied_preflight: ../work/data/raw/era5_land/supplied_preflight
-  output: ../work/data/interim/county_daily_weather/production
-  preflight_output: ../work/data/interim/county_daily_weather/preflight
-  weights: data/auxiliary/spatial_weights.csv
-  supplied_weights: ../work/data/interim/spatial_weights/spatial_weights_479_counties.parquet
-  historical_manifest: ../work/data/raw/era5_land/manifest.csv
-  migration_map: ../work/data/external/file_migration.json
+  external: ../data/raw/usda_nass
+  target: ../data/target/soybean_yield_1951_2025.csv
+  counties: ../data/auxiliary/counties.csv
+  acreage: ../data/auxiliary/acres_harvested_1951_2025.csv
+  provenance: ../data/auxiliary/panel_provenance.json
+  raw: ../data/raw/era5_land
+  preflight: ../data/raw/era5_land/preflight
+  supplied_preflight: ../data/raw/era5_land/supplied_preflight
+  output: ../data/weather/daily_counties
+  preflight_output: ../data/weather/preflight
+  weights: ../data/auxiliary/spatial_weights.csv
+  supplied_weights: ../data/auxiliary/spatial_weights_479_counties.parquet
+  historical_manifest: ../data/raw/era5_land/manifest.csv
+  migration_map: ../data/raw/usda_nass/file_migration.json
   quality_reports: ../work/reports/experiments/quality_control
   feature_manifest: configs/feature_manifest_37.yaml
-  arco_cache: ../work/data/raw/era5_land/arco_cache
-  arco_inventory: ../work/data/raw/era5_land/arco_inventory.json
+  arco_cache: ../data/raw/era5_land/arco_cache
+  arco_inventory: ../data/raw/era5_land/arco_inventory.json
 arco:
   base_url: "https://arco.datastores.ecmwf.int"
   store_type: "geoChunked"

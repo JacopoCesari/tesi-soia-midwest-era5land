@@ -77,7 +77,7 @@ def prepare(configuration: dict) -> dict:
     contents["provenance"] = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
     # Check every conflict and source hash before writing any derived file.
     for key, content in contents.items():
-        if paths[key].exists() and paths[key].read_bytes() != content:
+        if paths[key].exists() and paths[key].read_bytes().replace(b"\r\n", b"\n") != content.replace(b"\r\n", b"\n"):
             raise FileExistsError(f"Different derived data already exists: {paths[key]}")
     for key, path in sources.items():
         if hashlib.sha256(path.read_bytes()).hexdigest() != source_hashes[key]:

@@ -6,7 +6,7 @@ from soybean_yield_forecasting.era5.pipeline import run_year
 from soybean_yield_forecasting.era5.schema import WEATHER_VARIABLES
 
 
-@pytest.mark.parametrize("year,days", [(1950, 365), (1952, 366)])
+@pytest.mark.parametrize("year,days", [(1951, 365), (1952, 366)])
 def test_complete_year_requests_boundary_aggregation_and_resume(tmp_path, fake_cds, year, days, monkeypatch):
     weights = tmp_path / "weights.parquet"
     pd.DataFrame({"county_fips": ["17001"], "lat": [40.0], "lon": [-90.0], "weight": [1.0]}).to_parquet(

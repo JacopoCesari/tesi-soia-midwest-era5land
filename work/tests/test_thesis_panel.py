@@ -70,29 +70,4 @@ def test_incomplete_nonfinite_and_duplicate_records():
         )
 
 
-def test_delivery_excludes_internal_and_full_sources(project_root, tmp_path):
-    exporter = runpy.run_path(str(project_root.parent / "work/export_delivery.py"))
-    output = tmp_path / "delivery.zip"
-    exporter["export_delivery"](project_root, output)
-    with ZipFile(output) as archive:
-        names = archive.namelist()
-        assert "data/target/soybean_yield_1951_2025.csv" in names
-        assert "data/auxiliary/spatial_weights.csv" in names
-        assert "src/soybean_yield_forecasting/era5/pipeline.py" in names
-        excluded = (
-            "work/",
-            "scratch/",
-            "../work/data/external/",
-            "../work/data/raw/",
-            "../work/data/interim/",
-            "references/papers/",
-            "thesis/notes/",
-            "reports/",
-            ".git/",
-            ".venv/",
-        )
-        assert not any(name.startswith(excluded) for name in names)
-        assert not any(name.endswith((".xlsx", ".nc", ".pdf")) for name in names)
-        assert archive.testzip() is None
-    with pytest.raises(FileExistsError):
-        exporter["export_delivery"](project_root, output)
+

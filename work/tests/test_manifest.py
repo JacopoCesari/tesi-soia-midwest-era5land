@@ -25,9 +25,15 @@ def test_missing_checksum_cannot_pass_verification(tmp_path):
 
 
 def test_historical_manifest_resolves_after_migration(project_root):
+    manifest_path = project_root / "../data/raw/era5_land/manifest.csv"
+    if not manifest_path.exists():
+        manifest_path = project_root / "../work/data/raw/era5_land/manifest.csv"
+    map_path = project_root / "../data/raw/usda_nass/file_migration.json"
+    if not map_path.exists():
+        map_path = project_root / "../work/data/external/file_migration.json"
     manifest = ManifestManager(
-        project_root / "../work/data/raw/era5_land/manifest.csv",
-        path_map=project_root / "../work/data/external/file_migration.json",
+        manifest_path,
+        path_map=map_path,
         repository_root=project_root.parent,
         read_only=True,
     )

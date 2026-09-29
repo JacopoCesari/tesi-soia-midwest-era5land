@@ -8,30 +8,62 @@
 
 ## 1. Deferred Methodological Decisions (To Resolve in Chapter 5)
 
-### A. Target Priority: Continuous Regression vs. Regime Classification
-*   **Current State:** Both continuous yield anomalies and 3-class categorical regimes (shortfall, normal, bumper) are introduced in Chapter 1 and formalized in Chapter 4.
-*   **Pending Action:** Once out-of-sample empirical runs are completed in Chapter 5, assess whether regime classification provides distinct operational signal or earlier lead-time skill. If redundant, drop or streamline to a secondary ablation before final thesis delivery.
+### A. Target Selection: Pure Continuous Anomaly Regression (Classification Excluded)
+*   **Decision (2026-09-28):** Categorical regime classification is formally excluded from the modeling pipeline. The research design focuses 100% on continuous detrended yield anomaly regression ($\epsilon_{c,Y}$).
+*   **Rationale:** Eliminates arbitrary discretization thresholds, avoids splitting validation metrics across multiple loss paradigms, and ensures direct comparability with core literature benchmarks (Chen & Zhang 2026, Khaki et al. 2020).
+*   **Tail-Risk Evaluation:** Rather than training separate discrete classifiers, the ability to anticipate extreme climate shocks is evaluated directly by stress-testing the continuous regression predictions against historical shock cohorts (Table 3.4 cohorts: 1988, 2012, 1993, 2016).
+*   **Validation Interval (Consolidated 2026-09-28):** Three-phase temporal partition: Initial baseline training spans 1951–1984 ($N=34$ years, $4,590$ observations). Hyperparameter validation spans 1985–1995 ($N_{\text{val}}=11$ years, $1,485$ observations), achieving an equitable balance across climatic regimes with 6 positive anomaly campaigns (1985, 1986, 1987, 1990, 1992, 1994) and 5 negative anomaly campaigns (1988 drought, 1989, 1991, 1993 flood, 1995). Out-of-sample expanding-window testing spans 1996–2025 ($N_{\text{test}}=30$ crop years, $4,050$ blind evaluations per lead time; 17 positive, 13 negative), evaluating modern shock years (2003, 2012 drought, 2004, 2016 bumper). Primary loss function is $\text{RMSE}$ on detrended anomaly.
 
-### B. Table 3.4 (Historical Yield Shocks and Macro-Climatic Benchmarks)
-*   **Current State:** Positioned provisionally in Chapter 3 (`tab_yield_shocks.tex`) listing the major historical shortfall ($\le -10\%$) and bumper ($\ge +10\%$) cohorts.
-*   **Pending Action:** Evaluate in Chapter 5 whether to retain this table in Chapter 3 or relocate/merge it directly into Chapter 5, where candidate models are stress-tested against these exact historical shock cohorts.
+### B. Final Candidate Model Portfolio and Data Representation Paradigms
+*   **Decision (2026-09-28):** The candidate model portfolio is streamlined into four complementary families, avoiding redundant variants:
+    1.  *Reference Baselines:* Pure Naive Trend ($\hat{\epsilon}_{c,Y}=0$, $R^2_{\text{OOS}}=0$ at Month 1 with 0 weather) and Autoregressive Lagged Yield ($y_{t-1}$, lagged to $Y-2$ for $H \ge 8$).
+    2.  *Linear Regularized:* ElasticNet (unifying $L_1$ sparsity and $L_2$ collinearity grouping into a single convex objective).
+    3.  *Margin/Kernel Non-Linear:* Support Vector Regression (SVR) with RBF kernel and $\epsilon$-insensitive loss (constructs smooth continuous response surfaces matching plant physiology and ignores minor weather noise).
+    4.  *Tree Ensembles:* Random Forest (bagging, variance reduction) and XGBoost (gradient boosting with shrinkage and leaf regularization).
+    5.  *Sequential Deep Learning:* LSTM (Long Short-Term Memory) recurrent neural network (processes sequence dynamics; 1D-CNN and GRU referenced as alternative sequence architectures).
+*   **Data Representation Paradigms:**
+    *   *Horizon-Specific Direct Forecasting:* At each monthly origin $H \in \{12 \dots 1\}$, an independent model instance $\mathcal{M}_H$ is calibrated on the information set $\mathcal{I}_H$ available up to that cutoff.
+    *   *Continuous Spatial Coordinates ($P_{\text{geo}}=2$):* County centroid coordinates ($\text{Lat}_c, \text{Lon}_c$) are normalized and included as continuous spatial covariates. Administrative state dummies are explicitly excluded to prevent artificial boundary discontinuities across contiguous bioclimatic zones.
+    *   *2D Tabular Flattening (ElasticNet, SVR, RF, XGBoost):* Features are concatenated into monthly aggregated blocks ($17 \times m$ features) plus the 2 spatial coordinates ($P_H = 2 + 17 \times m$), avoiding feature explosion from ultra-high frequency tabular windows.
+    *   *3D Sequence Tensor (LSTM):* Native $[N, T, 17]$ sequence representation, where hidden state $h_T$ summarizes the growing season progression into a scalar prediction.
+*   **Hyperparameter Tuning Strategy (Single-Pass Grid Search):**
+    *   To prevent look-ahead bias and human data-snooping leakage, hyperparameter calibration uses an automated **Single-Pass Grid Search** defined a priori and executed strictly inside inner expanding-window validation folds.
+    *   *Grid specifications:* ElasticNet (25 combinations: $\lambda \in \{10^{-3}, 10^{-2}, 10^{-1}, 1, 10\}$, $\alpha \in \{0.1, 0.3, 0.5, 0.7, 0.9\}$); SVR (27 combinations: $C \in \{0.5, 2, 10\}$, $\epsilon \in \{0.1, 0.5, 1.0\}$, $\gamma \in \{0.1, 1, 5\} \times \gamma_{\text{scale}}$); Random Forest (27 combinations: trees=300, `max_features` $\in \{\text{'sqrt'}, 0.33, 0.5\}$, `min_samples_leaf` $\in \{5, 15, 30\}$, `max_depth` $\in \{8, 12, \text{None}\}$); XGBoost (16 combinations: $\eta \in \{0.03, 0.08\}$, depth $\in \{3, 5\}$, colsample $\in \{0.6, 0.8\}$, $\lambda \in \{1, 10\}$).
 
-### C. Horizon Progression & Pure Naive Trend Baseline ($H=12$ to $H=1$)
-*   **Campaign Start & Origin Cutoff ($H=12$):** Evaluated on October 31 of Year $Y-1$ (12 calendar months before the October 31 harvest reference of Year $Y$).
-*   **Zero-Weather Naive Benchmark at $H=12$:**
-    *   At $H=12$, the model ingests **zero weather data** from the new crop campaign.
-    *   The prediction relies solely on the historical secular trend ($\hat{y}_{c,Y} = \text{Trend}_c(Y)$, or predicted detrended anomaly $\hat{\epsilon}_{c,Y} = 0$).
-    *   This provides a clean, rigorous, naive benchmark against which all subsequent weather-informed horizons are directly benchmarked.
-*   **Progressive Monthly Weather Accumulation ($H=11, \dots, 1$):**
-    *   At each subsequent monthly origin, incoming observed weather data is progressively added to the cumulative information set:
-        *   $H=11$ (November 30): 1 month of antecedent weather (November).
-        *   $H=10$ (December 31): 2 months (Nov–Dec).
-        *   $H=9, \dots, 7$ (Jan–Mar): 3 to 5 months (overwinter recharge).
-        *   $H=6$ (April 30): 6 months (Nov–Apr, overwinter recharge + pre-sowing baseline).
-        *   $H=5, 4$ (May–Jun): 7 to 8 months (sowing and vegetative development).
-        *   $H=3, 2$ (Jul–Aug): 9 to 10 months (critical flowering and pod-filling).
-        *   $H=1$ (September 30): 11 months (Nov–Sep, physiological maturity prior to harvest).
-    *   **Methodological Value:** Isolates the marginal value of information (MVI) as developmental stages unfold, empirically demonstrating the exact lead-time horizon where meteorological signals statistically separate from the pure trend baseline.
+### C. Table 3.4 (Historical Yield Shocks and Macro-Climatic Benchmarks)
+*   **Current State:** Positioned in Chapter 3 (`tab_yield_shocks.tex`) listing the major historical shortfall ($\le -10\%$) and bumper ($\ge +10\%$) cohorts.
+*   **Pending Action:** Directly referenced in Chapter 4 for out-of-sample tail-risk stress testing and evaluated in Chapter 5.
+
+### C. Horizon Progression, Pure Naive Trend Baseline, and Error-Only Anomaly Modeling
+*   **Crop Campaign Definition (12 Months):** For target harvest year $Y$, the campaign spans exactly 12 calendar months from **November 1 of Year $Y-1$ to October 31 of Year $Y$**.
+*   **Sequential Monthly Horizons & Weather Accumulation:**
+    *   Forecasts are generated month-by-month through the campaign, with each horizon evaluated at the end of the corresponding campaign month.
+    *   **Month 1 (End of November $Y-1$, $H=12$ lead months): 0 weather data ingested.**
+        *   Even though Month 1 (November) has elapsed, the model is deliberately supplied with **zero meteorological data**.
+        *   The prediction relies strictly on the historical secular trend ($\hat{y}_{c,Y} = \tau_{c,Y}$, or predicted anomaly $\hat{\epsilon}_{c,Y} = 0$).
+        *   This serves as the pure, unaugmented **naive baseline** for the new campaign.
+    *   **Month 2 (End of December $Y-1$, $H=11$ lead months): 2 months of cumulative weather (Nov + Dec $Y-1$).**
+        *   The model receives 2 months of observed weather (Months 1 and 2).
+        *   *Empirical test:* Evaluates whether having 2 months of distant antecedent autumn/early-winter weather delivers genuine out-of-sample predictive skill over the 0-data naive baseline ($R^2_{\text{OOS}} > 0$), or whether it merely introduces noise and overfitting ($R^2_{\text{OOS}} < 0$, $\text{RMSE} > \text{RMSE}_{\text{naive}}$).
+    *   **Month 3 (End of January $Y$, $H=10$):** 3 months (Nov–Jan).
+    *   **Month 4 (End of February $Y$, $H=9$):** 4 months (Nov–Feb).
+    *   **Month 5 (End of March $Y$, $H=8$):** 5 months (Nov–Mar).
+    *   **Month 6 (End of April $Y$, $H=7$):** 6 months (Nov–Apr, overwinter hydrological recharge + pre-sowing soil profile).
+    *   **Month 7 (End of May $Y$, $H=6$):** 7 months (Nov–May, sowing window).
+    *   **Month 8 (End of June $Y$, $H=5$):** 8 months (Nov–Jun, vegetative emergence & canopy development).
+    *   **Month 9 (End of July $Y$, $H=4$):** 9 months (Nov–Jul, critical flowering & early pod set).
+    *   **Month 10 (End of August $Y$, $H=3$):** 10 months (Nov–Aug, peak reproductive pod-filling).
+    *   **Month 11 (End of September $Y$, $H=2$):** 11 months (Nov–Sep, physiological maturity).
+    *   **Month 12 (End of October $Y$, $H=1$ / Harvest):** 12 months (Nov–Oct, complete 12-month campaign observed weather).
+*   **Modeling Strictly on Detrended Anomaly Error:**
+    *   Observed yield is decomposed as $y_{c,Y} = \tau_{c,Y} + \epsilon_{c,Y}$, where $\tau_{c,Y}$ is the deterministic trend estimated strictly train-only.
+    *   All statistical, econometric, and ML models are trained **strictly to predict the anomaly $\epsilon_{c,Y}$**.
+    *   Out-of-sample performance metrics (RMSE, MAE, $R^2_{\text{OOS}}$) are computed **directly on the anomaly error** $\hat{\epsilon}_{c,Y} - \epsilon_{c,Y}$ (or equivalently relative to $\tau_{c,Y}$).
+    *   Because the secular trend accounts for over 80% of raw yield variance, evaluating metrics on raw yield would artificially inflate performance even with zero weather data.
+    *   Evaluating directly on $\epsilon$ ensures:
+        *   At **Month 1 (Naive, 0 data)**: $\hat{\epsilon} = 0 \implies \text{RMSE}_{\text{naive}} = \sigma(\epsilon)$ and $R^2_{\text{OOS}} = 0.0$.
+        *   At **Month 2 (2 months data)**: $R^2_{\text{OOS}} < 0$ cleanly reveals whether early distant data causes out-of-sample degradation due to overfitting, while $R^2_{\text{OOS}} > 0$ establishes genuine early signal.
+        *   Tracking the monthly progression from Month 1 to Month 12 maps the exact lead-time threshold where meteorological information begins yielding statistically significant predictive value beyond the naive baseline.
 
 ---
 
@@ -76,3 +108,19 @@ The primary bibliography is strictly closed to the 13 papers in `Literature.zip`
         *   `fig_weather_shocks_footprint.pdf` (Figure 3.8)
         *   `fig_spatial_shock_comparison.pdf` (Figure 3.9)
         *   `fig_climate_yield_sensitivity.pdf` (Figure 3.10)
+
+---
+
+## 5. Post-Chapter 4 Execution Roadmap
+
+With the formalization of Chapter 4 (`Methodology`), the sequential pipeline transitioning from methodological design to machine learning model execution and empirical results generation is documented in detail in:
+*   [`work/thesis_notes/modeling_execution_roadmap.md`](file:///c:/Users/JacopoCesari-Aret%C3%A9sr/Desktop/Tesi/work/thesis_notes/modeling_execution_roadmap.md)
+
+Key milestones:
+1.  **Gate 0**: Verification of Chapter 4 character budget (16k–19k chars via `count_thesis_characters.py`) and LaTeX zero-error compilation.
+2.  **Step 1**: Machine learning environment configuration (`scikit-learn`, `xgboost`, `torch`).
+3.  **Step 2**: Feature matrix assembly across 12 monthly horizons from ERA5-Land daily parquets (`build_feature_matrices.py`).
+4.  **Step 3**: Train-only hermetic OLS detrending and feature standardization module.
+5.  **Step 4**: Single-Pass Grid Search across the 1985–1995 balanced validation partition (11 years, 1,485 obs).
+6.  **Step 5**: Expanding-window out-of-sample evaluation across 1996–2025 (30 years, 4,050 evaluations) and export of performance artifacts.
+7.  **Step 6**: Drafting Chapter 5 (`05_empirical_results.tex`).

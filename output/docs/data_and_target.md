@@ -42,8 +42,7 @@ is the author's design priority, not demonstrated predictive superiority.
 ## Preserved complete source exports
 
 Original workbooks and Census boundaries remain under
-`../work/data/external/usda_nass_and_county_boundaries/`, byte for byte unchanged and excluded
-from the professor delivery ZIP. Both workbooks contain **35,487 SURVEY records**
+`data/raw/`, byte for byte unchanged. Both workbooks contain **35,487 SURVEY records**
 in `all_years_survey`: 29,219 historical rows and 6,268 available 2011–2025 rows.
 The 25,362 observations outside the new selected panel are preserved there.
 

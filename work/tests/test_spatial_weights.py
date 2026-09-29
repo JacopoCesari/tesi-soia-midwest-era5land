@@ -6,7 +6,9 @@ from soybean_yield_forecasting.era5.spatial_weights import load_spatial_weights
 
 
 def test_supplied_weight_formats_match(project_root):
-    directory = project_root / "../work/data/interim/spatial_weights"
+    directory = project_root / "../data/auxiliary"
+    if not (directory / "spatial_weights_479_counties.parquet").exists():
+        directory = project_root / "../work/data/interim/spatial_weights"
     parquet = load_spatial_weights(directory / "spatial_weights_479_counties.parquet")
     csv = load_spatial_weights(directory / "spatial_weights_479_counties.csv")
     pd.testing.assert_frame_equal(parquet, csv, check_exact=False, rtol=1e-10, atol=1e-14)
