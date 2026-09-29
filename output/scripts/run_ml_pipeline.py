@@ -1,16 +1,23 @@
-"""ML forecasting pipeline: tabular models only (no LSTM).
+"""ML forecasting pipeline: tabular models only (no SVR, no LSTM).
 
-Models: Naive Trend baseline, ElasticNet, SVR (RBF), Random Forest, XGBoost.
-Protocol:
+Models:
+  - Naive Trend baseline
+  - ElasticNet (regularized linear)
+  - RandomForest (bagging trees)
+  - XGBoost (gradient boosted trees)
+
+Validation & Testing Protocol:
   - Train-only OLS detrending per county per fold.
   - Train-only feature standardization.
-  - Single-pass grid search on 1985-1995 validation partition.
-  - Expanding-window OOS evaluation: 1996-2025 (30 folds, 4,050 evaluations/horizon).
+  - Hyperparameter tuning via chronological expanding window across the 1985-1995 validation partition (11 folds).
+  - Out-of-sample expanding-window evaluation: 1996-2025 (30 folds, 4,050 evaluations/horizon).
   - Primary metric: pooled R2_OOS. Secondary: year-averaged R2_OOS.
 
 Outputs:
   output/data/processed/hyperparameters_optimal.json  -- best hyperparams per model x horizon
   output/data/processed/evaluation_metrics.parquet    -- all metrics per model x horizon x year
+  output/data/processed/evaluation_summary.csv        -- consolidated metric table
+  output/data/processed/evaluation_summary.parquet    -- parquet version of summary
   output/data/processed/predictions.parquet           -- raw predictions for SHAP and figures
 """
 
@@ -27,7 +34,6 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import ElasticNet
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
 
@@ -49,9 +55,9 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 BASE_TRAIN_START = 1951
 BASE_TRAIN_END   = 1984   # inclusive
 VAL_START        = 1985
-VAL_END          = 1995   # inclusive
+VAL_END          = 1995   # inclusive (11 years)
 TEST_START       = 1996
-TEST_END         = 2025   # inclusive
+TEST_END         = 2025   # inclusive (30 years)
 
 # ---------------------------------------------------------------------------
 # Hyperparameter grids (from Chapter 4, Table 4.3)
@@ -59,19 +65,31 @@ TEST_END         = 2025   # inclusive
 GRIDS: dict[str, list[dict]] = {
     "ElasticNet": [
         {"alpha": a, "l1_ratio": l1}
-        for a, l1 in product([1e-3, 1e-2, 1e-1, 1.0, 10.0], [0.1, 0.3, 0.5, 0.7, 0.9])
-    ],  # 25 combinations
-    "SVR": [
-        {"C": C, "epsilon": eps, "gamma_factor": gf}
-        for C, eps, gf in product([0.5, 2.0, 10.0], [0.1, 0.5, 1.0], [0.1, 1.0, 5.0])
-    ],  # 27 combinations
+        for a, l1 in product([0.01, 0.05, 0.1, 0.5, 1.0, 5.0], [0.1, 0.3, 0.5, 0.7, 0.9])
+    ],  # 30 combinations
     "RandomForest": [
         {"max_features": mf, "min_samples_leaf": ml, "max_depth": md}
-        for mf, ml, md in product(["sqrt", 0.33, 0.5], [5, 15, 30], [8, 12, None])
-    ],  # 27 combinations
+        for mf, ml, md in product(["sqrt", 0.33, 0.5], [5, 20], [8, 14, None])
+    ],  # 18 combinations
     "XGBoost": [
-        {"learning_rate": lr, "max_depth": md, "colsample_bytree": cs, "reg_lambda": rl}
-        for lr, md, cs, rl in product([0.03, 0.08], [3, 5], [0.6, 0.8], [1.0, 10.0])
+        {
+            "learning_rate": lr,
+            "max_depth": md,
+            "colsample_bytree": cs,
+            "subsample": ss,
+            "reg_lambda": rl,
+            "reg_alpha": ra,
+            "min_child_weight": mcw,
+        }
+        for lr, md, cs, ss, rl, ra, mcw in product(
+            [0.03, 0.06],      # 2 learning rates
+            [3, 5],            # 2 tree depths
+            [0.7],             # feature fraction per tree
+            [0.8],             # stochastic row subsampling
+            [1.0, 5.0],        # L2 ridge penalty
+            [0.0, 0.5],        # L1 lasso penalty on leaves
+            [3],               # minimum child weight to suppress leaf noise
+        )
     ],  # 16 combinations
 }
 
@@ -141,20 +159,19 @@ def skill_score(rmse_model: float, rmse_naive: float) -> float:
 # Model factory
 # ---------------------------------------------------------------------------
 
-def make_model(name: str, params: dict, gamma_scale: float = 1.0):
+def make_model(name: str, params: dict, for_tuning: bool = False):
     if name == "ElasticNet":
         return ElasticNet(
             alpha=params["alpha"],
             l1_ratio=params["l1_ratio"],
-            max_iter=5000,
+            max_iter=1000,
+            tol=1e-3,
             random_state=42,
         )
-    elif name == "SVR":
-        gamma = params["gamma_factor"] * gamma_scale
-        return SVR(kernel="rbf", C=params["C"], epsilon=params["epsilon"], gamma=gamma)
     elif name == "RandomForest":
+        n_trees = 60 if for_tuning else 150
         return RandomForestRegressor(
-            n_estimators=300,
+            n_estimators=n_trees,
             max_features=params["max_features"],
             min_samples_leaf=params["min_samples_leaf"],
             max_depth=params["max_depth"],
@@ -162,13 +179,16 @@ def make_model(name: str, params: dict, gamma_scale: float = 1.0):
             n_jobs=-1,
         )
     elif name == "XGBoost":
+        n_trees = 150 if for_tuning else 300
         return XGBRegressor(
-            n_estimators=400,
+            n_estimators=n_trees,
             learning_rate=params["learning_rate"],
             max_depth=params["max_depth"],
             colsample_bytree=params["colsample_bytree"],
+            subsample=params.get("subsample", 0.8),
             reg_lambda=params["reg_lambda"],
-            subsample=0.8,
+            reg_alpha=params.get("reg_alpha", 0.0),
+            min_child_weight=params.get("min_child_weight", 3),
             random_state=42,
             verbosity=0,
             n_jobs=-1,
@@ -178,47 +198,39 @@ def make_model(name: str, params: dict, gamma_scale: float = 1.0):
 
 
 # ---------------------------------------------------------------------------
-# Gamma scale helper for SVR
+# Expanding-window grid search on validation partition (1985-1995)
 # ---------------------------------------------------------------------------
 
-def compute_gamma_scale(X_train: np.ndarray) -> float:
-    n_features = X_train.shape[1]
-    var_mean = float(np.var(X_train, ddof=1)) if X_train.shape[0] > 1 else 1.0
-    if n_features == 0 or var_mean == 0:
-        return 1.0
-    return 1.0 / (n_features * var_mean)
-
-
-# ---------------------------------------------------------------------------
-# Single-pass grid search on validation partition
-# ---------------------------------------------------------------------------
-
-def grid_search_validation(
+def grid_search_validation_expanding(
     model_name: str,
-    X_base_train: np.ndarray,
-    y_base_train: np.ndarray,
-    X_val: np.ndarray,
-    y_val: np.ndarray,
-    scaler: StandardScaler,
+    val_folds: list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]],
 ) -> dict:
-    """Search over pre-specified grid; return params minimising val RMSE."""
-    gamma_scale = compute_gamma_scale(X_base_train)
+    """Evaluate candidate parameter sets using chronological expanding window across the 11 validation folds.
+    
+    Returns parameter dict minimising pooled validation RMSE.
+    """
     best_params = None
     best_rmse   = float("inf")
 
-    X_base_sc = scaler.transform(X_base_train)
-    X_val_sc  = scaler.transform(X_val)
-
     for params in GRIDS[model_name]:
-        model = make_model(model_name, params, gamma_scale=gamma_scale)
+        preds_all = []
+        trues_all = []
         try:
-            model.fit(X_base_sc, y_base_train)
-            y_pred = model.predict(X_val_sc)
-            val_rmse = rmse(y_val, y_pred)
+            for X_tr_sc, y_tr, X_va_sc, y_va in val_folds:
+                model = make_model(model_name, params, for_tuning=True)
+                model.fit(X_tr_sc, y_tr)
+                y_hat = model.predict(X_va_sc)
+                preds_all.append(y_hat)
+                trues_all.append(y_va)
+            
+            y_pred_pooled = np.concatenate(preds_all)
+            y_true_pooled = np.concatenate(trues_all)
+            val_rmse = rmse(y_true_pooled, y_pred_pooled)
+
             if val_rmse < best_rmse:
                 best_rmse   = val_rmse
-                best_params = {**params, "gamma_scale": gamma_scale}
-        except Exception:
+                best_params = params
+        except Exception as e:
             continue
 
     return best_params if best_params is not None else GRIDS[model_name][0]
@@ -230,7 +242,7 @@ def grid_search_validation(
 
 def run_pipeline(horizons: list[int] | None = None) -> None:
     t0 = time.time()
-    print("=== ML Pipeline (tabular models, no LSTM) ===", flush=True)
+    print("=== ML Pipeline: Tabular Models (Naive, ElasticNet, RandomForest, XGBoost) ===", flush=True)
 
     # Load target
     yield_df = pd.read_csv(TARGET_CSV)
@@ -242,14 +254,14 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
     base_train_years = [y for y in all_years if BASE_TRAIN_START <= y <= BASE_TRAIN_END]
     val_years        = [y for y in all_years if VAL_START <= y <= VAL_END]
     test_years       = [y for y in all_years if TEST_START <= y <= TEST_END]
-    print(f"Base train: {len(base_train_years)}yr | Val: {len(val_years)}yr | Test: {len(test_years)}yr", flush=True)
+    print(f"Base train: {len(base_train_years)}yr | Val expanding: {len(val_years)}yr | Test expanding: {len(test_years)}yr", flush=True)
 
-    MODEL_NAMES = ["ElasticNet", "SVR", "RandomForest", "XGBoost"]
+    MODEL_NAMES = ["ElasticNet", "RandomForest", "XGBoost"]
     if horizons is None:
         horizons = list(range(1, 13))
 
     # Storage
-    all_optimal_params: dict = {}   # model -> H -> params
+    all_optimal_params: dict = {}   # H -> model -> params
     all_metrics: list[dict] = []
     all_predictions: list[dict] = []
 
@@ -270,12 +282,10 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
         panel = panel.sort_values(["year", "county_fips"]).reset_index(drop=True)
 
         feature_cols = [c for c in feat_df.columns if c not in ("county_fips", "year")]
+
         # H=12: only lat_norm, lon_norm — no weather features
         if H == 12:
-            # Naive baseline only: predict anomaly=0 everywhere
             print(f"  H=12: Naive baseline (0 weather features)", flush=True)
-            # Compute naive metrics on test set
-            trend_params_full = fit_county_trends(yield_df, all_years[:all_years.index(TEST_START)])
             for test_y in test_years:
                 train_yrs = [y for y in all_years if y < test_y]
                 tp = fit_county_trends(yield_df, train_yrs)
@@ -306,37 +316,42 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
 
         # --- For H < 12 ---
 
-        # Step A: Fit scaler + best hyperparams on base-train -> validation
-        base_train_panel = panel[panel["year"].isin(base_train_years)]
-        val_panel        = panel[panel["year"].isin(val_years)]
+        # Step A: Build 11 validation folds using chronological expanding window
+        print(f"  Building {len(val_years)} expanding validation folds (1985-1995)...", end=" ", flush=True)
+        t_fold = time.time()
+        val_folds: list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = []
+        for y_val in val_years:
+            train_yrs = [y for y in all_years if y < y_val]
+            train_panel = panel[panel["year"].isin(train_yrs)]
+            val_panel   = panel[panel["year"] == y_val]
 
-        # Train-only detrending for base_train + val
-        all_train_val_years = base_train_years + val_years
-        trend_params_tv = fit_county_trends(yield_df, all_train_val_years)
-        base_anom = compute_anomalies(base_train_panel, trend_params_tv)
-        val_anom  = compute_anomalies(val_panel,        trend_params_tv)
+            tp = fit_county_trends(yield_df, train_yrs)
+            train_anom = compute_anomalies(train_panel, tp)
+            val_anom   = compute_anomalies(val_panel,   tp)
 
-        X_base = base_anom[feature_cols].values.astype(float)
-        y_base = base_anom["anomaly"].values.astype(float)
-        X_val  = val_anom[feature_cols].values.astype(float)
-        y_val  = val_anom["anomaly"].values.astype(float)
+            X_tr = train_anom[feature_cols].values.astype(float)
+            y_tr = train_anom["anomaly"].values.astype(float)
+            X_va = val_anom[feature_cols].values.astype(float)
+            y_va = val_anom["anomaly"].values.astype(float)
 
-        # Train-only scaler
-        scaler_gs = StandardScaler()
-        scaler_gs.fit(X_base)
+            scaler_val = StandardScaler().fit(X_tr)
+            val_folds.append((scaler_val.transform(X_tr), y_tr, scaler_val.transform(X_va), y_va))
+        print(f"done ({time.time()-t_fold:.2f}s)", flush=True)
 
+        # Step B: Expanding-window grid search across validation folds
         optimal_params: dict[str, dict] = {}
         for model_name in MODEL_NAMES:
-            print(f"  Grid search {model_name} ({len(GRIDS[model_name])} configs)...", end=" ", flush=True)
+            print(f"  Grid search {model_name} ({len(GRIDS[model_name])} configs x 11 folds)...", end=" ", flush=True)
             t_gs = time.time()
-            best = grid_search_validation(model_name, X_base, y_base, X_val, y_val, scaler_gs)
+            best = grid_search_validation_expanding(model_name, val_folds)
             optimal_params[model_name] = best
             print(f"done ({time.time()-t_gs:.1f}s) | best: {best}", flush=True)
 
         all_optimal_params[H] = optimal_params
 
-        # Step B: Expanding-window OOS evaluation (1996-2025)
-        gamma_scale = compute_gamma_scale(X_base)
+        # Step C: Expanding-window OOS evaluation (1996-2025, 30 years)
+        print(f"  Evaluating expanding-window OOS across 1996-2025 (30 test years)...", end=" ", flush=True)
+        t_test = time.time()
 
         for test_y in test_years:
             train_yrs = [y for y in all_years if y < test_y]
@@ -384,7 +399,7 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
             # ML models
             for model_name in MODEL_NAMES:
                 params = optimal_params[model_name]
-                model = make_model(model_name, params, gamma_scale=gamma_scale)
+                model = make_model(model_name, params, for_tuning=False)
                 try:
                     model.fit(X_tr_sc, y_tr)
                     y_pred = model.predict(X_te_sc)
@@ -408,7 +423,7 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
                         "trend": float(row.trend),
                     })
 
-        print(f"  H={H} OOS evaluation complete.", flush=True)
+        print(f"done ({time.time()-t_test:.1f}s)", flush=True)
 
     # ---------------------------------------------------------------------------
     # Compute pooled R2_OOS across all test years per (model, H)
@@ -480,7 +495,6 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
 
 
 if __name__ == "__main__":
-    # Allow running specific horizons: python run_ml_pipeline.py 1 2 3
     if len(sys.argv) > 1:
         horizons_arg = [int(x) for x in sys.argv[1:]]
         run_pipeline(horizons=horizons_arg)

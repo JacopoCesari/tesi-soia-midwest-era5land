@@ -34,17 +34,17 @@ This benchmark quantifies the irreducible anomaly variability that meteorologica
 \textbf{Horizon} & \textbf{Cutoff Date} & \textbf{Best Model} & \textbf{RMSE (bu/ac)} & \textbf{MAE (bu/ac)} & $\boldsymbol{R^2_{\text{OOS}}}$ & \textbf{Skill (\%)} \\
 \midrule
 $H = 12$ & Nov 30 ($Y-1$) & Naive Baseline & 5.94 & 4.77 & 0.000 & 0.0\% \\
-$H = 11$ & Dec 31 ($Y-1$) & SVR (RBF)      & 5.90 & 4.67 & +0.014 & +0.7\% \\
-$H = 10$ & Jan 31 ($Y$)   & SVR (RBF)      & 5.91 & 4.69 & +0.012 & +0.6\% \\
-$H = 9$  & Feb 28 ($Y$)   & SVR (RBF)      & 5.89 & 4.69 & +0.017 & +0.9\% \\
-$H = 8$  & Mar 31 ($Y$)   & SVR (RBF)      & 5.85 & 4.64 & +0.030 & +1.5\% \\
-$H = 7$  & Apr 30 ($Y$)   & SVR (RBF)      & 5.83 & 4.61 & +0.039 & +2.0\% \\
-$H = 6$  & May 31 ($Y$)   & SVR (RBF)      & 5.82 & 4.61 & +0.040 & +2.0\% \\
-$H = 5$  & Jun 30 ($Y$)   & ElasticNet     & 5.75 & 4.56 & +0.064 & +3.2\% \\
-$H = 4$  & Jul 31 ($Y$)   & ElasticNet     & 5.60 & 4.40 & +0.114 & +5.9\% \\
-$H = 3$  & Aug 31 ($Y$)   & XGBoost        & 5.34 & 4.16 & +0.194 & +10.2\% \\
-$H = 2$  & Sep 30 ($Y$)   & ElasticNet     & \textbf{5.29} & \textbf{4.19} & \textbf{+0.208} & \textbf{+11.0\%} \\
-$H = 1$  & Oct 31 ($Y$)   & ElasticNet     & 5.31 & 4.16 & +0.202 & +10.6\% \\
+$H = 11$ & Dec 31 ($Y-1$) & Naive Baseline & 5.94 & 4.77 & 0.000 & 0.0\% \\
+$H = 10$ & Jan 31 ($Y$)   & Naive Baseline & 5.94 & 4.77 & 0.000 & 0.0\% \\
+$H = 9$  & Feb 28 ($Y$)   & Naive Baseline & 5.94 & 4.77 & 0.000 & 0.0\% \\
+$H = 8$  & Mar 31 ($Y$)   & Naive Baseline & 5.94 & 4.77 & 0.000 & 0.0\% \\
+$H = 7$  & Apr 30 ($Y$)   & Naive Baseline & 5.94 & 4.77 & 0.000 & 0.0\% \\
+$H = 6$  & May 31 ($Y$)   & XGBoost        & 5.87 & 4.65 & +0.023 & +1.2\% \\
+$H = 5$  & Jun 30 ($Y$)   & ElasticNet     & 5.74 & 4.54 & +0.068 & +3.4\% \\
+$H = 4$  & Jul 31 ($Y$)   & ElasticNet     & 5.59 & 4.38 & +0.116 & +6.0\% \\
+$H = 3$  & Aug 31 ($Y$)   & ElasticNet     & 5.34 & 4.20 & +0.193 & +10.2\% \\
+$H = 2$  & Sep 30 ($Y$)   & ElasticNet     & \textbf{5.27} & \textbf{4.13} & \textbf{+0.213} & \textbf{+11.3\%} \\
+$H = 1$  & Oct 31 ($Y$)   & XGBoost        & 5.30 & 4.14 & +0.205 & +10.8\% \\
 \bottomrule
 \end{tabularx}
 \vspace{0.2em}
@@ -56,9 +56,9 @@ $H = 1$  & Oct 31 ($Y$)   & ElasticNet     & 5.31 & 4.16 & +0.202 & +10.6\% \\
 
 The central empirical question is the lead time at which observed weather first delivers statistically significant positive skill over the naive secular trend ($R^2_{\text{OOS}} > 0$, $\text{Skill}_{\text{RMSE}} > 0$). We define the \textit{skill emergence horizon} $H^*$ as the earliest horizon where candidate models achieve $R^2_{\text{OOS}} > 0$ and the Diebold-Mariano test rejects the null of equal accuracy at the 5\% significance level.
 
-The empirical trajectory reveals a distinct two-stage emergence profile. Across early antecedent horizons ($H \in \{11, \dots, 8\}$, December $Y-1$ through March $Y$), tree ensembles and linear estimators suffer from variance inflation on high-dimensional noise ($R^2_{\text{OOS}} < 0$), whereas SVR with an RBF kernel and $\epsilon$-insensitive loss extracts modest positive skill ($R^2_{\text{OOS}} \approx 0.012$--$0.030$), reflecting winter soil moisture recharge. True operational skill emergence consolidates at the onset of vegetative growth ($H = 6$, May 31), where all candidate architectures cross the zero-skill threshold ($R^2_{\text{OOS}} > 0$). 
+The empirical trajectory reveals a distinct two-stage emergence profile. Across early antecedent horizons ($H \in \{11, \dots, 7\}$, December $Y-1$ through April $Y$), meteorological variables contain no actionable signal for end-of-season yield anomalies: tree ensembles and regularized estimators yield negative out-of-sample $R^2_{\text{OOS}}$, making the naive secular trend the optimal predictor. Operational skill emergence begins at the onset of vegetative growth ($H = 6$, May 31), where XGBoost crosses into positive territory ($R^2_{\text{OOS}} = +0.023$, $\text{Skill}_{\text{RMSE}} = +1.2\%$), capturing initial soil thermal conditions and planting moisture.
 
-As the reproductive phase unfolds, predictive skill accelerates sharply. Ingesting July weather ($H = 4$, July 31, R1--R3 flowering) doubles explained variance to $R^2_{\text{OOS}} = 0.114$. Incorporating August conditions ($H = 3$, August 31, R4--R6 pod-filling) yields an additional leap to $R^2_{\text{OOS}} = 0.194$. Peak accuracy is achieved at Horizon $H = 2$ (September 30), reaching $R^2_{\text{OOS}} = 0.208$ ($\text{Skill}_{\text{RMSE}} = +11.0\%$, $\text{RMSE} = 5.29\text{ bu/ac}$), before stabilizing at harvest ($H = 1$, $R^2_{\text{OOS}} = 0.202$). Figure~\ref{fig:r2_horizon_progression} plots this trajectory across all models and lead times.
+As the reproductive phase unfolds, predictive skill accelerates sharply. Ingesting June and July weather ($H = 4$, July 31, R1--R3 flowering) expands explained variance to $R^2_{\text{OOS}} = 0.116$. Incorporating August conditions ($H = 3$, August 31, R4--R6 pod-filling) yields a major leap to $R^2_{\text{OOS}} = 0.193$. Peak accuracy across the entire season is achieved at Horizon $H = 2$ (September 30) by ElasticNet, reaching $R^2_{\text{OOS}} = 0.213$ ($\text{Skill}_{\text{RMSE}} = +11.3\%$, $\text{RMSE} = 5.27\text{ bu/ac}$), while XGBoost achieves the highest accuracy at final harvest ($H = 1$, $R^2_{\text{OOS}} = 0.205$, $\text{Skill}_{\text{RMSE}} = +10.8\%$, $\text{RMSE} = 5.30\text{ bu/ac}$). Figure~\ref{fig:r2_horizon_progression} plots this trajectory across all models and lead times.
 
 \begin{figure}[htbp]
     \centering
@@ -98,10 +98,9 @@ To isolate the value of algorithmic complexity beyond linear projections, Table~
 \textbf{Model} & $R^2_{\text{OOS}}$ & DM $p$ & $R^2_{\text{OOS}}$ & DM $p$ & $R^2_{\text{OOS}}$ & DM $p$ \\
 \midrule
 $\mathcal{B}_{\text{naive}}$ & 0.000 & --- & 0.000 & --- & 0.000 & --- \\
-ElasticNet    & -0.016 & 0.832 & 0.000 & 0.660 & \textbf{+0.202} & 0.0003$^{***}$ \\
-SVR (RBF)     & \textbf{+0.014} & 0.347 & \textbf{+0.039} & 0.085$^{*}$ & +0.086 & 0.0001$^{***}$ \\
-Random Forest & -0.064 & 0.833 & -0.021 & 0.756 & +0.168 & $<0.0001$$^{***}$ \\
-XGBoost       & -0.061 & 0.807 & -0.029 & 0.743 & +0.195 & $<0.0001$$^{***}$ \\
+ElasticNet    & -0.026 & 1.000 & -0.014 & 0.996 & +0.193 & $<0.0001$$^{***}$ \\
+Random Forest & -0.044 & 1.000 & -0.036 & 1.000 & +0.162 & $<0.0001$$^{***}$ \\
+XGBoost       & -0.156 & 1.000 & -0.021 & 0.995 & \textbf{+0.205} & $<0.0001$$^{***}$ \\
 \bottomrule
 \end{tabularx}
 \vspace{0.2em}
@@ -111,21 +110,21 @@ XGBoost       & -0.061 & 0.807 & -0.029 & 0.743 & +0.195 & $<0.0001$$^{***}$ \\
 \subsection{Regularized Linear Model Performance}
 \label{sec:res_elasticnet}
 
-ElasticNet ($L_1 + L_2$ penalization, Eq.~\eqref{eq:elasticnet_objective}) operates as the primary linear benchmark against which non-linear architectures must demonstrate incremental skill. Its $L_1$ sparsity component applies implicit feature selection across the expanding $P_H$-dimensional predictor space, concentrating regression mass on the dominant agrometeorological channels while zeroing out noise-dominated predictors. The $L_2$ component groups correlated flux integrals (e.g., $GDD$, $HD_{30}$, $HD_{35}$) into stable coefficient clusters, preventing collinearity-induced variance inflation as the feature dimension grows from $P_{11} = 36$ to $P_1 = 206$.
+ElasticNet ($L_1 + L_2$ penalization, Eq.~\eqref{eq:elasticnet_objective}) operates as the primary linear benchmark against which non-linear architectures demonstrate incremental skill. Its $L_1$ sparsity component applies implicit feature selection across the expanding $P_H$-dimensional predictor space, concentrating regression mass on dominant agrometeorological channels while zeroing out noise-dominated predictors. The $L_2$ component groups correlated flux integrals (e.g., $GDD$, $HD_{30}$, $HD_{35}$) into stable coefficient clusters, preventing collinearity-induced variance inflation as the feature dimension grows from $P_{11} = 34$ to $P_1 = 194$. 
 
-\subsection{Kernel and Tree Ensemble Performance}
-\label{sec:res_nonlinear}
+Across late horizons, ElasticNet delivers robust out-of-sample accuracy, peaking at $R^2_{\text{OOS}} = 0.213$ ($\text{RMSE} = 5.27\text{ bu/ac}$) at Horizon $H = 2$ and maintaining $R^2_{\text{OOS}} = 0.193$ at harvest ($H = 1$). The convex loss surface and coordinate descent solver provide complete numerical stability across all 30 expanding test folds.
 
-SVR with the RBF kernel (Eq.~\eqref{eq:rbf_kernel}) can represent non-linear response surfaces in high-dimensional feature spaces without explicit interaction terms. Its $\epsilon$-insensitive loss filters minor background ERA5-Land noise, concentrating margin violations on the high-amplitude extreme years that drive yield anomaly variance. Random Forest reduces prediction variance via bootstrap aggregation across $B = 300$ deep trees (Eq.~\eqref{eq:rf_prediction}), while XGBoost learns sequential residual corrections via additive boosting with leaf regularization (Eq.~\eqref{eq:xgboost_objective}). The critical empirical question is whether these non-linear ensembles outperform ElasticNet on anomaly prediction, or whether the linear regularized model proves sufficient once the feature space is appropriately structured.
+\subsection{Tree Ensemble Performance: Random Forest and XGBoost}
+\label{sec:res_tree_ensembles}
 
-The relative performance trajectory of ensemble models versus ElasticNet across the twelve lead times evaluates Hypothesis~H3 on model complexity. A persistent gap favoring ensembles at late horizons (where non-linear stress threshold interactions are biophysically plausible) with convergence at early horizons (where signal-to-noise ratios are low) would constitute mechanistically interpretable evidence of non-linear value \citep{Torsonietal2023}.
+Non-linear tree ensembles capture threshold responses and compound hydrothermal interactions without pre-specifying multiplicative interaction terms. Random Forest reduces prediction variance via bootstrap aggregation across $B = 150$ randomized decision trees (Eq.~\eqref{eq:rf_prediction}). While Random Forest delivers positive skill from $H = 6$ through $H = 1$ (reaching $R^2_{\text{OOS}} = 0.169$ at $H = 2$ and $0.162$ at $H = 1$), its orthogonal axis-aligned splits on correlated weather inputs result in conservative predictions that underperform both ElasticNet and XGBoost.
 
-\subsection{Sequential Deep Learning: LSTM}
-\label{sec:res_lstm}
+XGBoost learns sequential residual corrections via additive gradient boosting with explicit regularizations (Eq.~\eqref{eq:xgboost_objective}). Incorporating $L_1$ leaf penalties ($\alpha_{\text{reg}} = 0.5$), stochastic row subsampling ($0.8$), and minimum child weight thresholding suppresses over-fitting on multicollinear monthly blocks. The expanding-window validation grid search systematically selects this regularized specification, enabling XGBoost to achieve the highest accuracy among all models at harvest ($H = 1$, $R^2_{\text{OOS}} = 0.205$, $\text{RMSE} = 5.30\text{ bu/ac}$). Diebold-Mariano tests confirm that both XGBoost and ElasticNet significantly surpass the naive secular benchmark ($p < 0.0001$).
 
-The LSTM network processes the three-dimensional sequence tensor $\mathbf{X}^{(H)} \in \mathbb{R}^{N \times T_H \times 16}$ natively (Eq.~\eqref{eq:tensor_dimensions}), accumulating gated memory across campaign months (Eqs.~\eqref{eq:lstm_f}--\eqref{eq:lstm_h}). Unlike tabular models where temporal expansion generates collinear column concatenations, the LSTM maintains fixed input dimensionality $K = 16$ across all horizons, with temporal depth traversed along the sequence axis. This architectural property theoretically captures intra-seasonal trajectory dynamics missed by monthly summary statistics \citep{Khaki2020, Shooketal2021}.
+\subsection{Architectural Trade-offs and Model Parsimony}
+\label{sec:res_parsimony}
 
-Whether this architectural advantage translates to superior out-of-sample accuracy in a pooled $N \approx 4{,}590$--$9{,}990$ county-year training environment against tabular ensembles trained on pre-aggregated features is an empirical question evaluated here. Deep learning regularization requirements (dropout, early stopping, Adam gradient clipping) interact with the relatively limited temporal sample size of the expanding window. Comparing LSTM versus XGBoost at late horizons ($H \le 5$) provides a direct test of Hypothesis~H3.
+The comparative findings illuminate the value of model parsimony in regional crop forecasting. Pre-aggregating hourly ERA5-Land reanalysis into physically motivated agrometeorological integrals ($GDD, HD_{35}, VPD, ET_0$) embeds domain knowledge directly into the design matrix. Consequently, parsimonious linear models with convex penalties and regularized gradient boosted trees attain the empirical performance frontier ($R^2_{\text{OOS}} \approx 0.205$--$0.213$). Complex over-parameterized architectures requiring massive sample-to-parameter ratios provide no structural advantage over well-regularized tabular estimators on monthly aggregated weather blocks.
 
 % ==============================================================================
 % SECTION 5.3: TAIL-RISK STRESS TESTING ON HISTORICAL SHOCK COHORTS
@@ -151,20 +150,20 @@ Standard pooled metrics ($\text{RMSE}_{\text{OOS}}$, $R^2_{\text{OOS}}$) aggrega
 \toprule
 \textbf{Cohort Year} & \textbf{Panel Anomaly} & \textbf{Horizon} & \textbf{RMSE} & $\boldsymbol{R^2_{\text{OOS}}}$ & \textbf{Bias} & \textbf{Best Model \& Shock Type} \\
 \midrule
-2012 & $-11.7\%$ & $H=7$ (Apr 30) & 6.75 & +0.120 & +3.02 & XGBoost (Flash drought onset) \\
-2012 & $-11.7\%$ & $H=4$ (Jul 31) & 5.77 & +0.359 & -0.06 & ElasticNet (Post-flowering peak) \\
-2012 & $-11.7\%$ & $H=1$ (Oct 31) & 5.60 & +0.395 & +1.38 & XGBoost (Harvest resolution) \\
+2012 & $-11.7\%$ & $H=7$ (Apr 30) & 6.76 & +0.119 & +2.94 & XGBoost (Flash drought early signal) \\
+2012 & $-11.7\%$ & $H=4$ (Jul 31) & 5.77 & +0.358 & +0.69 & Random Forest (Post-flowering detection) \\
+2012 & $-11.7\%$ & $H=1$ (Oct 31) & 5.64 & +0.387 & +1.08 & XGBoost (Harvest resolution) \\
 \midrule
-2003 & $-10.1\%$ & $H=4$ (Jul 31) & 11.20 & -0.112 & +8.82 & XGBoost (Mid-season drought) \\
-2003 & $-10.1\%$ & $H=1$ (Oct 31) & 9.83 & +0.142 & +7.09 & ElasticNet (Late moisture penalty) \\
+2003 & $-10.1\%$ & $H=4$ (Jul 31) & 10.94 & -0.062 & +8.42 & XGBoost (Mid-season drought transition) \\
+2003 & $-10.1\%$ & $H=1$ (Oct 31) & 9.72 & +0.162 & +7.01 & ElasticNet (Late moisture penalty) \\
 \midrule
-2016 & $+10.8\%$ & $H=4$ (Jul 31) & 6.63 & +0.290 & -6.09 & XGBoost (Reproductive buffer) \\
-2016 & $+10.8\%$ & $H=1$ (Oct 31) & 4.66 & +0.650 & -3.63 & ElasticNet (Modern bumper harvest) \\
+2016 & $+10.8\%$ & $H=4$ (Jul 31) & 6.60 & +0.296 & -5.99 & XGBoost (Reproductive buffer) \\
+2016 & $+10.8\%$ & $H=1$ (Oct 31) & 4.80 & +0.628 & -3.79 & ElasticNet (Modern bumper harvest) \\
 \midrule
-2004 & $+11.8\%$ & $H=4$ (Jul 31) & 5.06 & +0.322 & -1.86 & ElasticNet (Mid-season buffer) \\
-2004 & $+11.8\%$ & $H=1$ (Oct 31) & 4.93 & +0.356 & -1.16 & XGBoost (Expansion bumper) \\
+2004 & $+11.8\%$ & $H=4$ (Jul 31) & 4.82 & +0.385 & -2.11 & XGBoost (Mid-season buffer) \\
+2004 & $+11.8\%$ & $H=1$ (Oct 31) & 5.04 & +0.325 & -1.34 & XGBoost (Expansion bumper) \\
 \midrule
-2021 & $+9.8\%$  & $H=1$ (Oct 31) & 5.70 & +0.454 & -4.11 & ElasticNet (Modern record yield) \\
+2021 & $+9.8\%$  & $H=1$ (Oct 31) & 5.77 & +0.440 & -4.21 & ElasticNet (Modern record yield) \\
 \bottomrule
 \end{tabularx}
 \vspace{0.2em}
@@ -264,15 +263,15 @@ Predictive skill is strongest across central and southern Illinois and eastern I
 
 We revisit the five research hypotheses formalized in Chapter~\ref{chap:literature_review} against the empirical evidence established across Sections~\ref{sec:res_horizon_progression}--\ref{sec:res_spatial_performance}.
 
-\textbf{H1 (Incremental weather skill):} The null hypothesis of zero incremental meteorological value over the secular trend ($R^2_{\text{OOS}} = 0$ for all $H < 12$) is decisively \textbf{rejected} ($p < 0.0001$). The skill emergence horizon is identified at $H^* = 6$ (May 31), where candidate models achieve positive skill that expands monotonically to a peak of $R^2_{\text{OOS}} = 0.208$ ($\text{Skill}_{\text{RMSE}} = +11.0\%$) at $H = 2$ (September 30). Diebold-Mariano tests confirm that all four weather-augmented architectures significantly outperform the naive secular baseline at the 0.1\% significance level ($p < 0.001$).
+\textbf{H1 (Incremental weather skill):} The null hypothesis of zero incremental meteorological value over the secular trend ($R^2_{\text{OOS}} = 0$ for all $H < 12$) is decisively \textbf{rejected} ($p < 0.0001$). The skill emergence horizon is identified at $H^* = 6$ (May 31), where candidate models achieve positive skill that expands monotonically to a peak of $R^2_{\text{OOS}} = 0.213$ ($\text{Skill}_{\text{RMSE}} = +11.3\%$) at $H = 2$ (September 30). Diebold-Mariano tests confirm that weather-augmented architectures significantly outperform the naive secular baseline at the 0.1\% significance level ($p < 0.0001$).
 
-\textbf{H2 (Monotone lead-time dependence):} The hypothesis of monotonic skill expansion as the growing season unfolds is \textbf{supported}. Forecast error declines systematically from $\text{RMSE} = 5.94\text{ bu/ac}$ at $H = 12$ to $5.29\text{ bu/ac}$ at $H = 2$. Early overwinter horizons ($H \ge 8$) show negligible skill ($R^2_{\text{OOS}} \le 0.030$), indicating that genuine predictive signal is concentrated in the summer phenological window (July--August pod-set), after which accuracy saturates at physiological maturity.
+\textbf{H2 (Monotone lead-time dependence):} The hypothesis of monotonic skill expansion as the growing season unfolds is \textbf{supported}. Forecast error declines systematically from $\text{RMSE} = 5.94\text{ bu/ac}$ at $H = 12$ to $5.27\text{ bu/ac}$ at $H = 2$. Early overwinter horizons ($H \ge 7$) show no skill ($R^2_{\text{OOS}} \le 0$), indicating that genuine predictive signal is concentrated in the summer phenological window (July--August pod-set), after which accuracy saturates at physiological maturity.
 
-\textbf{H3 (Model complexity value):} The hypothesis that non-linear algorithmic complexity provides uniform advantages over parsimonious linear models is \textbf{partially supported / nuanced}. At the aggregate panel level, ElasticNet ($R^2_{\text{OOS}} = 0.2082$ at $H = 2$, $0.2015$ at $H = 1$) matches the performance of gradient boosted trees (XGBoost $R^2_{\text{OOS}} = 0.2082$ at $H = 2$, $0.1947$ at $H = 1$) and substantially outperforms Random Forest ($0.168$) and SVR ($0.086$). However, XGBoost demonstrates superior capabilities in resolving severe tail-risk events, outperforming ElasticNet during the 2012 flash drought ($R^2_{\text{OOS}} = 0.395$ vs.\ $0.302$).
+\textbf{H3 (Model complexity value):} The hypothesis that non-linear algorithmic complexity provides uniform advantages over parsimonious linear models is \textbf{partially supported / nuanced}. At the aggregate panel level, ElasticNet ($R^2_{\text{OOS}} = 0.213$ at $H = 2$, $0.193$ at $H = 1$) matches gradient boosted trees (XGBoost $R^2_{\text{OOS}} = 0.198$ at $H = 2$, $0.205$ at $H = 1$) and outperforms Random Forest ($0.162$). However, XGBoost demonstrates superior capabilities in resolving severe tail-risk events, outperforming ElasticNet during the 2012 flash drought at harvest ($R^2_{\text{OOS}} = 0.387$ vs.\ $0.292$).
 
-\textbf{H4 (Monthly aggregation sufficiency):} Monthly block aggregation ($K = 16$ channels, $P_H \le 194$) is \textbf{supported} as an optimal parsimonious representation for tabular estimators. Ingesting monthly sums of flux integrals and means of state variables captures over 20\% of county anomaly variance while preventing the multicollinearity collapse associated with sub-monthly pentad expansions ($P \ge 1{,}170$).
+\textbf{H4 (Monthly aggregation sufficiency):} Monthly block aggregation ($K = 16$ channels, $P_H \le 194$) is \textbf{supported} as an optimal parsimonious representation for tabular estimators. Ingesting monthly sums of flux integrals and means of state variables captures over 21\% of county anomaly variance while preventing the multicollinearity collapse associated with sub-monthly pentad expansions ($P \ge 1{,}170$).
 
-\textbf{H5 (Tail-risk shock anticipation):} The hypothesis that regression models anticipate extreme climate shocks is \textbf{supported}. During the benchmark 2012 flash drought, candidate models identify severe negative anomalies as early as July 31 ($H = 4$, $R^2_{\text{OOS}} = 0.359$, bias $-0.06\text{ bu/ac}$), successfully overcoming mean shrinkage and resolving the directional shortfall before harvest.
+\textbf{H5 (Tail-risk shock anticipation):} The hypothesis that regression models anticipate extreme climate shocks is \textbf{supported}. During the benchmark 2012 flash drought, candidate models identify severe negative anomalies as early as July 31 ($H = 4$, $R^2_{\text{OOS}} = 0.358$, bias $+0.69\text{ bu/ac}$), successfully overcoming mean shrinkage and resolving the directional shortfall before harvest ($H = 1$, $R^2_{\text{OOS}} = 0.387$, bias $+1.08\text{ bu/ac}$).
 
 Table~\ref{tab:hypothesis_summary} synthesizes the empirical verdicts across all five formal hypotheses.
 
@@ -288,11 +287,11 @@ Table~\ref{tab:hypothesis_summary} synthesizes the empirical verdicts across all
 \toprule
 \textbf{Hypothesis} & \textbf{Formal Claim} & \textbf{Empirical Verdict \& Key Evidence} & \textbf{Status} \\
 \midrule
-H1 & Incremental weather skill & Decisively rejected null: $R^2_{\text{OOS}}$ peaks at $+0.208$ ($\text{Skill} = +11.0\%$), DM test $p < 0.0001$. & $\checkmark$ \\
+H1 & Incremental weather skill & Decisively rejected null: $R^2_{\text{OOS}}$ peaks at $+0.213$ ($\text{Skill} = +11.3\%$), DM test $p < 0.0001$. & $\checkmark$ \\
 H2 & Monotone lead-time dependence & Monotonic skill growth from sowing ($H=6$) to peak maturity ($H=2$), saturation at harvest. & $\checkmark$ \\
-H3 & Non-linear complexity value & Parity between ElasticNet and XGBoost ($R^2 = 0.208$); non-linear advantage isolated in tail shocks. & $\sim$ \\
-H4 & Monthly aggregation sufficiency & Monthly representation ($K=16, P_1=194$) preserves dimensional stability and captures $>20\%$ variance. & $\checkmark$ \\
-H5 & Tail-risk shock anticipation & 2012 flash drought resolved at $H=4$ ($R^2 = 0.359$, bias $-0.06$ bu/ac); directional hit rate $>71\%$. & $\checkmark$ \\
+H3 & Non-linear complexity value & Parity between ElasticNet and XGBoost ($R^2 \approx 0.205$--$0.213$); non-linear advantage isolated in tail shocks. & $\sim$ \\
+H4 & Monthly aggregation sufficiency & Monthly representation ($K=16, P_1=194$) preserves dimensional stability and captures $>21\%$ variance. & $\checkmark$ \\
+H5 & Tail-risk shock anticipation & 2012 flash drought resolved at $H=4$ ($R^2 = 0.358$) and $H=1$ ($R^2 = 0.387$, bias $+1.08$ bu/ac). & $\checkmark$ \\
 \bottomrule
 \end{tabularx}
 \vspace{0.2em}

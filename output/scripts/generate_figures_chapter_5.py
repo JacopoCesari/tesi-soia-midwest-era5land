@@ -51,14 +51,12 @@ PREDS_PARQUET = PROCESSED_DIR / "predictions.parquet"
 COLOR_MAP = {
     'Naive': '#555555',
     'ElasticNet': '#1f77b4',
-    'SVR': '#2ca02c',
     'RandomForest': '#ff7f0e',
     'XGBoost': '#d62728'
 }
 MARKER_MAP = {
     'Naive': 's',
     'ElasticNet': 'o',
-    'SVR': '^',
     'RandomForest': 'D',
     'XGBoost': 'P'
 }
@@ -100,7 +98,7 @@ def plot_figure_5_1(summary: pd.DataFrame):
         ax.axvspan(9.4, 11.4, color='#f9f0ea', alpha=0.6, zorder=0)
 
     # Panel 1: R2_OOS Pooled
-    for model in ['Naive', 'SVR', 'RandomForest', 'ElasticNet', 'XGBoost']:
+    for model in ['Naive', 'RandomForest', 'ElasticNet', 'XGBoost']:
         m_df = summary[summary['model'] == model].set_index('H').reindex(horizons)
         r2_vals = m_df['R2_OOS_pooled'].values
         # For Naive at H=12, explicit 0
@@ -111,10 +109,10 @@ def plot_figure_5_1(summary: pd.DataFrame):
 
     ax1.axhline(0, color='black', linestyle='--', linewidth=0.9, alpha=0.7, label='Zero-Skill Reference')
     ax1.set_ylabel(r'Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$')
-    ax1.set_title(r'\textbf{(a)} Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)', loc='left', fontsize=11, fontweight='bold')
-    ax1.set_ylim(-0.15, 0.25)
+    ax1.set_title(r'(a) Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)', loc='left', fontsize=11, fontweight='bold')
+    ax1.set_ylim(-0.16, 0.25)
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
-    ax1.legend(loc='upper left', frameon=True, framealpha=0.9)
+    ax1.legend(loc='lower right', frameon=True, framealpha=0.9)
 
     # Annotate key phenological milestones
     ax1.text(2.0, 0.22, 'Overwinter Recharge', ha='center', fontsize=8.5, color='#4a607a', fontweight='semibold')
@@ -124,7 +122,7 @@ def plot_figure_5_1(summary: pd.DataFrame):
 
     # Panel 2: RMSE and Skill Score
     naive_rmse = 5.944191
-    for model in ['Naive', 'SVR', 'RandomForest', 'ElasticNet', 'XGBoost']:
+    for model in ['Naive', 'RandomForest', 'ElasticNet', 'XGBoost']:
         m_df = summary[summary['model'] == model].set_index('H').reindex(horizons)
         rmse_vals = m_df['RMSE_OOS_pooled'].values
         if model == 'Naive':
@@ -133,7 +131,7 @@ def plot_figure_5_1(summary: pd.DataFrame):
                  marker=MARKER_MAP[model], markersize=6, linewidth=1.8, zorder=3)
 
     ax2.set_ylabel(r'Out-of-Sample RMSE ($\mathrm{bu/acre}$)')
-    ax2.set_title(r'\textbf{(b)} Error Magnitude and Percentage Skill', loc='left', fontsize=11, fontweight='bold')
+    ax2.set_title(r'(b) Error Magnitude and Percentage Skill', loc='left', fontsize=11, fontweight='bold')
     ax2.set_ylim(5.15, 6.35)
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
 
@@ -193,7 +191,7 @@ def plot_figure_5_2(preds: pd.DataFrame):
 
     ax1.axhline(0, color='black', linestyle=':', linewidth=1.2, alpha=0.8, label='Zero Bias (Perfect Calibration)')
     ax1.set_ylabel(r'Mean Anomaly Bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/acre)')
-    ax1.set_title(r'\textbf{(a)} Lead-Time Convergence of Shock Bias (XGBoost)', loc='left', fontsize=11, fontweight='bold')
+    ax1.set_title(r'(a) Lead-Time Convergence of Shock Bias (XGBoost)', loc='left', fontsize=11, fontweight='bold')
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels([MONTH_LABELS[h] for h in horizons], rotation=0)
     ax1.set_xlabel('Forecast Horizon & Campaign Month')
@@ -219,7 +217,7 @@ def plot_figure_5_2(preds: pd.DataFrame):
     ax2.plot([-20, 10], [-20, 10], 'k--', linewidth=1.0, alpha=0.7, label='1:1 Perfect Prediction')
     ax2.set_xlabel(r'Observed 2012 Anomaly ($\epsilon_{c, 2012}$, bu/acre)')
     ax2.set_ylabel(r'Predicted Anomaly ($\hat{\epsilon}_{c, 2012}$, bu/acre)')
-    ax2.set_title(r'\textbf{(b)} 2012 Flash Drought: Trajectory from Blind to Resolved', loc='left', fontsize=11, fontweight='bold')
+    ax2.set_title(r'(b) 2012 Flash Drought: Trajectory from Blind to Resolved', loc='left', fontsize=11, fontweight='bold')
     ax2.set_xlim(-20, 8)
     ax2.set_ylim(-16, 6)
     ax2.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.8)

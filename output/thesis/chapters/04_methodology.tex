@@ -38,7 +38,7 @@ This operational protocol guarantees zero look-ahead leakage and avoids repeatin
 
 A central methodological challenge in crop yield modeling is the dimensional mismatch between target and predictor temporal resolutions. While the prediction target is a single annual scalar per county ($\epsilon_{c,Y} \in \mathbb{R}$, realized once at harvest), meteorological forcing operates as continuous high-frequency time series, ingested as daily multivariate sequences across a twelve-month campaign window ($K = 16$ agrometeorological indicators, Section~\ref{sec:meth_meteo_pool}).
 
-Standard supervised regression algorithms (ElasticNet, Support Vector Regression, Random Forest, XGBoost) require a two-dimensional cross-sectional tabular design matrix where each row represents a single annual county-campaign instance $(c, Y)$ and each column represents a fixed scalar predictor. Ingesting raw daily meteorological series directly across 365 calendar days generates $365 \times 16 \approx 5{,}840$ features per observation. Against a baseline training pool of $N_{\text{train}} \approx 4{,}590$ county-years, this unconstrained parameterization causes severe curse-of-dimensionality pathologies, extreme collinearity across adjacent calendar days, and catastrophic out-of-sample overfitting.
+Standard supervised regression algorithms (ElasticNet, Random Forest, XGBoost) require a two-dimensional cross-sectional tabular design matrix where each row represents a single annual county-campaign instance $(c, Y)$ and each column represents a fixed scalar predictor. Ingesting raw daily meteorological series directly across 365 calendar days generates $365 \times 16 \approx 5{,}840$ features per observation. Against a baseline training pool of $N_{\text{train}} \approx 4{,}590$ county-years, this unconstrained parameterization causes severe curse-of-dimensionality pathologies, extreme collinearity across adjacent calendar days, and catastrophic out-of-sample overfitting.
 
 To bridge this temporal resolution gap while preserving biophysical timing, daily weather fields are aggregated into structured monthly blocks:
 \begin{equation}
@@ -160,20 +160,6 @@ ElasticNet minimizes a penalized sum of squared residuals combining $L_1$ (Lasso
 \end{equation}
 where $\lambda > 0$ controls shrinkage intensity and $\alpha \in [0, 1]$ governs penalty mixing. ElasticNet performs automatic feature selection via $L_1$ sparsity while grouping collinear agrometeorological predictors stably through the $L_2$ quadratic term.
 
-\subsection{Kernel Non-Linear Method: Support Vector Regression}
-\label{sec:meth_svr}
-
-Support Vector Regression (SVR) maps non-linear response surfaces via Vapnik's $\epsilon$-insensitive loss function:
-\begin{equation}
-    L_\epsilon(\epsilon_i, \hat{\epsilon}_i) = \max(0, \, |\epsilon_i - \hat{\epsilon}_i| - \epsilon_{\text{tube}})
-    \label{eq:epsilon_loss}
-\end{equation}
-Errors within the $\epsilon_{\text{tube}}$ margin incur zero loss, filtering out minor background noise in reanalysis fields. The dual formulation is optimized subject to box constraints $0 \le a_i, a_i^* \le C$. We employ the Gaussian Radial Basis Function (RBF) kernel:
-\begin{equation}
-    K(\mathbf{x}_i, \mathbf{x}_j) = \exp\left( -\gamma \|\mathbf{x}_i - \mathbf{x}_j\|^2 \right)
-    \label{eq:rbf_kernel}
-\end{equation}
-The RBF kernel projects inputs into an infinite-dimensional Hilbert space, constructing smooth non-linear response surfaces that reflect biophysical stress thresholds.
 
 \subsection{Decision Tree Ensembles: Random Forest and XGBoost}
 \label{sec:meth_trees}
@@ -246,9 +232,8 @@ where $\mathbf{W}_{\text{out}} \in \mathbb{R}^{1 \times (d_h + 2)}$ and $b_{\tex
 \midrule
 $\mathcal{B}_{\text{naive}}$ & Secular Baseline & None ($P_{\text{met}}=0$) & Deterministic & None & Zero-weather trend baseline ($R^2_{\text{OOS}}=0$). \\
 ElasticNet & Regularized Linear & Tabular 2D ($P_H$) & $L_1 + L_2$ convex loss & $\lambda$, $\alpha$ & Linear baseline with collinearity grouping. \\
-SVR (RBF) & Kernel Non-Linear & Tabular 2D ($P_H$) & $\epsilon$-tube, margin $C$ & $C$, $\epsilon_{\text{tube}}$, $\gamma$ & Smooth continuous stress response surfaces. \\
 Random Forest & Bagging Trees & Tabular 2D ($P_H$) & $p_{\text{split}}$, leaf size & $p_{\text{split}}$, $n_{\text{leaf}}$, $d_{\text{max}}$ & Non-parametric partition; variance reduction. \\
-XGBoost & Gradient Boosting & Tabular 2D ($P_H$) & $\lambda_{\text{reg}}$, $\gamma_{\text{split}}$, shrinkage & $\eta$, $d_{\text{max}}$, colsample, $\lambda$ & Additive boosting; non-linear interaction. \\
+XGBoost & Gradient Boosting & Tabular 2D ($P_H$) & $\lambda_{\text{reg}}$, $\gamma_{\text{split}}$, shrinkage & $\eta$, $d_{\text{max}}$, colsample, $\lambda$, $\alpha_{\text{reg}}$ & Additive boosting; non-linear interaction. \\
 LSTM & Recurrent Deep & Sequence 3D ($m$) & Dropout, gate units & Hidden units, epochs & Sequential tracking of temporal trajectories. \\
 \bottomrule
 \end{tabularx}
@@ -318,7 +303,7 @@ All preprocessing transformations are computed strictly within each training fol
 \subsection{Automated Single-Pass Hyperparameter Grid Search}
 \label{sec:meth_grid_search}
 
-Hyperparameter tuning executes across the 11-year validation partition $\mathcal{T}_{\text{val}}$ (1985--1995, $1{,}485$ observations) using an automated Single-Pass Grid Search. To eliminate data snooping, search spaces are specified a priori (Table~\ref{tab:hyperparameter_grids}). Models are trained on $\{1951, \dots, 1984\}$ and evaluated across $\{1985, \dots, 1995\}$.
+Hyperparameter tuning executes across the 11-year validation partition $\mathcal{T}_{\text{val}}$ (1985--1995, $1{,}485$ observations) using an automated chronological expanding-window grid search. For each candidate parameter configuration and each validation campaign $Y_{\text{val}} \in \{1985, \dots, 1995\}$, models are trained strictly on historical campaigns $\{1951, \dots, Y_{\text{val}}-1\}$ with train-only detrending and feature scaling, generating out-of-sample predictions for year $Y_{\text{val}}$. This design mirrors the sequential operational structure of the subsequent test phase. Pre-specified search spaces are detailed in Table~\ref{tab:hyperparameter_grids}.
 
 \begin{table}[htbp]
 \centering
@@ -326,40 +311,35 @@ Hyperparameter tuning executes across the 11-year validation partition $\mathcal
 \footnotesize
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.1}
-\caption{Pre-specified hyperparameter search spaces for automated validation grid search.}
+\caption{Pre-specified hyperparameter search spaces for expanding-window validation grid search.}
 \label{tab:hyperparameter_grids}
-\begin{tabularx}{\textwidth}{l p{3.8cm} X c}
+\begin{tabularx}{\textwidth}{l p{4.0cm} X c}
 \toprule
 \textbf{Model} & \textbf{Hyperparameter} & \textbf{Search Space} & \textbf{Combinations} \\
 \midrule
-\multirow{2}{*}{\textbf{ElasticNet}} & Regularization ($\lambda$) & $\{10^{-3}, \, 10^{-2}, \, 10^{-1}, \, 1.0, \, 10.0\}$ & \multirow{2}{*}{25} \\
+\multirow{2}{*}{\textbf{ElasticNet}} & Regularization ($\lambda$) & $\{10^{-3}, \, 10^{-2}, \, 10^{-1}, \, 1.0, \, 5.0\}$ & \multirow{2}{*}{25} \\
  & Penalty Ratio ($\alpha$) & $\{0.1, \, 0.3, \, 0.5, \, 0.7, \, 0.9\}$ & \\
 \midrule
-\multirow{3}{*}{\textbf{SVR (RBF)}} & Cost Penalty ($C$) & $\{0.5, \, 2.0, \, 10.0\}$ & \multirow{3}{*}{27} \\
- & Tube Width ($\epsilon_{\text{tube}}$) & $\{0.1, \, 0.5, \, 1.0\}\text{ bu/ac}$ & \\
- & Kernel Bandwidth ($\gamma$) & $\{0.1, \, 1.0, \, 5.0\} \times \gamma_{\text{scale}}$ & \\
+\multirow{3}{*}{\textbf{Random Forest}} & Split Features ($p_{\text{split}}$) & $\{\text{'sqrt'}, \, 0.33, \, 0.5\} \times P_H$ & \multirow{3}{*}{18} \\
+ & Leaf Samples ($n_{\text{leaf}}$) & $\{5, \, 20\}$ & \\
+ & Maximum Depth ($d_{\text{max}}$) & $\{8, \, 14, \, \text{None}\}$ & \\
 \midrule
-\multirow{4}{*}{\textbf{Random Forest}} & Number of Trees ($B$) & $300$ (fixed) & \multirow{4}{*}{27} \\
- & Split Features ($p_{\text{split}}$) & $\{\text{'sqrt'}, \, 0.33, \, 0.5\} \times P_H$ & \\
- & Leaf Samples ($n_{\text{leaf}}$) & $\{5, \, 15, \, 30\}$ & \\
- & Maximum Depth ($d_{\text{max}}$) & $\{8, \, 12, \, \text{None}\}$ & \\
-\midrule
-\multirow{4}{*}{\textbf{XGBoost}} & Learning Rate ($\eta$) & $\{0.03, \, 0.08\}$ & \multirow{4}{*}{16} \\
+\multirow{4}{*}{\textbf{XGBoost}} & Learning Rate ($\eta$) & $\{0.03, \, 0.06\}$ & \multirow{4}{*}{16} \\
  & Maximum Depth ($d_{\text{max}}$) & $\{3, \, 5\}$ & \\
- & Column Sampling & $\{0.6, \, 0.8\}$ & \\
- & $L_2$ Leaf Weight ($\lambda_{\text{reg}}$) & $\{1.0, \, 10.0\}$ & \\
+ & $L_2$ Leaf Weight ($\lambda_{\text{reg}}$) & $\{1.0, \, 5.0\}$ & \\
+ & $L_1$ Leaf Penalty ($\alpha_{\text{reg}}$) & $\{0.0, \, 0.5\}$ & \\
 \bottomrule
 \end{tabularx}
 \vspace{0.2em}
-{\footnotesize \textit{Source: Author's specification following domain standards \citep{Torsonietal2023, Sharmaetal2025}}. $\gamma_{\text{scale}} = 1/(P_H \cdot \text{Var}(X))$.}
+{\footnotesize \textit{Source: Author's specification following domain standards \citep{Torsonietal2023, Sharmaetal2025}}. In Random Forest, $B=100$ trees are used during validation tuning and $B=300$ during final test evaluation. In XGBoost, feature sampling is fixed at $0.7 \times P_H$, row subsampling at $0.8$, and leaf weight threshold at $\text{min\_child\_weight}=3$.}
 \end{table}
 
-The optimal parameter vector $\mathbf{\Theta}_H^*$ for horizon $H$ is selected by minimizing validation RMSE:
+The optimal parameter vector $\mathbf{\Theta}_H^*$ for horizon $H$ is selected by minimizing the pooled validation RMSE across all 11 expanding validation folds:
 \begin{equation}
-    \mathbf{\Theta}_H^* = \arg\min_{\mathbf{\Theta} \in \mathcal{G}} \sqrt{\frac{1}{C \cdot |\mathcal{T}_{\text{val}}|} \sum_{t=1985}^{1995} \sum_{c=1}^C \left( \hat{\epsilon}_{c,t}^{(H)}(\mathbf{\Theta}) - \epsilon_{c,t} \right)^2}
+    \mathbf{\Theta}_H^* = \arg\min_{\mathbf{\Theta} \in \mathcal{G}} \sqrt{\frac{1}{C \cdot |\mathcal{T}_{\text{val}}|} \sum_{Y_{\text{val}}=1985}^{1995} \sum_{c=1}^C \left( \hat{\epsilon}_{c,Y_{\text{val}}}^{(H)}(\mathbf{\Theta}) - \epsilon_{c,Y_{\text{val}}} \right)^2}
     \label{eq:inner_val_selection}
 \end{equation}
-Selected hyperparameters remain fixed during expanding-window evaluation across 1996--2025, where models re-estimate weights over $\{1951, \dots, Y-1\}$ prior to predicting year $Y$.
+Selected hyperparameters remain fixed during the subsequent out-of-sample expanding-window evaluation across 1996--2025, where models re-estimate weights over $\{1951, \dots, Y-1\}$ prior to predicting test year $Y$.
 
 % ==============================================================================
 % SECTION 4.5: PERFORMANCE EVALUATION AND OUT-OF-SAMPLE TAIL-RISK STRESS TESTING
