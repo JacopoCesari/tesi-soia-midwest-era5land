@@ -1,0 +1,110 @@
+{
+  "1": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H01.parquet",
+    "rows": 10125,
+    "n_features": 192,
+    "shape": [
+      10125,
+      196
+    ]
+  },
+  "2": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H02.parquet",
+    "rows": 10125,
+    "n_features": 176,
+    "shape": [
+      10125,
+      180
+    ]
+  },
+  "3": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H03.parquet",
+    "rows": 10125,
+    "n_features": 160,
+    "shape": [
+      10125,
+      164
+    ]
+  },
+  "4": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H04.parquet",
+    "rows": 10125,
+    "n_features": 144,
+    "shape": [
+      10125,
+      148
+    ]
+  },
+  "5": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H05.parquet",
+    "rows": 10125,
+    "n_features": 128,
+    "shape": [
+      10125,
+      132
+    ]
+  },
+  "6": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H06.parquet",
+    "rows": 10125,
+    "n_features": 112,
+    "shape": [
+      10125,
+      116
+    ]
+  },
+  "7": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H07.parquet",
+    "rows": 10125,
+    "n_features": 96,
+    "shape": [
+      10125,
+      100
+    ]
+  },
+  "8": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H08.parquet",
+    "rows": 10125,
+    "n_features": 80,
+    "shape": [
+      10125,
+      84
+    ]
+  },
+  "9": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H09.parquet",
+    "rows": 10125,
+    "n_features": 64,
+    "shape": [
+      10125,
+      68
+    ]
+  },
+  "10": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H10.parquet",
+    "rows": 10125,
+    "n_features": 48,
+    "shape": [
+      10125,
+      52
+    ]
+  },
+  "11": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H11.parquet",
+    "rows": 10125,
+    "n_features": 32,
+    "shape": [
+      10125,
+      36
+    ]
+  },
+  "12": {
+    "path": "C:\\Users\\JacopoCesari-Aret\u00e9sr\\Desktop\\Tesi\\output\\data\\processed\\model_datasets\\features_H12.parquet",
+    "rows": 10125,
+    "n_features": 0,
+    "shape": [
+      10125,
+      4
+    ]
+  }
+}
