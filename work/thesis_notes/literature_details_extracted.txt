@@ -1,0 +1,200 @@
+================================================================================
+PAPER: Ceglar & Toreti (2021) — Seasonal Climate Forecasts for European Agriculture.pdf
+Total Pages: 8
+
+[METRICS SNIPPETS]:
+  * Skill and reliability in predicting agro-climate indicators, co-designed with and for European wheat farmers, are here assessed
+  * 1 Skill and reliability of wheat- ﬂowering prediction
+  * Skill and reliability of seasonal prediction of Clisagri indicators We divide our indicator predictions into categories relevant for agricultural decision making
+  * The Fair Ranked Probability Skill Score (FRPSS) is here used as skill measure
+
+================================================================================
+PAPER: Chen, Zhang (2026) — Soybean yield forecasting.pdf
+Total Pages: 13
+
+[METRICS SNIPPETS]:
+  * Following training, the model was evaluated  using an independent hold-out test set, with predictive performance  quantified via the coefficient of determination (R2)
+  * Evaluation of model performance We used R2 within this study for assessing the prediction perfor- mance of machine learning and deep learning models constructed  throughout this study
+  * The model  achieved a coefficient of determination R2 of 0.668 and 0.678 in 2024  and 2025, respectively, showing consistent predictions in hold-out  testing (Figure 5; Supplementary Table 3)
+  * A sensitivity analysis was  conducted to exclude one-year lagged soybean yield from the DNN  model, and it resulted the coefficient of determination of R2 of 0.3154  and 0.3515 in 2024 and 2025
+  * As expected, models  using cumulative data through May, June, July and August showed  increasing predictive power, with R 2 values of 0.516, 0.596, 0.622,  and 0.668, respectively—only slightly lower than the full-year  model (R 2 = 0.678)
+  * Notably, when incorporating July or August weather data, the R 2  reached close to the full-year performance
+
+================================================================================
+PAPER: Hoffman, Kemanian & Forest (2020) — Growing-Phase Climate and Soybean Yield.pdf
+Total Pages: 21
+
+[ABSTRACT]:
+Abstract Accurate representation of crop responses to climate is critically important to understand impacts of climate change and variability in food systems. W e use Random Forest (RF), a diagnostic machine learning tool, to explore the dependence of yield on climate and technology for maize, sorghum and soybean in the US plains. W e analyze the period from 1980 to 2016 and use a panel of county yields and climate variables for the crop-specific developmental phases: establishment, critical window (yield potential definition) and grain filling. The RF models accounted for between 71% to 86% of the yield variance. T echnology, evaluated through the time variable, accounted for approximately 20% of the yield variance and indicates that yields have steadily increased. Responses to climate confirm prior findings revealing threshold-like responses to high temperature (yield decrease sharply when maximum temperature exceed 29 ◦C and 30 ◦C for maize and soybean), and reveal a higher temperature tolerance for sorghum, whose yield decreases gradually as maximum temperature exceeds 32.5 ◦C. W e found that sorghum and soybean responded positively to increases in cool minimum temperatures. Ma
+
+[METRICS SNIPPETS]:
+  * For soybean, we consider the establishment phase to span from planting to the start of flowering (R1), the critical window to contain the second through fourth reproductive stages (R2- R4), and grain filling to capture the final stages of reproduction (R5-R8) (Setiyono et al 2007, Berglund and McWilliams 2015, Fehr and Caviness 1977)
+  * 3.3.Sorghum The model for sorghum yields had the lowest explan- atory power of all three crops with an R 2 of 0.71 (figure 2)
+  * Comparison of explanatory power (R 2) between crop models that only include fundamental variables and those that include all variables from table 1
+  * Plant Sci.6 820 Prasad P V V , Pisipati S R, Mutava R N and T uinstra M R 2008 Sensitivity of grain sorghum to high temperature stress during reproductive development Crop Sci
+
+================================================================================
+PAPER: Iizumi et al. (2018) — Global Crop Yield Forecasting Using Seasonal Climate Information.pdf
+Total Pages: 13
+
+[ABSTRACT]:
+ABSTRACT Forecasting year-to-year variations in the yields of major crops globally is expected to have utility in strengthening the ability of societies to better respond to food production shocks and food price spikes triggered by climate extremes. However, substantial improvements to the methodology used in global crop forecasting are required to realize a reliable operational service. Here, we assess the reliability of global within-season and pre-season pre- dictions of yield variability obtained by applying statistical yield models to seasonal temperature and precipitation hindcast data derived from a multi-model ensemble (MME). This analysis is performed for ﬁve individual atmo- sphere-ocean coupled general circulation models (GCMs) and the two MME datasets generated using the average method and the mosaic method. Four major crops, maize, rice, wheat and soybean are studied. The mosaic method reliably predicts the yield variability over a large portion (25–38%) of the global harvested area three months before harvesting. The areas where the mosaic method displays good prediction skill are two to three times larger than those achieved using the average method (9–15%). Using th
+
+[METRICS SNIPPETS]:
+  * Skill score We use ROC scores ( Wilks, 2006 ) to assess prediction skill
+
+================================================================================
+PAPER: Iizumi et al. (2021) — Global Within-Season Yield Anomaly Prediction.pdf
+Total Pages: 15
+
+[ABSTRACT]:
+ABSTRACT: Weather and climate variability associated with major climate modes is a main driver of interannual yield variability of commodity crops in global cropland areas. A global crop forecasting service that is currently in the test operation phase is based on temperature and precipitation forecasts, while recent literature suggests that crop forecasting services may beneﬁt from the use of climate index forecasts. However, no consistent comparison is available on prediction skill between yield models relying on forecasts from temperature and precipitation and from climate indices. Here, we present a global assessment of 26-yr (1983–2008) within-season yield anomaly hindcasts for maize, rice, wheat, and soybean derived using different types of statistical yield models. One type of model utilizes temperature and precipitation for individual cropping areas (the TP model type) to represent the current service, whereas the other type relies on large-scale climate indices (the CI model). For the TP models, three speciﬁcations with different model complexities are compared. The results show that the CI model is characterized by a small reduction in the skillful area from the reanalysi
+
+[METRICS SNIPPETS]:
+  * Skill score The yield anomaly hindcast presented here is deterministic and serves as a binary classiﬁcation tool for distinguishing be- tween yield loss ( DY , 0) and yield gain ( DY $ 0)
+  * DeWitt, 2012: Skill of real-time seasonal ENSO model predictions during 2002–11: Is our capability increasing? Bull
+
+================================================================================
+PAPER: Jeong et al. (2016) — Random Forests for Global and Regional Crop Yield Predictions.pdf
+Total Pages: 15
+
+[ABSTRACT]:
+Abstract Accurate predictions of crop yield are critical for developing effective agricultural and food policies at the regional and global scales. We evaluated a machine-learning method, Ran- dom Forests (RF), for its ability to predict crop yield responses to climate and biophysical variables at global and regional scales in wheat, maize, and potato in comparison with multi- ple linear regressions (MLR) serving as a benchmark. We used crop yield data from various sources and regions for model training and testing: 1) gridded global wheat grain yield, 2) maize grain yield from US counties over thirty years, and 3) potato tuber and maize silage yield from the northeastern seaboard region. RF was found highly capable of predicting crop yields and outperformed MLR benchmarks in all performance statistics that were com- pared. For example, the root mean square errors (RMSE) ranged between 6 and 14% of the average observed yield with RF models in all test cases whereas these values ranged from 14% to 49% for MLR models. Our results show that RF is an effective and versatile machine-learning method for crop yield predictions at regional and global scales for its high accuracy and precis
+
+[METRICS SNIPPETS]:
+  * For example, the root mean square errors (RMSE) ranged between 6 and 14% of the average observed yield with RF models in all test cases whereas these values ranged from 14% to 49% for MLR models
+  * Model performance evaluation and inter-comparison Four methods were used to evaluate and compare the model performances: 1) root mean square error (RMSE,E q[ 1]), 2) Nash-Sutcliffe model efficiency ( EF,E q[ 2]), 3) index of agree- ment known as Willmott’s d (d,E q[ 3]) [36], and 4) observed vs
+  * Brie ﬂy, RMSE is a measure of deviations between the observations and model predictions
+  * All performance measures (i.e., RMSE, EF, d, and observed vs
+  * Crop Scale RF MLR RMSE (tons/ha) EF d RMSE (tons/ha) EF d Wheat Global 0.32 0.96 0.99 1.32 0.31 0.68 Maize (grain) U.S
+  * The RMSE of the model was 0.32 tons/ha, which is 11.9% of the average observed yield, EF was Fig 2
+
+================================================================================
+PAPER: Khaki & Wang (2019) — Crop Yield Prediction Using Deep Neural Networks.pdf
+Total Pages: 10
+
+[METRICS SNIPPETS]:
+  * Our model was found to have a superior p rediction accuracy, with a root-mean-square-error (RMSE) being 12% of the average yield and 50% of the standard deviation for the validation dataset using predicted weath er data
+  * With perfect weather data, the RMSE would be reduced to 11% of the average yield and 46% of the standard deviation
+  * Their model outperformed traditional remote-sensing based method s by 15% in terms of Mean Absolute Percentage Error (MAPE)
+  * Table 1 compares the performances of the four models on both training and validation datasets with respect to the RMSE and correlation coeﬃcient
+  * SNN outperformed Lasso on all the performance measures except validation RMSE of the yield diﬀerence, since it was able to capture nonlinear eﬀects
+  * The DNN model was particularly eﬀective in predicting yield and check yield, with RMSE for the validation dataset being approximately 11% of their respectiv e average values
+
+================================================================================
+PAPER: Khaki, Wang & Archontoulis (2020) — A CNN-RNN Framework for Crop Yield Prediction.pdf
+Total Pages: 14
+
+[METRICS SNIPPETS]:
+  * The new model achieved a root-mean-square-error (RMSE) 9% and 8% of their respective average yields, substantially outperforming all other methods that were tested
+  * Tables 1 and 2 compare the performances of the four models on both training and validation datasets with respect to the RMSE and correlation coefﬁcient for corn and soybean yield prediction, respectively
+  * The unit of RMSE is bushels per acre
+  * DFNN had a better performance compared to the RF model with respect to all performance measures except the validation RMSE of the year 2016 for corn yield prediction
+  * RF showed a better performance compared to the LASSO with respect to all performance measures except the validation RMSE of the year 2017 for corn yield prediction
+  * The CNN-RNN was effective in predicting yields of both corn and soybean with RMSE for the validation data being approximately 9% and 8% of their respective average values
+
+================================================================================
+PAPER: Schlenker & Roberts (2009) — Nonlinear Temperature Effects on U.S. Crop Yields.pdf
+Total Pages: 5
+
+[METRICS SNIPPETS]:
+  * Although F tests give significantly different coeffi- cient estimates in July compared to the pooled remaining months, the fit (R 2) hardly increases at all when breaking the growing season into various subperiods and predicted climate- change impacts that are not significantly different
+  * For example, a corn-yield model with separate temperature coefficients for July only slightly increases the R 2 from 0.7654 to 0.7698 under the step function and changes overall predicted long-run yield impact from /H1100243% to /H1100244% under the slow-warming scenario (B1) and from /H1100279% to /H1100274% under the fast-warming scenario (A1FI)
+
+================================================================================
+PAPER: Sharma et al. (2025) — Maize and Soybean Yield Prediction Using ML Systematic Review.pdf
+Total Pages: 29
+
+[ABSTRACT]:
+Abstract Today’s agronomy is data-rich, and machine learning (ML) provides the ability to efficiently predict crop yields, utilizing  high-volume data to optimize agricultural decision-making. Numerous ML models are used, yet systemized framework  guiding the crop-targeted selection of models, features, accuracy measures, and addressing associated challenges is  lacking, specifically for soybean and maize, world’s vital crops. Henceforth, this is the first crop-targeted systematic  literature review (SLR) performed to retrieve/consolidate the ML techniques and key features utilized in maize and  soybean yield prediction research. The study searched four databases (ProQuest, Wiley, Science Direct, and EBSCOhost),  producing 1859 articles, which finally reduced to 82 articles following SLR’s inclusion/exclusion criteria. These papers  were thoroughly analysed for generating common consensus and future research recommendations. Results revealed  the temperature, precipitation, historical crop yield, normalized difference vegetation index (NDVI), and soil pH to be  the most utilized ML features for yield prediction research. The Random Forest (RF), Artificial Neural Networks (ANNs),  S
+
+[METRICS SNIPPETS]:
+  * In the utilized models, the most used performance assessment measures were noted as the coefficient  of determination  (R2), root absolute error (RAE), root mean square error (RMSE), and mean absolute error (MAE)
+  * [91] analysed  the impact of merging crop modelling and ML techniques in maize yield prediction in the US and found that proposed  algorithm can decrease RMSE of predicted model
+  * R-Q3: What type of accuracy measures and software have been most used for ML and DL techniques for maize  and soybean yield prediction? Among the several measures of evaluating the forecasting accuracy of ML and DL, the most frequently used  ones included the  R2, RAE, and RMSE
+  * R2 is coefficient of determination, RAE  is relative absolute error, RMSE is root mean square error, MAE is mean absolute error, Corr
+  * is correlation coefficient, RRSE is relative root  squared error, MSE is mean squared error, RRMSE is relative root mean square error, RME is relative mean error, CV is coefficient of variation,  Acc
+  * is accuracy, MAPE is mean absolute percentage error, MBE is mean bias error, Kappa is Cohen’s kappa, MRE is mean relative error, RSE is  relative squared error, Recall is true positive rate, F1 is F1 score (harmonic mean of precision and recall), and Reg
+
+================================================================================
+PAPER: Shook et al. (2021) — Crop Yield Prediction Integrating Genotype and Weather Using Deep Learning.pdf
+Total Pages: 19
+
+[ABSTRACT]:
+Abstract Accurate prediction of crop yield supported by scientific and domain-relevant insights, is useful to improve agricultural breeding, provide monitoring across diverse climatic condi- tions and thereby protect against climatic challenges to crop production. We used perfor- mance records from Uniform Soybean Tests (UST) in North America to build a Long Short Term Memory (LSTM)—Recurrent Neural Network based model that leveraged pedigree relatedness measures along with weekly weather parameters to dissect and predict geno- type response in multiple-environments. Our proposed models outperformed other compet- ing machine learning models such as Support Vector Regression with Radial Basis Function kernel (SVR-RBF), least absolute shrinkage and selection operator (LASSO) regression and the data-driven USDA model for yield prediction. Additionally, for providing interpretability of the important time-windows in the growing season, we developed a tempo- ral attention mechanism for LSTM models. The outputs of such interpretable models could provide valuable insights to plant breeders.
+
+[METRICS SNIPPETS]:
+  * In the first step of the greedy search, the Stacked LSTM model was trained for each of the 7 variables and to choose the variable that had the least RMSE
+  * We utilized three evaluation metrics: root mean square error (RMSE), mean absolute error (MAE), and coefficient of determination or R-squared (R2) score
+  * We observed average relative humidity had the lowest test RMSE
+  * Minimum surface temperature was the most important weather variable, i.e, had the lowest RMSE
+  * Empirical results For determination of appropriate temporal sampling of weather information to predict yield using our proposed frameworks, the validation set RMSE was used to determine optimal (lowest RMSE) number of time points to predict seed yield
+  * Overall, a R2 score of 0.796 between predicted and observed yields in the test set was attained; largely capturing the differences in performance between environments and years
+
+================================================================================
+PAPER: Sweet et al. (2023) — Cross-Validation Strategy Impacts ML Performance and Interpretation.pdf
+Total Pages: 14
+
+[ABSTRACT]:
+ABSTRACT: Machine learning algorithms are able to capture complex, nonlinear, interacting relationships and are increasingly used to predict agricultural yield variability at regional and national scales. Using explainable arti ﬁcial intelli- gence (XAI) methods applied to such algorithms may enable better scienti ﬁc understanding of drivers of yield variability. However, XAI methods may provide misleading results when applied to spatiotemporal correlated datasets. In this study, machine learning models are trained to predict simulated crop yield from climate indices, and the impact of cross-validation strategy on the interpretation and performance of the resulting models is assessed. Using data from a process-based crop model allows us to then comment on the plausibility of the “explanations” provided by XAI methods. Our results show that the choice of evaluation strategy has an impact on (i) interpretations of the model and (ii) model skill on held-out years and regions, after the evaluation strategy is used for hyperparameter tuning and feature selection. We ﬁnd that use of a cross- validation strategy based on clustering in feature space achieves the most plausible interpretati
+
+[METRICS SNIPPETS]:
+  * 1OCTOBER 2023 Unauthenticated | Downloaded 09/06/26 06:42 AM UTC  crop yield
+  * 3OCTOBER 2023 Unauthenticated | Downloaded 09/06/26 06:42 AM UTC  3 months prior to the sowing date and the subsequent 7 months, thereby fully encompassing the growing season in all grid cells (with subscripti used to represent the number of months before or after sowing)
+  * As the metric of model performance, we select the coef ﬁ- cient of determination ( R2) due to its frequent use in similar studies
+  * R2 represents the proportion of the variance explained by the variables of the model
+  * The best possible score is 1.0, and a model that predicts the mean of the target variable would have an R2 of 0.0; R2 can also be negative
+  * Our results are robust to the use of explained variance or root-mean- square error (RMSE) as performance metric
+
+================================================================================
+PAPER: Torsoni et al. (2023) — Soybean Yield Prediction by Machine Learning and Climate.pdf
+Total Pages: 17
+
+[ABSTRACT]:
+Abstract  Soybean cultivation plays an important role in Mato Grosso do Sul and around the world. Given the inherent complexity of  the agricultural system, this study aimed to develop climate-based yield prediction models using ML, considering the most  correlated meteorological variables for each condition, test the best model with independent data, and define zones of higher  soybean yield in Mato Grosso do Sul to recommend better planting sites. The study was carried out in two stages. First,  meteorological and soybean yield data obtained from 47 locations in the state of Mato Grosso do Sul were used to calibrate  the machine learning (ML) algorithms. Second, the best algorithm was used to predict soybean yields throughout Mato  Grosso do Sul. Daily meteorological data of air temperature (T, °C), precipitation (P, mm), global solar irradiance (Qg, MJ   m−2  day−1), wind speed (u2, m  s−1), net radiation (Rn, MJ  m−2  day−1), and relative humidity (RH, %) of the NASA-POWER  system from 2002 to 2021 were used. The reference evapotranspiration (ETo) by the standard FAO method and water balance  (WB) by Thornthwaite and Mather (1955) were calculated for each collection point. The 
+
+[METRICS SNIPPETS]:
+  * For instance, the best model in the calibration  was XGBOOSTING, which showed MAPE,  R2, RMSE, MSE, and MAE values of 1.84%, 0.95, 2.06%, 4.24%, and 0.921%,  respectively
+  * Random forest (RF), extreme gradient boosting (XGBOOSTING), and gradient boosting (GradBOOSTING)  were the most precise machine learning algorithms, with  R2 values of 0.71, 0.62, and 0.62 in the test, respectively
+  * 2.4  Model per formance evaluation The metrics used to verify the degree of learning consisted  of the mean square error (MSE), the performance evalu- ation of MLs in the validation period used the accuracy  through the Mean Absolute Percent Error (MAPE) and mean  Fig
+  * 1 3 absolute error (MAE), and the precision was defined by the  adjusted coefficient of determination   ( R2ADJ) (Eqs.  1, 2,  3, and 4)
+  * (1)MSE = ∑N i=1.�Yobsi − Yesti �2 N (2)MAPE = ∑N i=1
+  * The tendency, precision, and  accuracy of the calibration and testing were calculated by  MAPE,  R2, RMSE, MSE, and MAE
+
+================================================================================
+PAPER: Vijverberg, Hamed & Coumou (2023) — Skillful U.S. Soy Yield Forecasts at Presowing Lead Times.pdf
+Total Pages: 26
+
+[ABSTRACT]:
+ABSTRACT: Soy harvest failure events can severely impact farmers, insurance companies, and raise global prices. Reliable seasonal forecasts of misharvests would allow stakeholders to prepare and take appropriate early action. However, especially for farmers, the reliability and lead time of current prediction systems provide insuf ﬁcient information to justify within- season adaptation measures. Recent innovations increased our ability to generate reliable statistical seasonal forecasts. Here, we combine these innovations to predict the 1–3 poor soy harvest years in the eastern United States. Weﬁrst use a clustering algorithm to spatially aggregate crop producing regions within the eastern United States that are particularly sensitive to hot–dry weather conditions. Next, we use observational climate variables [sea surface temperature (SST) and soil moisture] to extract precursor time series at multiple lags. This allows the machine learning model to learn the low-frequency evolution, which carries important information for predictability. A selection based on causal inference allows for physically interpret- able precursors. We show that the robust selected predictors are associate
+
+[METRICS SNIPPETS]:
+  * Skill metrics Multiple metrics are needed for proper veriﬁcation (Vijverberg et al
+
+================================================================================
+PAPER: Xie, Huang & Meng (2025) — Soybean Yield Modeling with Weather Dynamics.pdf
+Total Pages: 18
+
+[ABSTRACT]:
+Abstract: Accurate crop yield prediction and modeling are essential for ensuring food secu- rity, optimizing resource allocation, and guiding policy decisions in agriculture, ultimately benefiting society at large. With the increasing threat of weather change, it is important to understand the impacts of weather dynamics on agricultural productivity, particularly for crucial crops like soybeans. This study considers the study area of the Greater Mis- sissippi River Basin, where most soybeans are typically planted, with a large variety of weather across from the North to the South in the US. Leveraging the greenness and density measured by the normalized difference vegetation index (NDVI) from NASA’s Moderate Resolution Imaging Spectroradiometer (MODIS) satellite images, along with weather vari- ables including mean precipitation, minimum temperature, and maximum temperature, we aim to uncover the relationships between these variables and soybean yield for different geographical and weather regions. Our analysis focuses on the four weather regions within the US: Very Cold, Cold, Mixed Humid, and Hot Humid, where most soybeans are planted in the Mississippi River Basin. The findings 
+
+[METRICS SNIPPETS]:
+  * This study will use the following widely used performance metrics: the adjusted R-squared, root mean square error (RMSE), and normalized root mean square error (NRMSE)
+  * The adjusted R2 penalizes models with more independent variables compared to the regular R2, and hence it is a more reliable metric for comparing models with different numbers of predictors
+  * The prediction performance of the nonlinear model is generally better than the linear model in terms of the adjusted R-squared, RMSE, and NRMSE values
+  * Moreover, our linear model achieved an RMSE ranging from 4.43 to 6.22, which is lower than those reported by [8,18,40] for crop yield forecasting
+
+================================================================================
+PAPER: Yin et al. (2026) — Estimating Soybean Yields from High-Temporal-Resolution Multi-Source Data.pdf
+Total Pages: 16
+
+[ABSTRACT]:
+ABSTRACT Accurate and timely crop yield prediction is crucial for ensuring food security and maintaining stable agricultural  markets, yet leveraging high-temporal-resolution, multi-source data for this purpose presents a big challenge in  effectively capturing intricate variable interactions across time, especially during periods of extreme weather  events. To address this issue, this study introduces an Attention and Graph Isomorphism Network-enhanced Bi-  directional Long Short-Term Memory network (AGB-LSTM), which is specifically designed for estimating county-  level soybean yield in the United States. The proposed model effectively integrated diverse high-temporal-  resolution time-series data (5-days), including Near-Infrared Reflectance of Vegetation (NIRv), Solar-Included  chlorophyll Fluorescence (SIF), and Gross Primary Productivity (GPP), along with environmental covariates.  The AGB-LSTM model achieves an accuracy of R2 = 0.67 and rRMSE = 14.46 %, which outperforms traditional  and advanced machine learning methods tested, such as Random Forest (RF) (R2 = 0.52, rRMSE = 17.36 %) and  Transformer (R2 = 0.60, rRMSE = 15.80 %). Furthermore, sensitivity analysis revealed th
+
+[METRICS SNIPPETS]:
+  * The AGB-LSTM model achieves an accuracy of R2 = 0.67 and rRMSE = 14.46 %, which outperforms traditional  and advanced machine learning methods tested, such as Random Forest (RF) (R2 = 0.52, rRMSE = 17.36 %) and  Transformer (R2 = 0.60, rRMSE = 15.80 %)
+  * Specifically, the  model performance is R2 = 0.67 and rRMSE = 14.46 % for the 5-day data, and R2 = 0.55 and rRMSE = 16.81 %  for the 30-day data
+  * We also highlight the robustness of the model under extreme climate events, maintaining  strong performance with R2 = 0.50 and rRMSE = 21.32 %
+  * (8)–(13), this study evaluated the prediction accuracy of  the model using the coefficient of determination (R2), relative root mean  square error (rRMSE), mean absolute percentage error (MAPE), relative  bias (rBias), and standard error (SE)
+  * R2 measures how well the model explains the variance in the actual  data, with higher values indicating a better fit
+  * rRMSE is a normalized  version of the root mean squared error, providing insight into the size of  prediction errors relative to the data range, where smaller values suggest  better model accuracy
