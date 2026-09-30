@@ -1,4 +1,4 @@
-"""ML forecasting pipeline: tabular models only (no SVR, no LSTM).
+"""ML forecasting pipeline: Integrated model (Weather + EDD30 + Lagged Yield Anomaly).
 
 Models:
   - Naive Trend baseline
@@ -6,7 +6,10 @@ Models:
   - RandomForest (bagging trees)
   - XGBoost (gradient boosted trees)
 
-Validation & Testing Protocol:
+Key Specification:
+  - Feature set: 17 bioclimatic indicators per month (including EDD30) +
+    spatial coordinates (lat_norm, lon_norm) +
+    train-only detrended prior-year yield anomaly (anomaly_lag1 = epsilon_{c, t-1}).
   - Train-only OLS detrending per county per fold.
   - Train-only feature standardization.
   - Hyperparameter tuning via chronological expanding window across the 1985-1995 validation partition (11 folds).
@@ -14,11 +17,12 @@ Validation & Testing Protocol:
   - Primary metric: pooled R2_OOS. Secondary: year-averaged R2_OOS.
 
 Outputs:
-  output/data/processed/hyperparameters_optimal.json  -- best hyperparams per model x horizon
-  output/data/processed/evaluation_metrics.parquet    -- all metrics per model x horizon x year
-  output/data/processed/evaluation_summary.csv        -- consolidated metric table
-  output/data/processed/evaluation_summary.parquet    -- parquet version of summary
-  output/data/processed/predictions.parquet           -- raw predictions for SHAP and figures
+  output/data/processed/hyperparameters_optimal_integrated.json
+  output/data/processed/evaluation_metrics_integrated.parquet
+  output/data/processed/evaluation_summary_integrated.csv
+  output/data/processed/evaluation_summary_integrated.parquet
+  output/data/processed/predictions_integrated.parquet
+  output/data/processed/diagnostics/comparison_weather_vs_integrated.csv
 """
 
 from __future__ import annotations
@@ -44,13 +48,15 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # Paths
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[2]          # repo root: Tesi/
-FEAT_DIR  = ROOT / "output" / "data" / "processed" / "model_datasets"
+FEAT_DIR   = ROOT / "output" / "data" / "processed" / "model_datasets"
 TARGET_CSV = ROOT / "data" / "target" / "soybean_yield_1951_2025.csv"
-OUT_DIR   = ROOT / "output" / "data" / "processed"
+OUT_DIR    = ROOT / "output" / "data" / "processed"
+DIAG_DIR   = OUT_DIR / "diagnostics"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+DIAG_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Partition constants (consolidated 2026-09-29)
+# Partition constants
 # ---------------------------------------------------------------------------
 BASE_TRAIN_START = 1951
 BASE_TRAIN_END   = 1984   # inclusive
@@ -106,7 +112,6 @@ def fit_county_trends(
     for fips, grp in train.groupby("county_fips"):
         y_vals = grp["yield_bu_per_acre"].values
         t_vals = grp["year"].values.astype(float)
-        # OLS via normal equations
         t_bar = t_vals.mean()
         y_bar = y_vals.mean()
         beta  = np.sum((t_vals - t_bar) * (y_vals - y_bar)) / np.sum((t_vals - t_bar) ** 2)
@@ -129,6 +134,31 @@ def compute_anomalies(
     return df
 
 
+def add_lagged_yield_anomaly(
+    df: pd.DataFrame,
+    yield_df: pd.DataFrame,
+    trend_params: dict[str, tuple[float, float]],
+    max_year: int,
+) -> pd.DataFrame:
+    """Compute prior-year detrended yield anomaly epsilon_{c, t-1} using train-only trends.
+    
+    For the first panel year (1951), epsilon_{c, 1950} = 0.0 (uninformative neutral prior).
+    For any test year Y, Y-1 was in the training set, so epsilon_{c, Y-1} is 100% strictly available.
+    """
+    hist_yield = yield_df[yield_df["year"] <= max_year].copy()
+    hist_anom = compute_anomalies(hist_yield, trend_params)
+    
+    # Map (county_fips, year) -> anomaly
+    anom_lookup = hist_anom.set_index(["county_fips", "year"])["anomaly"].to_dict()
+
+    df = df.copy()
+    df["anomaly_lag1"] = df.apply(
+        lambda r: anom_lookup.get((str(r["county_fips"]), int(r["year"]) - 1), 0.0),
+        axis=1,
+    )
+    return df
+
+
 # ---------------------------------------------------------------------------
 # Metric helpers
 # ---------------------------------------------------------------------------
@@ -143,7 +173,7 @@ def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 def r2_oos_pooled(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     ss_res = np.sum((y_true - y_pred) ** 2)
-    ss_tot = np.sum(y_true ** 2)   # denominator = sum of squares (anomaly, zero mean)
+    ss_tot = np.sum(y_true ** 2)
     if ss_tot == 0:
         return float("nan")
     return float(1.0 - ss_res / ss_tot)
@@ -205,10 +235,6 @@ def grid_search_validation_expanding(
     model_name: str,
     val_folds: list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]],
 ) -> dict:
-    """Evaluate candidate parameter sets using chronological expanding window across the 11 validation folds.
-    
-    Returns parameter dict minimising pooled validation RMSE.
-    """
     best_params = None
     best_rmse   = float("inf")
 
@@ -230,7 +256,7 @@ def grid_search_validation_expanding(
             if val_rmse < best_rmse:
                 best_rmse   = val_rmse
                 best_params = params
-        except Exception as e:
+        except Exception:
             continue
 
     return best_params if best_params is not None else GRIDS[model_name][0]
@@ -242,7 +268,7 @@ def grid_search_validation_expanding(
 
 def run_pipeline(horizons: list[int] | None = None) -> None:
     t0 = time.time()
-    print("=== ML Pipeline: Tabular Models (Naive, ElasticNet, RandomForest, XGBoost) ===", flush=True)
+    print("=== Integrated ML Pipeline (Weather + EDD30 + Lagged Yield Anomaly) ===", flush=True)
 
     # Load target
     yield_df = pd.read_csv(TARGET_CSV)
@@ -260,8 +286,7 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
     if horizons is None:
         horizons = list(range(1, 13))
 
-    # Storage
-    all_optimal_params: dict = {}   # H -> model -> params
+    all_optimal_params: dict = {}
     all_metrics: list[dict] = []
     all_predictions: list[dict] = []
 
@@ -277,44 +302,13 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
         feat_df["county_fips"] = feat_df["county_fips"].astype(str)
         feat_df = feat_df.rename(columns={"crop_year": "year"})
 
-        # Merge features with yield
+        # Merge base features with yield
         panel = yield_df.merge(feat_df, on=["county_fips", "year"], how="inner")
         panel = panel.sort_values(["year", "county_fips"]).reset_index(drop=True)
 
-        feature_cols = [c for c in feat_df.columns if c not in ("county_fips", "year")]
-
-        # H=12: only lat_norm, lon_norm — no weather features
-        if H == 12:
-            print(f"  H=12: Naive baseline (0 weather features)", flush=True)
-            for test_y in test_years:
-                train_yrs = [y for y in all_years if y < test_y]
-                tp = fit_county_trends(yield_df, train_yrs)
-                test_rows = panel[panel["year"] == test_y]
-                if test_rows.empty:
-                    continue
-                anom = compute_anomalies(test_rows, tp)
-                y_true = anom["anomaly"].values
-                y_pred_naive = np.zeros_like(y_true)
-                for _, row in test_rows.iterrows():
-                    all_predictions.append({
-                        "model": "Naive",
-                        "H": H,
-                        "year": test_y,
-                        "county_fips": row["county_fips"],
-                        "y_true_anomaly": float(anom[anom["county_fips"] == row["county_fips"]]["anomaly"].values[0]),
-                        "y_pred_anomaly": 0.0,
-                        "trend": float(anom[anom["county_fips"] == row["county_fips"]]["trend"].values[0]),
-                    })
-                all_metrics.append({
-                    "model": "Naive", "H": H, "year": test_y,
-                    "RMSE": rmse(y_true, y_pred_naive),
-                    "MAE": mae(y_true, y_pred_naive),
-                    "R2_year": r2_oos_pooled(y_true, y_pred_naive),
-                    "n_obs": len(y_true),
-                })
-            continue
-
-        # --- For H < 12 ---
+        # Feature columns include weather indicators + lat_norm, lon_norm + anomaly_lag1
+        weather_cols = [c for c in feat_df.columns if c not in ("county_fips", "year")]
+        feature_cols = weather_cols + ["anomaly_lag1"]
 
         # Step A: Build 11 validation folds using chronological expanding window
         print(f"  Building {len(val_years)} expanding validation folds (1985-1995)...", end=" ", flush=True)
@@ -322,12 +316,16 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
         val_folds: list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = []
         for y_val in val_years:
             train_yrs = [y for y in all_years if y < y_val]
-            train_panel = panel[panel["year"].isin(train_yrs)]
-            val_panel   = panel[panel["year"] == y_val]
+            train_panel = panel[panel["year"].isin(train_yrs)].copy()
+            val_panel   = panel[panel["year"] == y_val].copy()
 
             tp = fit_county_trends(yield_df, train_yrs)
             train_anom = compute_anomalies(train_panel, tp)
             val_anom   = compute_anomalies(val_panel,   tp)
+
+            # Add train-only lagged yield anomaly
+            train_anom = add_lagged_yield_anomaly(train_anom, yield_df, tp, max_year=y_val - 1)
+            val_anom   = add_lagged_yield_anomaly(val_anom,   yield_df, tp, max_year=y_val)
 
             X_tr = train_anom[feature_cols].values.astype(float)
             y_tr = train_anom["anomaly"].values.astype(float)
@@ -355,31 +353,32 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
 
         for test_y in test_years:
             train_yrs = [y for y in all_years if y < test_y]
-            train_panel = panel[panel["year"].isin(train_yrs)]
-            test_panel  = panel[panel["year"] == test_y]
+            train_panel = panel[panel["year"].isin(train_yrs)].copy()
+            test_panel  = panel[panel["year"] == test_y].copy()
             if test_panel.empty or train_panel.empty:
                 continue
 
-            # Train-only detrending for this fold
+            # Train-only detrending
             tp = fit_county_trends(yield_df, train_yrs)
             train_anom = compute_anomalies(train_panel, tp)
             test_anom  = compute_anomalies(test_panel,  tp)
+
+            # Add train-only lagged yield anomaly
+            train_anom = add_lagged_yield_anomaly(train_anom, yield_df, tp, max_year=test_y - 1)
+            test_anom  = add_lagged_yield_anomaly(test_anom,   yield_df, tp, max_year=test_y)
 
             X_tr = train_anom[feature_cols].values.astype(float)
             y_tr = train_anom["anomaly"].values.astype(float)
             X_te = test_anom[feature_cols].values.astype(float)
             y_te = test_anom["anomaly"].values.astype(float)
 
-            # Train-only scaler for this fold
-            scaler_fold = StandardScaler()
-            scaler_fold.fit(X_tr)
+            # Train-only scaler
+            scaler_fold = StandardScaler().fit(X_tr)
             X_tr_sc = scaler_fold.transform(X_tr)
             X_te_sc = scaler_fold.transform(X_te)
 
-            # Naive prediction (anomaly=0 everywhere)
+            # Naive prediction (anomaly = 0)
             y_naive = np.zeros_like(y_te)
-
-            # Save naive metrics and predictions
             all_metrics.append({
                 "model": "Naive", "H": H, "year": test_y,
                 "RMSE": rmse(y_te, y_naive),
@@ -426,13 +425,12 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
         print(f"done ({time.time()-t_test:.1f}s)", flush=True)
 
     # ---------------------------------------------------------------------------
-    # Compute pooled R2_OOS across all test years per (model, H)
+    # Consolidated Metrics
     # ---------------------------------------------------------------------------
     print("\nComputing pooled R2_OOS and Skill Scores...", flush=True)
     metrics_df  = pd.DataFrame(all_metrics)
     pred_df     = pd.DataFrame(all_predictions)
 
-    # Pooled R2_OOS: computed from all predictions at once per (model, H)
     pooled_records = []
     for (model_name, H), grp in pred_df.groupby(["model", "H"]):
         y_true = grp["y_true_anomaly"].values
@@ -449,7 +447,6 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
         })
     pooled_df = pd.DataFrame(pooled_records)
 
-    # Year-averaged R2_OOS (secondary metric)
     year_avg = (
         metrics_df
         .groupby(["model", "H"])["R2_year"]
@@ -458,7 +455,6 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
         .rename(columns={"R2_year": "R2_OOS_year_avg"})
     )
 
-    # Skill score relative to Naive pooled RMSE per H
     naive_rmse_by_H = (
         pooled_df[pooled_df["model"] == "Naive"]
         .set_index("H")["RMSE_OOS_pooled"]
@@ -473,45 +469,58 @@ def run_pipeline(horizons: list[int] | None = None) -> None:
     # ---------------------------------------------------------------------------
     # Save outputs
     # ---------------------------------------------------------------------------
-    metrics_path = OUT_DIR / "evaluation_metrics.parquet"
+    metrics_path = OUT_DIR / "evaluation_metrics_integrated.parquet"
     metrics_df.to_parquet(metrics_path, index=False)
 
-    summary_path = OUT_DIR / "evaluation_summary.parquet"
+    summary_path = OUT_DIR / "evaluation_summary_integrated.parquet"
     summary_df.to_parquet(summary_path, index=False)
-    summary_df.to_csv(OUT_DIR / "evaluation_summary.csv", index=False)
+    summary_df.to_csv(OUT_DIR / "evaluation_summary_integrated.csv", index=False)
 
-    pred_path = OUT_DIR / "predictions.parquet"
+    pred_path = OUT_DIR / "predictions_integrated.parquet"
     pred_df.to_parquet(pred_path, index=False)
 
-    hp_path = OUT_DIR / "hyperparameters_optimal.json"
-    existing_hp = {}
-    if hp_path.exists():
-        try:
-            with open(hp_path) as f:
-                existing_hp = json.load(f)
-        except Exception:
-            existing_hp = {}
-    for H_k, v in all_optimal_params.items():
-        existing_hp[str(H_k)] = v
+    hp_path = OUT_DIR / "hyperparameters_optimal_integrated.json"
     with open(hp_path, "w") as f:
-        json.dump(existing_hp, f, indent=2)
+        json.dump({str(H): v for H, v in all_optimal_params.items()}, f, indent=2)
 
-    print(f"\n=== Pipeline complete in {(time.time()-t0)/60:.1f} min ===", flush=True)
+    print(f"\n=== Integrated Pipeline complete in {(time.time()-t0)/60:.1f} min ===", flush=True)
     print(f"Outputs written to {OUT_DIR}", flush=True)
-    print("\n--- Summary (pooled R2_OOS) ---", flush=True)
+    print("\n--- Integrated Summary (pooled R2_OOS) ---", flush=True)
     pivot = summary_df.pivot(index="H", columns="model", values="R2_OOS_pooled").sort_index(ascending=False)
     print(pivot.to_string(), flush=True)
 
-    # Automatically run econometric diagnostics and explainability analysis
+    # ---------------------------------------------------------------------------
+    # Direct Comparison Table: Weather-Only vs Integrated (Weather + Lag1)
+    # ---------------------------------------------------------------------------
+    weather_only_path = OUT_DIR / "evaluation_summary.csv"
+    if weather_only_path.exists():
+        try:
+            wo_df = pd.read_csv(weather_only_path)
+            comp = summary_df[["model", "H", "R2_OOS_pooled", "RMSE_OOS_pooled"]].merge(
+                wo_df[["model", "H", "R2_OOS_pooled", "RMSE_OOS_pooled"]],
+                on=["model", "H"],
+                suffixes=("_integrated", "_weather_only"),
+            )
+            comp["delta_R2"] = comp["R2_OOS_pooled_integrated"] - comp["R2_OOS_pooled_weather_only"]
+            comp["delta_RMSE"] = comp["RMSE_OOS_pooled_integrated"] - comp["RMSE_OOS_pooled_weather_only"]
+            comp_csv = DIAG_DIR / "comparison_weather_vs_integrated.csv"
+            comp.to_csv(comp_csv, index=False)
+            print(f"\nSaved direct ablation comparison to {comp_csv}", flush=True)
+            print("\n--- Ablation Comparison: Delta R2_OOS (Integrated - Weather_Only) ---", flush=True)
+            piv_comp = comp.pivot(index="H", columns="model", values="delta_R2").sort_index(ascending=False)
+            print(piv_comp.to_string(), flush=True)
+        except Exception as e:
+            print(f"Warning: could not generate comparison table: {e}", flush=True)
+
+    # Automatically run econometric diagnostics on predictions_integrated
     try:
-        # ensure output/scripts is on sys.path
         scripts_dir = Path(__file__).resolve().parent
         if str(scripts_dir) not in sys.path:
             sys.path.append(str(scripts_dir))
         from analyze_model_diagnostics import run_diagnostics
         run_diagnostics(pred_path)
     except Exception as e:
-        print(f"Warning: diagnostics failed to run automatically: {e}", flush=True)
+        print(f"Warning: diagnostics failed to run: {e}", flush=True)
 
 
 if __name__ == "__main__":
