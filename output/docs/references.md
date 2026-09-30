@@ -7,6 +7,31 @@ catalog; no new literature search or publication-status verification was perform
 A cited study may use information outside this thesis's weather-only design; its
 presence does not authorize adopting those inputs.
 
+## Methodology textbook references (author-authorized 2026-09-30)
+
+Not domain papers from the primary agronomic bibliography; must be cited separately
+from the scientific literature. Used strictly for ML/statistical methodology.
+
+**Primary — deep learning and ML implementation:**
+> Géron, A. (2025). *Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow*
+> (latest edition, O'Reilly Media, December 2025; gorilla cover).
+
+Scope: LSTM architecture, dropout, Adam optimizer, Xavier initialization, early stopping,
+batch normalization, general DL training protocol.
+
+**Secondary — statistical learning topics not covered by Géron:**
+> James, G., Witten, D., Hastie, T., Tibshirani, R., & Taylor, J. (2023).
+> *An Introduction to Statistical Learning with Applications in Python*.
+> Springer. Available at https://www.statlearning.com
+
+Scope: regularized linear models (Ridge, Lasso, ElasticNet), tree ensembles
+(Random Forest, boosting), cross-validation theory, model selection criteria,
+bootstrap inference. Use Géron first; fall back to ISLP for topics absent there.
+
+Exact edition details to be verified against the physical/digital copy before final submission.
+
+
+
 | Reference | Methodological context | DOI |
 |---|---|---|
 | **Sweet et al. (2023)** | Temporal validation | [DOI](https://doi.org/10.1175/AIES-D-23-0026.1) |

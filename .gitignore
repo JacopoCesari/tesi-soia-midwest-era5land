@@ -21,6 +21,8 @@ work/scratch/
 data/processed/model_datasets/*
 !data/processed/model_datasets/README.md
 !data/processed/model_datasets/feature_manifest.json
+output/data/processed/lstm_sequences/*
+*.npz
 *.nc
 *.nc.part
 *.grib

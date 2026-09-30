@@ -40,6 +40,7 @@ K_FLUX_MAP: dict[str, str] = {
     "growing_degree_days":               "GDD",
     "heat_day_30":                       "HD30",
     "heat_day_35":                       "HD35",
+    "edd_30":                            "EDD30",
 }
 
 K_STATE_MAP: dict[str, str] = {
@@ -53,9 +54,9 @@ K_STATE_MAP: dict[str, str] = {
     "vapor_pressure_deficit":            "VPD",
 }
 
-FLUX_INDICATORS = list(K_FLUX_MAP.values())        # 7 flux indicators
+FLUX_INDICATORS = list(K_FLUX_MAP.values())        # 8 flux indicators
 STATE_INDICATORS = list(K_STATE_MAP.values()) + ["SM_root"]  # 9 state indicators (SM_root derived)
-ALL_INDICATOR_NAMES: list[str] = FLUX_INDICATORS + STATE_INDICATORS  # Exactly 16 indicators
+ALL_INDICATOR_NAMES: list[str] = FLUX_INDICATORS + STATE_INDICATORS  # Exactly 17 indicators
 
 HARVEST_MONTH = 10   # October
 HARVEST_DAY   = 31   # consolidated 2026-09-29
@@ -84,26 +85,28 @@ def aggregate_campaign_month(
     if sub.empty:
         return pd.DataFrame()
 
-    rows = []
-    for fips, grp in sub.groupby("county_fips"):
-        row: dict = {"county_fips": str(fips)}
-        # Flux: sum
-        for raw_col, ind_name in K_FLUX_MAP.items():
-            if raw_col in grp.columns:
-                row[ind_name] = float(grp[raw_col].sum())
-            else:
-                row[ind_name] = float("nan")
-        # State: mean
-        for raw_col, ind_name in K_STATE_MAP.items():
-            if raw_col in grp.columns:
-                row[ind_name] = float(grp[raw_col].mean())
-            else:
-                row[ind_name] = float("nan")
-        
-        # SM_root: depth-weighted column (0-100 cm, Eq. 3.14: 0.07*SM1 + 0.21*SM2 + 0.72*SM3)
-        row["SM_root"] = 0.07 * row["SM1"] + 0.21 * row["SM2"] + 0.72 * row["SM3"]
-        rows.append(row)
-    return pd.DataFrame(rows)
+    if "edd_30" not in sub.columns and "air_temperature_maximum" in sub.columns:
+        sub["edd_30"] = np.maximum(0.0, sub["air_temperature_maximum"] - 30.0)
+
+    flux_cols = [c for c in K_FLUX_MAP.keys() if c in sub.columns]
+    state_cols = [c for c in K_STATE_MAP.keys() if c in sub.columns]
+
+    agg_dict = {col: "sum" for col in flux_cols}
+    agg_dict.update({col: "mean" for col in state_cols})
+
+    grouped = sub.groupby("county_fips").agg(agg_dict).reset_index()
+    grouped["county_fips"] = grouped["county_fips"].astype(str)
+
+    rename_map = {**K_FLUX_MAP, **K_STATE_MAP}
+    grouped = grouped.rename(columns=rename_map)
+
+    # SM_root: depth-weighted column (0-100 cm, Eq. 3.14: 0.07*SM1 + 0.21*SM2 + 0.72*SM3)
+    if all(k in grouped.columns for k in ["SM1", "SM2", "SM3"]):
+        grouped["SM_root"] = 0.07 * grouped["SM1"] + 0.21 * grouped["SM2"] + 0.72 * grouped["SM3"]
+    else:
+        grouped["SM_root"] = np.nan
+
+    return grouped
 
 
 def build_centroid_coords(weights: pd.DataFrame) -> pd.DataFrame:

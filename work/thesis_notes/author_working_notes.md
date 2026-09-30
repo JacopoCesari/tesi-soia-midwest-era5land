@@ -124,3 +124,19 @@ Key milestones:
 5.  **Step 4**: Single-Pass Grid Search across the 1985–1995 balanced validation partition (11 years, 1,485 obs).
 6.  **Step 5**: Expanding-window out-of-sample evaluation across 1996–2025 (30 years, 4,050 evaluations) and export of performance artifacts.
 7.  **Step 6**: Drafting Chapter 5 (`05_empirical_results.tex`).
+
+---
+
+## 6. Tabular Machine Learning Execution & Empirical Results [COMPLETED 2026-09-30]
+
+*   **Roadmap Status:** Steps 1 through 5 of the execution roadmap are 100% completed and empirically validated.
+*   **Experiments Executed:**
+    1.  *Bioclimatic Feature Engineering ($\text{EDD}_{30}$):* Added Extreme Degree Days $> 30^\circ\text{C}$ to all 12 monthly matrices. ElasticNet gained $+1.07\%$ $R^2$ at $H=1$ and $+1.00\%$ at $H=3$; $\text{EDD}_{30}$ of August entered top-10 features at $H=3$. Full note: [`work/thesis_notes/experiment_summary_edd30_and_diagnostics.md`](file:///c:/Users/JacopoCesari-Aret%C3%A9sr/Desktop/Tesi/work/thesis_notes/experiment_summary_edd30_and_diagnostics.md).
+    2.  *Category C Integrated Model (Weather + $\text{EDD}_{30}$ + Anomaly $Y_{t-1}$):* Evaluated train-only detrended anomaly $\epsilon_{t-1}$. Peak tabular performance achieved: ElasticNet $R^2 = 0.2271$ at $H=2$, XGBoost $R^2 = 0.2159$ at $H=1$ and $0.2115$ at $H=3$. Direct ablation established that unconfounded antecedent crop memory adds $+1.0\% \dots +2.0\%$ in $R^2$. Full note: [`work/thesis_notes/experiment_summary_integrated_lagged_yield.md`](file:///c:/Users/JacopoCesari-Aret%C3%A9sr/Desktop/Tesi/work/thesis_notes/experiment_summary_integrated_lagged_yield.md).
+    3.  *Econometric & Explainability Diagnostics:*
+        *   Non-Gaussian residuals: negative skewness ($\approx -0.60$) from asymmetric climate downside risk; leptokurtosis; Jarque-Bera $p < 0.0001$.
+        *   Heteroscedasticity: residual variance doubles during negative shock regimes ($\sigma^2 \approx 16–20$ vs $8–10$ in normal years).
+        *   Phenological importance: summer months (Jun–Aug) explain $>51\%$ of total importance at $H=3$, with August peak ($18.4\%$), validating Hypothesis H1.
+        *   Shock mitigation: 2012 drought bias reduced from $-4.07$ bu/ac at $H=6$ to $-0.22$ bu/ac at $H=2$.
+*   **Artifacts Generated:** All summary tables, out-of-sample prediction parquets, diagnostics, and ablation comparisons are persisted in `output/data/processed/` and `output/data/processed/diagnostics/`.
+
