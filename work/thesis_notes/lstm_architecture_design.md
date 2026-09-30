@@ -22,12 +22,13 @@ rispetto alle aggregazioni mensili usate dai modelli tabular.
 | Variante | Descrizione | Stato |
 |---|---|---|
 | **A (lat/lon baseline)** | Input=16 meteo + lat/lon per time step, Xavier init | ✅ Grid v1 archiviata come baseline ablation |
-| **A (county embedding + Temporal Attention)** | Input=17 meteo (incl. EDD30), Temporal Attention sui time-step della campagna, county embedding all'output | 🎯 Target consolidato (direttiva autore 2026-09-30) |
+| **A (county embedding + Temporal Attention)** | Input=17 meteo (incl. EDD30), Temporal Attention sui time-step della campagna, county embedding all'output, Dense MLP head | 🎯 Implementato in `run_lstm_pipeline_v2.py` |
+| **A (integrated: + lagged yield anomaly)** | Estensione a weather + train-only detrended $\epsilon_{t-1}$ | 🎯 Implementato in `run_lstm_pipeline_v2.py` |
 | **B (no detrend)** | No OLS detrend a monte, temporal attention estesa al trend | 📋 Futura estensione esplorativa |
 
 ---
 
-## 3. Architettura consolidata — County Embedding & Temporal Attention
+## 3. Architettura consolidata — County Embedding, Temporal Attention & Dense Head
 
 ### 3.1 Flusso computazionale con Temporal Attention lungo la campagna
 
@@ -38,15 +39,15 @@ Input meteo [batch, seq_len, 17] (17 indicatori bioclimatici incl. EDD30)
         ↓
   Tutti gli hidden states [h_1, h_2, ..., h_T]  [batch, seq_len, hidden_size]
         ↓
-  Temporal Attention Layer (lungo la campagna meteo Nov→Ott):
+  Temporal Attention Layer (Bahdanau, lungo la campagna meteo Nov→Ott):
     e_t = v^T tanh(W_a h_t + b_a)
     alpha_t = softmax(e_t)        ← Pesi di attenzione per tempo [batch, seq_len]
-                                      (EXPLAINABILITY DIRETTA su giorni/settimane/mesi!)
+                                       (EXPLAINABILITY DIRETTA su giorni/settimane/mesi!)
     context vector c = sum_{t=1}^T (alpha_t * h_t)  [batch, hidden_size]
         ↓
-  concat [ context vector c | e_c ]   ← county embedding e_c [batch, 16]
+  concat [ context vector c | county embedding e_c (16) (| lag_y (1)) ]
         ↓
-  Linear(hidden_size + 16, 1)
+  Dense MLP Head: Linear(in_features, 32) → ReLU → Dropout → Linear(32, 1)
         ↓
   Anomalia scalare preditta \hat{epsilon}_{c, Y}
 ```
@@ -76,13 +77,25 @@ Criteri considerati:
   overfitting spaziale quando il numero di entità è limitato.
 
 **Decisione**: d=16 fisso. Non incluso nel grid per non far esplodere le combinazioni.
-Ablazione su d ∈ {8, 32} demandata a future sessioni se i risultati lo richiedono.
 
-### 3.4 Nota futura — dense head
+### 3.4 Dense MLP Head & Activation Function
 
-Variante non implementata nel grid corrente: sostituire la Linear finale con
-`Linear(hidden+16, 32) → ReLU → Linear(32, 1)`. Potenzialmente utile se hidden_size
-è grande e la proiezione diretta è troppo brusca. Segnato come TODO nel codice.
+La proiezione finale è implementata come:
+`Linear(in_features, 32) → GELU() → Dropout(dropout) → Linear(32, 1)`
+dove `in_features = hidden_size + 16` (Weather-Only) oppure `hidden_size + 16 + 1` (Integrated con $\epsilon_{t-1}$).
+
+**Motivazione per GELU (Gaussian Error Linear Unit)**:
+1. Il target è un'**anomalia di resa detrendata a media zero** ($\epsilon \in [-25, +20]$ bu/ac). Metà delle osservazioni sono negative (stress idrico, ondate di calore).
+2. Con la ReLU standard ($\max(0, z)$), qualsiasi attivazione intermedia negativa ha gradiente nullo (*dying ReLU problem*), riducendo la capacità della rete di modellare shock avversi.
+3. GELU è liscia, differenziabile ovunque, non-monotona per piccoli valori negativi e fornisce gradienti non nulli anche per attivazioni negative moderate, risultando la scelta standard nelle architetture neurali moderne. (Il codice supporta anche `--activation leaky_relu` e `--activation relu`).
+
+### 3.5 Learning Rate & Scheduler dinamico
+
+- **Optimizer**: Adam con pesi differenziati (discriminative fine-tuning):
+  - LSTM + Attention: $\text{LR} = 3 \times 10^{-5}$
+  - County Embedding + MLP Head: $\text{LR} = 3 \times 10^{-4}$
+- **Scheduler**: `torch.optim.lr_scheduler.ReduceLROnPlateau(mode='min', factor=0.5, patience=3, min_lr=1e-6)`.
+  Dimezza il learning rate quando la validation RMSE si arresta per 3 epoche consecutive. Questo consente al modello di beneficiare di rate di apprendimento progressivamente più fini ($3 \times 10^{-4} \to 1.5 \times 10^{-4} \to 7.5 \times 10^{-5}$) **senza moltiplicare il numero di configurazioni del grid search**.
 
 ---
 
@@ -94,71 +107,58 @@ Nell'expanding window, ogni fold riallena il modello da zero (Xavier random). Co
 iniziali (es. 1996, training 1951–1995 = 45 anni ≈ 6,075 osservazioni), la convergenza
 parte da un punto casuale ogni volta. Il pre-training risolve questo:
 
-- **Pre-training**: LSTM universale (senza county embedding) allenato su 1951–1979, validato
-  su 1980–1984. Apprende la relazione meteo→anomalia generale su tutto il panel pooled.
-- **Fine-tuning**: ogni fold parte dai pesi del pre-training (LSTM) + county embedding
+- **Pre-training**: LSTM universale + Temporal Attention (senza county embedding) allenato su 1951–1979 (29 anni), validato
+  su 1980–1984 (5 anni) con early stopping. Apprende la relazione meteo→anomalia generale su tutto il panel pooled.
+- **Fine-tuning**: ogni fold parte dai pesi del pre-training (LSTM + Attention) + county embedding
   inizializzato random (Xavier). Il modello raffina la relazione partendo da un punto già
   "ragionevole" invece che da rumore.
 
-**Garanzia no-leakage**: il pre-training usa solo 1951–1979, cioè dati precedenti sia alla
+**Garanzia no-leakage**: il pre-training usa solo 1951–1979 con pre-validation 1980–1984, cioè dati rigorosamente precedenti sia alla
 validation (1985–1995) che al test (1996–2025). Tutti i fold ricevono gli stessi pesi
-iniziali — non c'è trasferimento di informazione inter-fold.
-
-### 4.2 Discriminative fine-tuning — motivazione
-
-Approccio: Howard & Ruder (2018, ULMFiT) applicato al nostro contesto.
-
-| Componente | Learning rate | Motivazione |
-|---|---|---|
-| LSTM weights (da pre-training) | **3×10⁻⁵** (1/10 del LR base) | Preservare la rappresentazione pre-allenata, aggiornamenti piccoli |
-| County embedding (nuovo) | **3×10⁻⁴** (LR base) | Impara da zero, ha bisogno di aggiornamenti più grandi |
-| Output head Linear (nuovo) | **3×10⁻⁴** (LR base) | Impara da zero |
-
-L'alternativa più aggressiva — congelare completamente LSTM per N epoche poi sbloccarlo —
-è stata scartata perché aggiunge un iperparametro (N) e la differenza empirica rispetto al
-discriminative lr è marginale per sequenze brevi (Géron 2025, Cap. 15).
-
-### 4.3 Pesi pre-training salvati per (freq, hidden_size, num_layers)
-
-Un PretrainLSTM separato per ciascuna combinazione unica (hidden_size, num_layers)
-= 3 × 4 = 12 modelli × 3 frequenze = 36 file `.pt`. Dropout fisso a 0.2 durante
-il pre-training (valore medio, indipendente dalla config del grid).
-
-Path: `output/data/processed/lstm_sequences/pretrain_{freq}d_h{h}_l{l}.pt`
+iniziali — non c'è trasferimento di informazione inter-fold. Gli anni 1980–1984 vengono poi regolarmente inclusi nel training set dei fold a partire dal 1985.
 
 ---
 
-## 5. Grid search — iperparametri
+## 5. Grid search — iperparametri e potatura intelligente (Pruned Grid)
 
-### 5.1 Fissi da letteratura
+### 5.1 Fissi da letteratura e ingegneria
 
-| Param | Valore | Fonte |
+| Param | Valore | Fonte / Motivazione |
 |---|---|---|
 | Optimizer | Adam | Khaki & Wang (2019); Khaki et al. (2020) |
-| LR (pre-training e head) | 3×10⁻⁴ | Identico in entrambi i Khaki |
-| LR (LSTM fine-tuning) | 3×10⁻⁵ | Discriminative fine-tuning: LR/10 |
+| LR (head & embedding) | 3×10⁻⁴ | Khaki & Wang (2019, 2020) |
+| LR (LSTM & attention fine-tuning) | 3×10⁻⁵ | Discriminative fine-tuning (ULMFiT / Howard & Ruder 2018) |
+| LR Scheduler | ReduceLROnPlateau(factor=0.5, patience=3) | Adattamento dinamico fine-tuning |
+| Activation | GELU (default, opt: LeakyReLU, ReLU) | Prevenzione dying ReLU su anomalie zero-centered |
 | Weight init | Xavier uniform | Khaki & Wang (2019); Khaki et al. (2020) |
 | max_epochs | 100 (fine-tuning), 200 (pre-training) | Standard |
 | Early stopping patience | 7 (fine-tuning), 15 (pre-training) | Standard |
 | Gradient clipping | norm=1.0 | Géron (2025), standard per LSTM |
 
-### 5.2 Grid search v2 — 72 configurazioni
+### 5.2 Strategia Pruned Grid (44 configurazioni)
 
-| Param | Valori | Note |
-|---|---|---|
-| `hidden_size` | {64, 128, 256} | Khaki 2020 usava 64; range esteso per sequenze più ricche |
-| `num_layers` | {1, 2, 3, 4} | Esteso da {1,2} perché num_layers=2 vince sempre in v1 |
-| `dropout` | {0.0, 0.2, 0.4} | Nessuna indicazione dalla letteratura; range esplorato |
-| `batch_size` | {25, 64} | 25 da Khaki 2020 CNN-RNN; 64 da Khaki 2019 DNN |
+Tutti i livelli di ciascun iperparametro rimangono pienamente rappresentati:
+- `hidden_size`: $\{64, 128, 256\}$
+- `num_layers`: $\{1, 2, 3, 4\}$
+- `dropout`: $\{0.0, 0.2, 0.4\}$
+- `batch_size`: $\{25, 64\}$
 
-3 × 4 × 3 × 2 = **72 config** × 11 folds × 3 freq × 11 horizons = 27,324 fit totali.
+**Criteri di esclusione delle sole combinazioni patologiche/ridondanti**:
+1. `num_layers = 1` con `dropout > 0.0`: in PyTorch, il dropout interno di `nn.LSTM` opera solo tra strati ricorrenti multipli. Con 1 layer, PyTorch ignora il dropout (lo imposta a 0). Testare `(l=1, d=0.2)` e `(l=1, d=0.4)` significherebbe testare 3 volte lo stesso modello.
+2. `num_layers >= 3` con `dropout = 0.0`: una rete profonda senza regolarizzazione su 5.000 campioni agricoli è matematicamente destinata a grave overfitting.
+3. `num_layers = 4` con `hidden_size = 256`: genera oltre 1.8M di parametri, con rapporto campioni/pesi $< 0.003$, ingestibile per sequenze di 12 step.
 
-### 5.3 Nota su num_layers=3,4
+Risultato: **44 configurazioni**, riduzione del ~40% dei tempi di calcolo senza alcuna perdita di informazione.
 
-Con sequenze da 12 a 71 steps e ~4k-10k campioni, LSTM a 4 layer è aggressivo.
-Il dropout e l'early stopping mitigano l'overfitting. La scelta di testarlo è empirica:
-num_layers=2 batte num_layers=1 in tutti i 4 H completati della v1; non si assume
-che il vantaggio si arresti a 2 senza evidenza.
+### 5.3 Orizzonti di Validazione Rappresentativi ($H=1, 3, 6, 10$)
+
+Per il tuning su validation (1985–1995), si valutano gli orizzonti cardinali fenologici:
+- $H=1$ (Ottobre, fine stagione, 12 mesi meteo)
+- $H=3$ (Agosto, post-fioritura / grain-filling, 10 mesi meteo)
+- $H=6$ (Maggio, semina, 7 mesi meteo)
+- $H=10$ (Gennaio, pre-stagione / inverno, 3 mesi meteo)
+
+La configurazione ottimale selezionata viene poi applicata per l'addestramento e il test forecast (1996–2025) su **tutti gli 11 orizzonti**, dove ogni orizzonte impara la propria attenzione e il proprio modello sui dati disponibili fino a quel mese.
 
 ---
 
