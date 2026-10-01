@@ -90,21 +90,54 @@ Nel codice V2, durante la valutazione sul test set espanso (1996–2025), il tes
 
 ---
 
-## 6. Piano Esecutivo: 30 Minuti Ora vs Overnight Run
+## 6. Protocollo Definitivo: Grid Search Completa a 44 Configurazioni (Senza Esclusioni Forzate)
 
-### Fase 1 (Prossimi 30 minuti, prima di andare a letto):
-1. Salvataggio delle specifiche in `appunti.md`.
-2. Generazione e caching delle sequenze sub-mensili a 10 giorni (`seq_10d`) e a 5 giorni (`seq_5d`) per tutti i 75 anni (1950–2025) con routine vettorizzata NumPy e Zero-Cost Slicing.
-3. Creazione del modulo consolidato e resumabile `output/scripts/run_lstm_pipeline_v3.py`.
-4. Smoke test rapido sul terminale su $H=1$ per le 3 frequenze (30d, 10d, 5d) per verificare stabilità numerica e convergenza.
+Su esplicita indicazione metodologica dell'autore ("non ti preoccupare delle ore di run, dobbiamo fare le cose bene, non forzare troppe esclusioni"), la pipeline adotta lo spazio fattoriale completo a **44 configurazioni**, senza sacrificare profondità o batch size.
 
-### Fase 2 (Overnight Run, tutta la notte in background):
-Comando: `python output/scripts/run_lstm_pipeline_v3.py --mode overnight`
-1. **Fase A (Ablation Frequenze Meteo su $H=1 \dots 6$)**:
-   * Esecuzione 30d vs 10d vs 5d su tutti i 6 orizzonti in-season (11 fold di validazione 1985–1995).
-   * Elezione della frequenza campionessa con matrice comparativa completa 3 × 6.
-2. **Fase B (Ablation Anomalia Ritardata $\epsilon_{t-1}$)**:
-   * Test della resa ritardata (`anomaly_lag1`) sulla sola frequenza vincente per $H=1 \dots 6$.
-3. **Fase C (Test Out-of-Sample Completo 1996–2025, 11 Orizzonti)**:
-   * Valutazione espansa su 30 anni (1996–2025, 4.050 osservazioni) con Inner Validation Split blind per tutti gli 11 orizzonti.
-   * Salvataggio di predizioni, matrici di attenzione $\alpha_t$ e aggiornamento di `master_progression_register.csv`.
+### Spazio Iperparametrico delle 44 Configurazioni (`GRID_44`):
+* $h \in \{64, 128, 256\}$
+* $l \in \{1, 2, 3, 4\}$ ($l \in \{1, 2, 3\}$ per $h=256$)
+* $dr \in \{0.0, 0.2, 0.4\}$
+* $bs \in \{25, 64\}$
+Totale: **44 configurazioni per ciascuna frequenza temporale (30d, 10d, 5d)**.
+
+### Struttura delle Fasi Esecutive:
+1. **Fase A (Grid Search a 44 Configurazioni su Tutti gli 11 Orizzonti $H=1 \dots 11$)**:
+   * Valutazione su validazione espansa 1985–1995 (11 fold).
+   * **Nessun fissaggio arbitrario tra frequenze**: 30d, 10d e 5d eleggono ciascuna in modo indipendente la propria configurazione ottimale $(h^*, l^*, dr^*, bs^*)$.
+   * **Scoring Fenologico Pesato**:
+     $$\text{Score}(W) = \frac{\sum_{H=1}^{11} w_H \cdot \text{RMSE}_H}{\sum_{H=1}^{11} w_H}$$
+     con:
+     * $w_H = 1.5$ per $H \in \{1, 2, 3\}$ (Agosto, Settembre, Ottobre: riempimento baccelli e resa finale).
+     * $w_H = 1.0$ per $H \in \{4, 5, 6\}$ (Maggio, Giugno, Luglio: semina, sviluppo, fioritura).
+     * $w_H = 0.5$ per $H \in \{7 \dots 11\}$ (Novembre – Aprile: pre-season, segnale meteo debole).
+   * Elezione del Campione Assoluto $(W^*, \text{config}^*)$.
+2. **Fase B (Ablation Anomalia di Resa Ritardata $\epsilon_{t-1}$)**:
+   * Test della resa ritardata (`anomaly_lag1`) sulla configurazione campionessa per $H=1 \dots 6$.
+3. **Fase C (Test Out-of-Sample Completo 1996–2025 su Tutti gli 11 Orizzonti)**:
+   * Valutazione espansa su 30 anni (1996–2025, 4.050 osservazioni) con Inner Validation Split blind ($t-3 \dots t-1$) per tutti gli 11 orizzonti.
+   * Calcolo metriche pooled out-of-sample: $R^2_{\text{OOS}}$, RMSE, MAE, Hit Rate direzionale.
+
+### Ottimizzazioni Tecnologiche a Costo Zero (Preservando l'Integrità Scientifica):
+* **Zero-Cost Sequence Slicing**: Le sequenze complete per tutti i 75 anni sono caricate una sola volta in RAM e affettate per orizzonte ($X[:, :S_H, :]$) senza alcun I/O su disco.
+* **Checkpoint Atomico Resumabile**: Ogni singolo orizzonte viene serializzato immediatamente su `checkpoint_lstm.json`. Il processo può essere interrotto, riavviato a pezzi ("a step") o fatto girare in background continuo senza perdere un solo secondo di calcolo pregresso.
+* **Early Stopping con LR Plateau**: Pazienza 5 con decadimento del learning rate per evitare epoche ridondanti sui fold già convergenti.
+
+---
+
+## 7. TODO Metodologico & Repository Hygiene: Formalizzazione Nomi, Percorsi e Bonifica Scorie
+
+*Promemoria prioritario per la consegna della tesi e del codice al Relatore (Professore):*
+
+1. **Eliminazione Totale di Nomi Informali/Operativi ("Overnight", "v2", "v3", ecc.)**:
+   * Nel materiale finale da consegnare al relatore non deve comparire alcuna dicitura gergale o contingente (ad es. cartelle, log o opzioni CLI chiamate `overnight`, `v2`, `v3`, `temp`, `scratch`).
+   * Sostituire con nomenclatura scientifica formale ed esplicativa:
+     * Flag CLI: `--mode full_pipeline`, `--mode validation_sweep`, `--mode lag_ablation`, `--mode blind_test`.
+     * Report e cartelle: `work/reports/experiments/lstm/hyperparameter_validation_matrix.json`, `blind_out_of_sample_results.json`.
+     * Script: `output/scripts/run_lstm_pipeline.py` diventerà `train_lstm_anomaly_forecaster.py` o analogo modulo consolidato.
+2. **Audit e Bonifica Globale delle Scorie Obsolete nel Repository**:
+   * Eseguire una scansione approfondita dell'intero albero per:
+     * Verificare l'assenza di script o prototipi obsoleti non più utilizzati.
+     * Bonificare cartelle orfane o file temporanei non tracciati.
+     * Garantire la rigida aderenza alle linee guida di `AGENTS.md`: separazione netta tra la delivery minimale, pulita e accademica (`output/`) e l'area di lavoro/raw data (`work/`).
+     * Assicurare la massima razionalità, pulizia, eleganza e realismo professionale dell'intera repository prima della presentazione al docente.

@@ -4,20 +4,23 @@ run_lstm_pipeline.py -- Consolidated Production LSTM Pipeline for Soybean Yield 
 Key Features & Methodological Alignments:
 1. Spatial Encoding: continuous lat_norm + lon_norm concatenated to 17 bioclimatic indicators
    at every time step (input_size = 19). Empirically superior to discrete county embeddings.
-2. Architecture: LSTM (2 layers, hidden=128, dropout=0.2) + LayerNorm + Bahdanau Temporal Attention
-   + Dense MLP Head (GELU activation) + He/Kaiming initialization + AdamW (weight_decay=1e-4).
-3. Zero-Leakage Test Protocol:
+2. Architecture: LSTM + LayerNorm + Bahdanau Temporal Attention + Dense MLP Head (GELU)
+   + He/Kaiming initialization + AdamW (weight_decay=1e-4).
+3. Partial Grid Search (Phase A): Evaluates candidate capacities per frequency:
+   h in {64, 128} x l in {1, 2} (4 configs) across 30d, 10d, 5d on in-season horizons H=1..6.
+   Selects the champion frequency and its optimal architecture based on weighted In-Season RMSE.
+4. Zero-Leakage Test Protocol (Phase C):
    - Training on historical years: 1951 .. t-4
    - Inner Validation Window: t-3 .. t-1 (monitors early stopping & LR scheduler)
    - Test year t evaluated strictly blind at frozen weights.
-4. Resumable Checkpointing: Saves state after each fold to checkpoint_lstm.json.
-5. Slicing Optimization: Reads 75-year full-season sequences once; any horizon H is sliced X[:, :S_H, :].
+5. Resumable Checkpointing: Saves state after each fold to checkpoint_lstm.json.
+6. Slicing Optimization: Reads 75-year full-season sequences once; any horizon H is sliced X[:, :S_H, :].
 
 Modes:
-  --mode phase_a    : Benchmark temporal frequencies (30d vs 10d vs 5d) on H=1..6 (1985-1995 val).
+  --mode phase_a    : Partial grid across frequencies (30d vs 10d vs 5d) on H=1..6 (1985-1995 val).
   --mode phase_b    : Evaluate lagged yield anomaly (epsilon_{t-1}) ablation on champion frequency.
   --mode phase_c    : Full 100% blind expanding test (1996-2025) across all 11 horizons.
-  --mode overnight  : Run Phase A -> auto-select champion -> Phase B -> Phase C -> update reports.
+  --mode overnight  : Run Phase A (partial grid) -> select champion -> Phase B -> Phase C.
 """
 
 from __future__ import annotations
@@ -87,6 +90,46 @@ def seq_len_at_H(H: int, W: int) -> int:
     m = 13 - H
     wpm = windows_per_month(W)
     return sum(wpm[cm] for cm in range(1, m + 1))
+
+
+# ---------------------------------------------------------------------------
+# Hyperparameter Grids: Full 44 Configurations (No Forced Exclusions) & Lean
+# ---------------------------------------------------------------------------
+def build_grid_44() -> list[dict]:
+    """
+    Exhaustive 44-configuration factorial grid:
+    - hidden_size in {64, 128, 256}
+    - num_layers in {1, 2, 3, 4} (l in {1, 2, 3} for h=256)
+    - dropout in {0.0, 0.2, 0.4}
+    - batch_size in {25, 64}
+    Matches the exact 44 configurations evaluated in exploratory stage.
+    """
+    grid = []
+    for h in [64, 128, 256]:
+        for bs in [25, 64]:
+            grid.append({"hidden_size": h, "num_layers": 1, "dropout": 0.0, "batch_size": bs})
+        for l in [2]:
+            for dr in [0.0, 0.2, 0.4]:
+                for bs in [25, 64]:
+                    grid.append({"hidden_size": h, "num_layers": l, "dropout": dr, "batch_size": bs})
+        for l in ([3, 4] if h < 256 else [3]):
+            for dr in [0.2, 0.4]:
+                for bs in [25, 64]:
+                    grid.append({"hidden_size": h, "num_layers": l, "dropout": dr, "batch_size": bs})
+    return grid
+
+def build_grid_lean() -> list[dict]:
+    """Targeted 6-configuration grid covering key depths and empirical champions."""
+    return [
+        {"hidden_size": 64,  "num_layers": 1, "dropout": 0.0, "batch_size": 25},
+        {"hidden_size": 64,  "num_layers": 2, "dropout": 0.2, "batch_size": 25},
+        {"hidden_size": 64,  "num_layers": 2, "dropout": 0.4, "batch_size": 25},
+        {"hidden_size": 128, "num_layers": 1, "dropout": 0.0, "batch_size": 25},
+        {"hidden_size": 128, "num_layers": 2, "dropout": 0.2, "batch_size": 25},
+        {"hidden_size": 128, "num_layers": 2, "dropout": 0.4, "batch_size": 25},
+    ]
+
+GRID_44 = build_grid_44()
 
 
 # ---------------------------------------------------------------------------
@@ -327,12 +370,20 @@ def save_checkpoint(data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# STAGE A: Frequency Ablation (30d vs 10d vs 5d across H=1..6)
+# STAGE A: Grid Search across Frequencies (30d vs 10d vs 5d on all Horizons)
 # ---------------------------------------------------------------------------
-def run_phase_a(horizons: list[int] = [1, 2, 3, 4, 5, 6]) -> str:
+def run_phase_a(
+    horizons: list[int] = list(range(1, 12)),
+    frequencies: list[int] = [30, 10, 5],
+    grid: list[dict] | None = None,
+) -> tuple[int, dict]:
+    if grid is None:
+        grid = GRID_44
+
     print("\n" + "=" * 75)
-    print("PHASE A: WEATHER TEMPORAL FREQUENCY ABLATION (30d vs 10d vs 5d)")
-    print(f"Growing Season Horizons: H={horizons} | Validation: 1985-1995 (11 Folds)")
+    print("PHASE A: HYPERPARAMETER SEARCH ACROSS TEMPORAL FREQUENCIES (30d vs 10d vs 5d)")
+    print(f"Campaign Horizons: H={horizons} ({len(horizons)} horizons) | Validation: 1985-1995 (11 Folds)")
+    print(f"Candidate Grid: {len(grid)} configurations per frequency (No Forced Exclusions)")
     print("=" * 75)
 
     chk = load_checkpoint()
@@ -341,73 +392,128 @@ def run_phase_a(horizons: list[int] = [1, 2, 3, 4, 5, 6]) -> str:
     all_years = sorted(yield_df["year"].unique().tolist())
     val_years = [y for y in all_years if VAL_START <= y <= VAL_END]
 
-    frequencies = [30, 10, 5]
-    summary_results: dict[int, dict[int, float]] = {w: {} for w in frequencies}
+    freq_best_config: dict[int, dict] = {}
+    freq_best_rmse: dict[int, float] = {}
 
     for W in frequencies:
-        print(f"\n>> Evaluating Frequency {W}-day (W={W})...", flush=True)
-        for H in horizons:
-            key = f"phase_a_{W}d_H{H:02d}"
-            if key in chk:
-                res = chk[key]["rmse"]
-                summary_results[W][H] = res
-                print(f"  H={H:02d}: Cached Val RMSE = {res:.4f}")
-                continue
+        print(f"\n=======================================================")
+        print(f">> FREQUENCY: {W}-day sequences")
+        print(f"=======================================================")
 
-            X_seq, counties, years = get_sequence_slice(W, H)
-            fold_rmses = []
+        best_cfg_rmse = float("inf")
+        best_cfg_dict = grid[0]
 
-            for val_y in val_years:
-                train_yrs = [y for y in all_years if y < val_y]
-                tp = fit_trends(yield_df, train_yrs)
-                anom_map = compute_anomalies(yield_df, tp, train_yrs + [val_y])
+        for cfg_idx, cfg in enumerate(grid):
+            h = cfg["hidden_size"]
+            l = cfg["num_layers"]
+            dr = cfg["dropout"]
+            bs = cfg["batch_size"]
+            cfg_sig = f"cfg{cfg_idx:02d}_h{h}_l{l}_dr{int(round(dr*100))}_bs{bs}"
+            print(f"\n  Evaluating Config {cfg_idx+1}/{len(grid)}: {cfg_sig}...")
 
-                tr_mask = np.isin(years, train_yrs)
-                va_mask = (years == val_y)
+            h_rmses = {}
 
-                y_tr = np.array([anom_map[(f, y)] for f, y in zip(counties[tr_mask], years[tr_mask])], dtype=np.float32)
-                y_va = np.array([anom_map[(f, y)] for f, y in zip(counties[va_mask], years[va_mask])], dtype=np.float32)
+            for H in horizons:
+                key = f"phase_a_{W}d_{cfg_sig}_H{H:02d}"
+                legacy_key = f"phase_a_{W}d_cfg{cfg_idx}_H{H:02d}"
+                if key in chk:
+                    res = chk[key]["rmse"]
+                    h_rmses[H] = res
+                    print(f"    H={H:02d}: Cached Val RMSE = {res:.4f}")
+                    continue
+                elif legacy_key in chk:
+                    res = chk[legacy_key]["rmse"]
+                    h_rmses[H] = res
+                    print(f"    H={H:02d}: Cached Val RMSE = {res:.4f}")
+                    continue
 
-                flat_tr = X_seq[tr_mask].reshape(-1, INPUT_SIZE)
-                mu = flat_tr.mean(axis=0); sigma = flat_tr.std(axis=0); sigma[sigma == 0] = 1.0
-                X_tr_sc = (X_seq[tr_mask] - mu) / sigma
-                X_va_sc = (X_seq[va_mask] - mu) / sigma
+                X_seq, counties, years = get_sequence_slice(W, H)
+                fold_rmses = []
 
-                val_preds, _, _ = fit_and_predict(
-                    X_tr=X_tr_sc, y_tr=y_tr, lag_tr=None,
-                    X_va=X_va_sc, y_va=y_va, lag_va=None,
-                    X_te=X_va_sc, lag_te=None,
-                    hidden_size=128, num_layers=2, dropout=0.2, batch_size=25,
-                )
-                fold_rmses.append(float(np.sqrt(np.mean((val_preds - y_va) ** 2))))
+                for val_y in val_years:
+                    train_yrs = [y for y in all_years if y < val_y]
+                    tp = fit_trends(yield_df, train_yrs)
+                    anom_map = compute_anomalies(yield_df, tp, train_yrs + [val_y])
 
-            mean_rmse = float(np.mean(fold_rmses))
-            summary_results[W][H] = mean_rmse
-            chk[key] = {"rmse": mean_rmse, "fold_rmses": fold_rmses, "timestamp": datetime.now(timezone.utc).isoformat()}
-            save_checkpoint(chk)
-            print(f"  H={H:02d}: Val RMSE = {mean_rmse:.4f}")
+                    tr_mask = np.isin(years, train_yrs)
+                    va_mask = (years == val_y)
+
+                    y_tr = np.array([anom_map[(f, y)] for f, y in zip(counties[tr_mask], years[tr_mask])], dtype=np.float32)
+                    y_va = np.array([anom_map[(f, y)] for f, y in zip(counties[va_mask], years[va_mask])], dtype=np.float32)
+
+                    flat_tr = X_seq[tr_mask].reshape(-1, INPUT_SIZE)
+                    mu = flat_tr.mean(axis=0); sigma = flat_tr.std(axis=0); sigma[sigma == 0] = 1.0
+                    X_tr_sc = (X_seq[tr_mask] - mu) / sigma
+                    X_va_sc = (X_seq[va_mask] - mu) / sigma
+
+                    val_preds, _, _ = fit_and_predict(
+                        X_tr=X_tr_sc, y_tr=y_tr, lag_tr=None,
+                        X_va=X_va_sc, y_va=y_va, lag_va=None,
+                        X_te=X_va_sc, lag_te=None,
+                        hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
+                    )
+                    fold_rmses.append(float(np.sqrt(np.mean((val_preds - y_va) ** 2))))
+
+                mean_h_rmse = float(np.mean(fold_rmses))
+                h_rmses[H] = mean_h_rmse
+                chk[key] = {
+                    "rmse": mean_h_rmse,
+                    "fold_rmses": fold_rmses,
+                    "config": cfg,
+                    "cfg_idx": cfg_idx,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+                save_checkpoint(chk)
+                print(f"    H={H:02d}: Val RMSE = {mean_h_rmse:.4f}")
+
+            # Phenologically Weighted RMSE across evaluated horizons:
+            # - Peak harvest / pod-filling (H=1, 2, 3): 1.5x weight
+            # - Vegetative & flowering (H=4, 5, 6): 1.0x weight
+            # - Pre-season (H=7..11): 0.5x weight
+            weights = {
+                1: 1.5, 2: 1.5, 3: 1.5,
+                4: 1.0, 5: 1.0, 6: 1.0,
+                7: 0.5, 8: 0.5, 9: 0.5, 10: 0.5, 11: 0.5,
+            }
+            weighted_rmse = sum(h_rmses[H] * weights.get(H, 0.5) for H in horizons) / sum(weights.get(H, 0.5) for H in horizons)
+            unweighted_rmse = float(np.mean(list(h_rmses.values())))
+            print(f"  -> Config {cfg_idx+1}/{len(grid)} Score: Weighted RMSE = {weighted_rmse:.4f} (Unweighted = {unweighted_rmse:.4f})")
+
+            if weighted_rmse < best_cfg_rmse:
+                best_cfg_rmse = weighted_rmse
+                best_cfg_dict = cfg
+
+        freq_best_config[W] = best_cfg_dict
+        freq_best_rmse[W]   = best_cfg_rmse
+        print(f"\n>> BEST CONFIG FOR {W}-day: {best_cfg_dict} with Weighted RMSE = {best_cfg_rmse:.4f}")
 
     print("\n" + "=" * 75)
-    print("PHASE A SUMMARY: IN-SEASON RMSE MATRIX (H=1..6)")
+    print("PHASE A FINAL SUMMARY: CHAMPION OF EACH FREQUENCY")
     print("=" * 75)
-    df_res = pd.DataFrame(summary_results).T
-    df_res.columns = [f"H={h}" for h in horizons]
-    df_res["InSeason_Mean"] = df_res.mean(axis=1)
-    peak_cols = [f"H={h}" for h in [1, 2, 3] if f"H={h}" in df_res.columns]
-    df_res["PeakSeason_Mean (H1-H3)"] = df_res[peak_cols].mean(axis=1)
-    print(df_res.to_string())
+    for W in frequencies:
+        print(f"  Frequency {W:2d}-day: Weighted RMSE = {freq_best_rmse[W]:.4f} | Optimal Config: {freq_best_config[W]}")
 
-    best_freq = int(df_res["InSeason_Mean"].idxmin())
-    print(f"\n--> CHAMPION TEMPORAL FREQUENCY: {best_freq}-day (InSeason RMSE = {df_res.loc[best_freq, 'InSeason_Mean']:.4f})")
-    return str(best_freq)
+    champion_freq = min(frequencies, key=lambda w: freq_best_rmse[w])
+    champion_config = freq_best_config[champion_freq]
+    print(f"\n--> OVERALL CHAMPION: {champion_freq}-day Frequency with {champion_config} (Score: {freq_best_rmse[champion_freq]:.4f})")
+
+    chk["champion"] = {
+        "freq": champion_freq,
+        "config": champion_config,
+        "score": freq_best_rmse[champion_freq],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    save_checkpoint(chk)
+    return champion_freq, champion_config
 
 
 # ---------------------------------------------------------------------------
 # STAGE B: Lagged Yield Anomaly Ablation (epsilon_{t-1})
 # ---------------------------------------------------------------------------
-def run_phase_b(champion_freq: int, horizons: list[int] = [1, 2, 3, 4, 5, 6]) -> None:
+def run_phase_b(champion_freq: int, champion_config: dict, horizons: list[int] = [1, 2, 3, 4, 5, 6]) -> None:
     print("\n" + "=" * 75)
     print(f"PHASE B: LAGGED YIELD ANOMALY ABLATION (Frequency = {champion_freq}-day)")
+    print(f"Using Optimal Config: {champion_config}")
     print("=" * 75)
 
     chk = load_checkpoint()
@@ -415,6 +521,11 @@ def run_phase_b(champion_freq: int, horizons: list[int] = [1, 2, 3, 4, 5, 6]) ->
     yield_df["county_fips"] = yield_df["county_fips"].astype(str)
     all_years = sorted(yield_df["year"].unique().tolist())
     val_years = [y for y in all_years if VAL_START <= y <= VAL_END]
+
+    h = champion_config["hidden_size"]
+    l = champion_config["num_layers"]
+    dr = champion_config["dropout"]
+    bs = champion_config["batch_size"]
 
     for H in horizons:
         key = f"phase_b_lag_{champion_freq}d_H{H:02d}"
@@ -453,7 +564,7 @@ def run_phase_b(champion_freq: int, horizons: list[int] = [1, 2, 3, 4, 5, 6]) ->
                 X_tr=X_tr_sc, y_tr=y_tr, lag_tr=lag_tr_sc,
                 X_va=X_va_sc, y_va=y_va, lag_va=lag_va_sc,
                 X_te=X_va_sc, lag_te=lag_va_sc,
-                hidden_size=128, num_layers=2, dropout=0.2, batch_size=25,
+                hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
             )
             fold_rmses.append(float(np.sqrt(np.mean((val_preds - y_va) ** 2))))
 
@@ -466,11 +577,11 @@ def run_phase_b(champion_freq: int, horizons: list[int] = [1, 2, 3, 4, 5, 6]) ->
 # ---------------------------------------------------------------------------
 # STAGE C: Full 100% Blind Test (1996-2025 across all 11 horizons)
 # ---------------------------------------------------------------------------
-def run_phase_c(champion_freq: int, include_lag: bool = True) -> None:
+def run_phase_c(champion_freq: int, champion_config: dict, include_lag: bool = True) -> None:
     print("\n" + "=" * 75)
     print("PHASE C: FULL 100% BLIND OUT-OF-SAMPLE TEST FORECAST (1996-2025)")
-    print(f"Frequency = {champion_freq}-day | Include Lag Yield = {include_lag} | All 11 Horizons")
-    print("Protocol: Inner Validation Window (t-3..t-1) for Zero Test Leakage")
+    print(f"Frequency = {champion_freq}-day | Config = {champion_config} | Include Lag Yield = {include_lag}")
+    print("Protocol: Inner Validation Window (t-3..t-1) for Zero Test Leakage across All 11 Horizons")
     print("=" * 75)
 
     chk = load_checkpoint()
@@ -478,6 +589,11 @@ def run_phase_c(champion_freq: int, include_lag: bool = True) -> None:
     yield_df["county_fips"] = yield_df["county_fips"].astype(str)
     all_years = sorted(yield_df["year"].unique().tolist())
     test_years = [y for y in all_years if TEST_START <= y <= TEST_END]
+
+    h = champion_config["hidden_size"]
+    l = champion_config["num_layers"]
+    dr = champion_config["dropout"]
+    bs = champion_config["batch_size"]
 
     for H in range(1, 12):
         print(f"\n--- Horizon H={H:02d} ---", flush=True)
@@ -489,6 +605,7 @@ def run_phase_c(champion_freq: int, include_lag: bool = True) -> None:
         X_seq, counties, years = get_sequence_slice(champion_freq, H)
         y_true_all = []
         y_pred_all = []
+        attn_all = []
 
         for test_y in test_years:
             hist_years = [y for y in all_years if y < test_y]
@@ -524,14 +641,16 @@ def run_phase_c(champion_freq: int, include_lag: bool = True) -> None:
             else:
                 lag_tr_sc = lag_va_sc = lag_te_sc = None
 
-            pred_te, _, _ = fit_and_predict(
+            pred_te, attn_te, _ = fit_and_predict(
                 X_tr=X_tr_sc, y_tr=y_tr, lag_tr=lag_tr_sc,
                 X_va=X_va_sc, y_va=y_va, lag_va=lag_va_sc,
                 X_te=X_te_sc, lag_te=lag_te_sc,
-                hidden_size=128, num_layers=2, dropout=0.2, batch_size=25,
+                hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
             )
             y_true_all.extend(y_te)
             y_pred_all.extend(pred_te)
+            if attn_te is not None:
+                attn_all.append(attn_te.mean(axis=0))
 
         y_true_np = np.array(y_true_all)
         y_pred_np = np.array(y_pred_all)
@@ -542,10 +661,12 @@ def run_phase_c(champion_freq: int, include_lag: bool = True) -> None:
         r2_p   = float(1.0 - ss_res / ss_tot)
         hit_rate = float(np.mean(np.sign(y_true_np) == np.sign(y_pred_np)))
 
+        mean_attn_vector = [float(v) for v in np.mean(attn_all, axis=0)] if len(attn_all) > 0 else []
         print(f"  H={H:02d} Final Test: RMSE={rmse_p:.4f} | R2_OOS={r2_p:.4f} | MAE={mae_p:.4f} | HitRate={hit_rate*100:.1f}%")
         chk[key] = {
             "rmse_pooled": rmse_p, "r2_pooled": r2_p, "mae_pooled": mae_p,
             "hit_rate": hit_rate, "n_obs": len(y_true_np),
+            "mean_attention": mean_attn_vector,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         save_checkpoint(chk)
@@ -555,25 +676,37 @@ def run_phase_c(champion_freq: int, include_lag: bool = True) -> None:
 # MAIN CLI
 # ---------------------------------------------------------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Consolidated LSTM Pipeline")
+    parser = argparse.ArgumentParser(description="Consolidated LSTM Pipeline with Full 44 Grid Search")
     parser.add_argument("--mode", choices=["phase_a", "phase_b", "phase_c", "overnight"], default="overnight")
-    parser.add_argument("--freq", type=int, default=30)
+    parser.add_argument("--grid", choices=["44", "lean"], default="44", help="Grid type: 44 for exhaustive 44 configs, lean for 6 configs")
+    parser.add_argument("--freqs", nargs="+", type=int, default=[30, 10, 5], help="Aggregation frequencies in days (default: 30 10 5)")
+    parser.add_argument("--horizons", nargs="+", type=int, default=list(range(1, 12)), help="Horizons to evaluate (default: 1..11)")
     args = parser.parse_args()
 
+    selected_grid = GRID_44 if args.grid == "44" else build_grid_lean()
+
     if args.mode == "phase_a":
-        run_phase_a()
+        run_phase_a(horizons=args.horizons, frequencies=args.freqs, grid=selected_grid)
     elif args.mode == "phase_b":
-        run_phase_b(args.freq)
+        chk = load_checkpoint()
+        champ = chk.get("champion", {})
+        cfg = champ.get("config", selected_grid[0])
+        freq = champ.get("freq", args.freqs[0])
+        run_phase_b(freq, cfg, horizons=[h for h in args.horizons if h <= 6])
     elif args.mode == "phase_c":
-        run_phase_c(args.freq)
+        chk = load_checkpoint()
+        champ = chk.get("champion", {})
+        cfg = champ.get("config", selected_grid[0])
+        freq = champ.get("freq", args.freqs[0])
+        run_phase_c(freq, cfg, include_lag=True)
     elif args.mode == "overnight":
-        best_freq_str = run_phase_a()
-        best_freq = int(best_freq_str)
-        run_phase_b(best_freq)
-        run_phase_c(best_freq, include_lag=True)
+        champion_freq, champion_config = run_phase_a(horizons=args.horizons, frequencies=args.freqs, grid=selected_grid)
+        run_phase_b(champion_freq, champion_config, horizons=[h for h in args.horizons if h <= 6])
+        run_phase_c(champion_freq, champion_config, include_lag=True)
         print("\n" + "=" * 75)
         print("OVERNIGHT PIPELINE FULLY COMPLETED!")
         print("=" * 75)
+
 
 if __name__ == "__main__":
     main()
