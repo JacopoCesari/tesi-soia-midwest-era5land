@@ -53,6 +53,9 @@
 - **One Paper per Topic**: In narrative reviews, cite **one primary reference paper per mini-topic/paragraph** (e.g., Sharma for tree review, Khaki for sequential models, Yin for sub-monthly aggregation). Avoid dense multi-citation stacking unless explicitly contrasting divergent findings.
 - **Reserve Papers in Repository**: The 3 additional local papers in `work/references/papers/` (`Jeong et al. 2016`, `Iizumi et al. 2018`, `Khaki & Wang 2019`) are kept in reserve. Cite them **only** if a technical concept is uniquely present in them and absent from the 13 primary papers. Never cite them gratuitously and never upload them to the supervisor's OneDrive folder unless cited.
 - **Zero External Additions**: Never add new papers without explicit author authorization.
+- **Authorized Theoretical Textbooks (2026-10-03)**: The author has explicitly authorized two theoretical reference textbooks, available in `work/references/`:
+  - **James et al. — *Introduction to Statistical Learning with Python* (ISLP)** → `work/references/ISLP.pdf`. Cite as `\citet{James2023}` or similar. Use for theoretical foundations of regularized regression (Ridge, Lasso, ElasticNet), tree ensembles, cross-validation, and model selection.
+  - **Géron — *Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow*, 3rd ed.** → notebooks in `work/references/homl3_*.ipynb`. Cite as `\citet{Geron2022}` or similar. Use for LSTM architecture details, gradient clipping, Adam optimizer, and ensemble methods. These are methodological support references, complementary to the primary literature perimeter.
 
 ### 3. Author Voice, Register, and Zero LLM Markers
 - The author is an Italian data-science MSc student writing in professional C1 English.

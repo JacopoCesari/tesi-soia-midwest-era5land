@@ -742,7 +742,7 @@ def run_phase_b(champion_freq: int, champion_configs: dict, horizons: list[int] 
             _, _, v_rmse = fit_and_predict(
                 X_tr=X_tr_sc, y_tr=y_tr, lag_tr=lag_tr_sc,
                 X_va=X_va_sc, y_va=y_va, lag_va=lag_va_sc,
-                X_te=X_va_sc, lag_te=None,
+                X_te=X_va_sc, lag_te=lag_va_sc,
                 hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
             )
             fold_rmses.append(v_rmse)
@@ -797,6 +797,7 @@ def run_phase_c(champion_freq: int, champion_configs: dict, include_lag: bool = 
         y_true_all = []
         y_pred_all = []
         y_years_all = []
+        counties_all = []
         attn_all = []
 
         for test_y in test_years:
@@ -843,6 +844,7 @@ def run_phase_c(champion_freq: int, champion_configs: dict, include_lag: bool = 
             y_true_all.extend(y_te)
             y_pred_all.extend(pred_te)
             y_years_all.extend([test_y] * len(y_te))
+            counties_all.extend(counties[te_mask])
             if attn_te is not None:
                 attn_all.append(attn_te.mean(axis=0))
 
@@ -878,13 +880,132 @@ def run_phase_c(champion_freq: int, champion_configs: dict, include_lag: bool = 
         }
         save_checkpoint(chk)
 
+        # Save individual prediction parquet
+        pred_file = REPORT_DIR / f"preds_{champion_freq}d_H{H:02d}_{head_variant}_{'lag' if include_lag else 'weather'}.parquet"
+        pd.DataFrame({
+            "year": y_years_np,
+            "county_fips": counties_all,
+            "actual_anomaly": y_true_np,
+            "pred_anomaly": y_pred_np,
+            "horizon": H,
+            "head_variant": head_variant,
+            "include_lag": include_lag,
+            "frequency": champion_freq,
+        }).to_parquet(pred_file, index=False)
+
+
+# ---------------------------------------------------------------------------
+# Consolidated Export Helper
+# ---------------------------------------------------------------------------
+def export_consolidated_results(champion_freq: int) -> None:
+    print("\n" + "=" * 75)
+    print("EXPORTING CONSOLIDATED LSTM RESULTS & DIAGNOSTICS")
+    print("=" * 75)
+
+    chk = load_checkpoint()
+    rows = []
+
+    # 1. Base Naive reference at H=12
+    rows.append({
+        "model": "Naive",
+        "variant": "secular_trend",
+        "include_lag": False,
+        "frequency": champion_freq,
+        "H": 12,
+        "RMSE_OOS_pooled": 5.9442,
+        "R2_OOS_pooled": 0.0,
+        "MAE_OOS_pooled": 4.7675,
+        "Skill_Score": 0.0,
+        "Hit_Rate": 0.5,
+        "RMSE_2012": 6.84,
+        "Bias_2012": 3.42,
+        "RMSE_normal": 4.25,
+    })
+
+    # 2. Extract Phase C results
+    for key, data in chk.items():
+        if not key.startswith("phase_c_test_"):
+            continue
+        parts = key.split("_")
+        h_part = [p for p in parts if p.startswith("H") and p[1:].isdigit()]
+        if not h_part:
+            continue
+        H = int(h_part[0][1:])
+        variant = data.get("variant", "gelu")
+        include_lag = key.endswith("_lag")
+        rmse_p = data.get("rmse_pooled", float("nan"))
+        r2_p   = data.get("r2_pooled", float("nan"))
+        mae_p  = data.get("mae_pooled", float("nan"))
+        skill  = 1.0 - (rmse_p / 5.9442) if rmse_p else float("nan")
+
+        rows.append({
+            "model": "LSTM",
+            "variant": variant,
+            "include_lag": include_lag,
+            "frequency": champion_freq,
+            "H": H,
+            "RMSE_OOS_pooled": rmse_p,
+            "R2_OOS_pooled": r2_p,
+            "MAE_OOS_pooled": mae_p,
+            "Skill_Score": skill,
+            "Hit_Rate": data.get("hit_rate", float("nan")),
+            "RMSE_2012": data.get("rmse_2012", float("nan")),
+            "Bias_2012": data.get("bias_2012", float("nan")),
+            "RMSE_normal": data.get("rmse_normal", float("nan")),
+        })
+
+    summary_df = pd.DataFrame(rows)
+    if not summary_df.empty:
+        summary_df.sort_values(by=["model", "variant", "include_lag", "H"], ascending=[False, True, True, False], inplace=True)
+        out_csv = ROOT / "output" / "data" / "processed" / "evaluation_summary_lstm.csv"
+        out_parquet = ROOT / "output" / "data" / "processed" / "evaluation_summary_lstm.parquet"
+        summary_df.to_csv(out_csv, index=False)
+        summary_df.to_parquet(out_parquet, index=False)
+        print(f">> Saved evaluation summary to:\n   {out_csv}\n   {out_parquet}")
+
+        # Build comparison: Weather vs Integrated (lag)
+        comp_rows = []
+        for var, grp in summary_df[summary_df["model"] == "LSTM"].groupby("variant"):
+            w_df = grp[~grp["include_lag"]].set_index("H")
+            l_df = grp[grp["include_lag"]].set_index("H")
+            common_H = sorted(list(set(w_df.index).intersection(set(l_df.index))))
+            for H in common_H:
+                r2_w = w_df.loc[H, "R2_OOS_pooled"]
+                r2_l = l_df.loc[H, "R2_OOS_pooled"]
+                rmse_w = w_df.loc[H, "RMSE_OOS_pooled"]
+                rmse_l = l_df.loc[H, "RMSE_OOS_pooled"]
+                comp_rows.append({
+                    "variant": var,
+                    "H": H,
+                    "R2_OOS_pooled_integrated": r2_l,
+                    "RMSE_OOS_pooled_integrated": rmse_l,
+                    "R2_OOS_pooled_weather_only": r2_w,
+                    "RMSE_OOS_pooled_weather_only": rmse_w,
+                    "delta_R2": r2_l - r2_w,
+                    "delta_RMSE": rmse_l - rmse_w,
+                })
+        if comp_rows:
+            comp_df = pd.DataFrame(comp_rows)
+            comp_csv = ROOT / "output" / "data" / "processed" / "diagnostics" / "comparison_weather_vs_integrated_lstm.csv"
+            comp_csv.parent.mkdir(parents=True, exist_ok=True)
+            comp_df.to_csv(comp_csv, index=False)
+            print(f">> Saved weather vs integrated comparison to:\n   {comp_csv}")
+
+        # Concatenate all predictions if available
+        pred_files = list(REPORT_DIR.glob(f"preds_{champion_freq}d_*.parquet"))
+        if pred_files:
+            all_preds = pd.concat([pd.read_parquet(p) for p in pred_files], axis=0)
+            pred_out = ROOT / "output" / "data" / "processed" / "predictions_lstm.parquet"
+            all_preds.to_parquet(pred_out, index=False)
+            print(f">> Saved consolidated predictions to:\n   {pred_out}")
+
 
 # ---------------------------------------------------------------------------
 # MAIN CLI
 # ---------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description="Consolidated LSTM Pipeline with Multi-Head Support")
-    parser.add_argument("--mode", choices=["phase_a", "microgrid", "phase_b", "phase_c", "overnight", "full_pipeline"], default="full_pipeline")
+    parser.add_argument("--mode", choices=["phase_a", "microgrid", "phase_b", "phase_c", "overnight", "full_pipeline", "export_reports"], default="full_pipeline")
     parser.add_argument("--grid", choices=["44", "lean"], default="44", help="Grid type: 44 for exhaustive 44 configs, lean for 6 configs")
     parser.add_argument("--freqs", nargs="+", type=int, default=[30, 10, 5], help="Aggregation frequencies in days (default: 30 10 5)")
     parser.add_argument("--horizons", nargs="+", type=int, default=list(range(1, 12)), help="Horizons to evaluate (default: 1..11)")
@@ -892,6 +1013,13 @@ def main():
     args = parser.parse_args()
 
     selected_grid = GRID_44 if args.grid == "44" else build_grid_lean()
+
+    if args.mode == "export_reports":
+        chk = load_checkpoint()
+        champ = chk.get("champion", {})
+        freq = champ.get("freq", args.freqs[0])
+        export_consolidated_results(freq)
+        return
 
     if args.mode == "phase_a":
         run_phase_a(horizons=args.horizons, frequencies=args.freqs, grid=selected_grid)
@@ -915,6 +1043,7 @@ def main():
         freq = champ.get("freq", args.freqs[0])
         cfg_map = opt_per_h.get(str(freq), opt_per_h.get(freq, champ.get("config", selected_grid[0])))
         run_phase_c(freq, cfg_map, include_lag=args.include_lag, head_variant="gelu")
+        export_consolidated_results(freq)
     elif args.mode in ["overnight", "full_pipeline"]:
         # Step 1: Macro Grid Search across frequencies
         champion_freq, champion_configs_per_H = run_phase_a(horizons=args.horizons, frequencies=args.freqs, grid=selected_grid)
@@ -922,11 +1051,23 @@ def main():
         variant_champions = run_phase_microgrid(champion_freq, champion_configs_per_H, horizons=[h for h in args.horizons if h <= 6])
         # Step 3: Lagged Yield Anomaly Ablation
         run_phase_b(champion_freq, champion_configs_per_H, horizons=[h for h in args.horizons if h <= 6])
-        # Step 4: Full Blind Test Set Evaluation on all variants
+        # Step 4: Final Evaluation of the 4 Deep Learning Options: Weather-Only vs. With Past Yield Anomaly
+        print("\n" + "=" * 75)
+        print("FINAL EVALUATION ACROSS THE 4 DEEP LEARNING OPTIONS (WEATHER-ONLY vs. WITH PAST YIELD)")
+        print("=" * 75)
         for v_name, v_data in variant_champions.items():
-            run_phase_c(champion_freq, {H: v_data["config"] for H in range(1, 12)}, include_lag=False, head_variant=v_name)
-        if args.include_lag:
-            run_phase_c(champion_freq, champion_configs_per_H, include_lag=True, head_variant="gelu")
+            final_cfg_map = {H: v_data["config"] for H in range(1, 12)}
+            
+            # (A) Final Model: Weather-Only
+            print(f"\n>> [{v_name.upper()}] Final Out-of-Sample Evaluation (Weather-Only)...")
+            run_phase_c(champion_freq, final_cfg_map, include_lag=False, head_variant=v_name)
+            
+            # (B) Final Model: With Past Yield Anomaly (Integrated)
+            print(f"\n>> [{v_name.upper()}] Final Out-of-Sample Evaluation (With Past Yield Anomaly)...")
+            run_phase_c(champion_freq, final_cfg_map, include_lag=True, head_variant=v_name)
+
+        # Step 5: Export consolidated results and comparison files for Chapter 5
+        export_consolidated_results(champion_freq)
         print("\n" + "=" * 75)
         print("FULL LSTM PIPELINE COMPLETED SUCCESSFULLY!")
         print("=" * 75)
@@ -934,3 +1075,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

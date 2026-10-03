@@ -1,0 +1,2 @@
+model,variant,include_lag,frequency,H,RMSE_OOS_pooled,R2_OOS_pooled,MAE_OOS_pooled,Skill_Score,Hit_Rate,RMSE_2012,Bias_2012,RMSE_normal
+Naive,secular_trend,False,30,12,5.9442,0.0,4.7675,0.0,0.5,6.84,3.42,4.25

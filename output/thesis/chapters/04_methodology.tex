@@ -174,10 +174,10 @@ We specify two complementary tree ensembles:
     At each candidate split, candidate partitioning minimizes node variance over a random feature subset $p_{\text{split}} \le P_H$. Random feature subsampling decorrelates individual trees, reducing ensemble variance on high-dimensional weather inputs.
     \item \textbf{XGBoost (Gradient Tree Boosting):} Fits an additive sequence of $M$ shallow regression trees minimizing a regularized loss \citep{Torsonietal2023}:
     \begin{equation}
-        \mathcal{L}^{(m)} = \sum_{i=1}^{N} \left[ g_i f_m(\mathbf{x}_i) + \frac{1}{2} h_i f_m(\mathbf{x}_i)^2 \right] + \gamma_{\text{split}} T_{\text{leaves}} + \frac{1}{2} \lambda_{\text{reg}} \sum_{j=1}^{T_{\text{leaves}}} w_j^2
+        \mathcal{L}^{(m)} = \sum_{i=1}^{N} \left[ g_i f_m(\mathbf{x}_i) + \frac{1}{2} h_i f_m(\mathbf{x}_i)^2 \right] + \gamma_{\text{split}} T_{\text{leaves}} + \frac{1}{2} \lambda_{\text{reg}} \sum_{j=1}^{T_{\text{leaves}}} w_j^2 + \alpha_{\text{reg}} \sum_{j=1}^{T_{\text{leaves}}} |w_j|
         \label{eq:xgboost_objective}
     \end{equation}
-    where $g_i$ and $h_i$ are first and second order loss gradients, $T_{\text{leaves}}$ is leaf count, and $w_j$ are leaf weights. Leaf complexity is constrained by split threshold $\gamma_{\text{split}}$ and $L_2$ regularization $\lambda_{\text{reg}}$. Column subsampling randomly restricts predictors at each tree level to prevent dominance by individual heat-stress indicators. Sequential updates employ shrinkage rate $\eta \in (0, 1]$:
+    where $g_i$ and $h_i$ are first and second order loss gradients, $T_{\text{leaves}}$ is leaf count, and $w_j$ are leaf weights. Leaf complexity is constrained by split threshold $\gamma_{\text{split}}$, $L_2$ regularization $\lambda_{\text{reg}}$, and $L_1$ penalty $\alpha_{\text{reg}}$ \citep{Geron2022}. Column subsampling randomly restricts predictors at each tree level to prevent dominance by individual heat-stress indicators \citep{James2023}. Sequential updates employ shrinkage rate $\eta \in (0, 1]$:
     \begin{equation}
         \hat{\epsilon}_i^{(m)} = \hat{\epsilon}_i^{(m-1)} + \eta f_m(\mathbf{x}_i)
         \label{eq:xgboost_update}
