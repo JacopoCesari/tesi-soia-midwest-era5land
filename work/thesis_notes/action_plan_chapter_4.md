@@ -2,7 +2,7 @@
 
 > **Document Status:** Active Working Roadmap  
 > **Target Delivery File:** `output/thesis/chapters/04_methodology.tex`  
-> **Master Reference:** `output/thesis/main.tex`, `output/docs/decisions.md`, `work/thesis_notes/author_working_notes.md`
+> **Master Reference:** `output/thesis/main.tex`, `output/docs/decisions.md`, `work/thesis_notes/operational_todo_and_action_plans.md`
 
 ---
 
