@@ -130,3 +130,38 @@ Analisi statistica condotta sulle 4.050 osservazioni out-of-sample per ciascun o
 ### 6.3 Risposta allo Shock Storico della Siccità 2012
 * **A $H=6$ (Maggio):** I modelli mostrano un bias negativo medio di $-4.07\text{ bu/ac}$ e $\text{RMSE} \in [6.36, 7.20]\text{ bu/ac}$, attestando l'impossibilità di anticipare la siccità estiva prima della semina.
 * **A $H=2$ (Settembre):** L'ingestione dei dati estivi abbatte il bias di ElasticNet a **$-0.25\text{ bu/ac}$** e l'RMSE di XGBoost a **$5.64\text{ bu/ac}$**, dimostrando che le feature ad alta frequenza di $VPD$ e stress termico intercettano quantitativamente il collasso regionale.
+
+### 6.4 Calibrazione per Decili e Tail Shrinkage ($D_1 \dots D_{10}$ a $H=2$)
+Partizionando le 4.050 osservazioni out-of-sample nei 10 decili dell'anomalia osservata:
+* **Decile di Siccità Estrema ($D_1$, media reale $-10.52\text{ bu/ac}$):**
+  * Naive Benchmark: $0.00\text{ bu/ac}$ ($\text{RMSE} = 11.06\text{ bu/ac}$, $\text{Bias} = +10.52$).
+  * ElasticNet: $-1.90\text{ bu/ac}$ ($\text{RMSE} = 9.68\text{ bu/ac}$, $\text{Bias} = +8.61$).
+  * XGBoost: $-1.02\text{ bu/ac}$ ($\text{RMSE} = 10.25\text{ bu/ac}$, $\text{Bias} = +9.50$).
+  * Random Forest: $-0.88\text{ bu/ac}$ ($\text{RMSE} = 10.29\text{ bu/ac}$, $\text{Bias} = +9.64$).
+* **Evidenza Metodologica Fondamentale:** 
+  1. Tutti i modelli addestrati con loss quadratica $L_2$ manifestano un severo *tail shrinkage* (l'algoritmo predice in media solo il $10\% - 18\%$ dell'ampiezza reale dello shock per non peggiorare il fit globale).
+  2. ElasticNet attenua la coda meno degli alberi ($-1.90$ vs $-1.02$ bu/ac) perché i modelli ad albero sono limitati superiormente e inferiormente dalle medie delle foglie terminali e non possono estrapolare, mentre il modello lineare regolarizzato proietta linearmente lungo la coda.
+* **Decili Centrali ($D_4 - D_6$, anomalie da $-0.25$ a $+2.61\text{ bu/ac}$):**
+  * Il fit è eccellente e l'errore crolla: $\text{RMSE} \approx 2.00 - 2.80\text{ bu/ac}$ per XGBoost ed ElasticNet.
+
+### 6.5 Inferenza Statistica: Test di Wilcoxon / Diebold-Mariano sui 30 Anni di Test
+Valutazione della significatività statistica dei differenziali di errore quadratico annuale (30 fold out-of-sample 1996–2025):
+* **Superiorità rispetto alla Baseline Naive:**
+  * $H=12 \dots 7$: $p > 0.05$ (nessun modello è statisticamente distinguibile dalla baseline primaverile).
+  * $H=6$ (Maggio, semina): XGBoost mostra un'emergenza precoce debole ($p = 0.082$).
+  * $H=5$ (Giugno): ElasticNet domina il Naive ($p = 0.026$).
+  * $H=4 \dots 1$ (Luglio – Ottobre): Tutti i modelli battono sistematicamente la baseline con elevata significatività statistica ($p < 10^{-4}$ a $H=3, 2, 1$).
+* **Confronto Lineare vs Non-Lineare (ElasticNet vs XGBoost):**
+  * A $H=1$: $p = 0.9515$
+  * A $H=2$: $p = 0.4399$
+  * A $H=3$: $p = 0.5158$
+  * *Conclusione econometrica inattaccabile:* Non sussiste alcuna differenza statisticamente significativa tra la complessità degli alberi gradient-boosted (XGBoost) e la regressione regolarizzata (ElasticNet) sul piano dell'errore quadratico medio aggregato.
+
+### 6.6 Struttura di Dipendenza Spazio-Temporale dei Residui
+* **Autocorrelazione Temporale AR(1) per Contea:**
+  * Media su 135 contee: $\rho_{\text{AR(1)}} = 0.049 \pm 0.177$ a $H=2$ ($0.057 \pm 0.191$ a $H=1$).
+  * L'assenza di correlazione seriale conferma che la detrendizzazione OLS train-only per contea ha epurato integralmente la memoria storica temporale dai residui di previsione.
+* **Autocorrelazione Spaziale (Moran's $I$ su Pesi di Distanza Inversa):**
+  * A $H=6$ (Maggio, pre-stagione): $I = 0.209 \pm 0.068$.
+  * A $H=2$ (Settembre, post-riempimento baccelli): $I = 0.178 \pm 0.088$ per ElasticNet e $0.193 \pm 0.062$ per XGBoost.
+  * La correlazione spaziale residua positiva moderata riflette forzanti regionali non catturate dalla meteorologia pura (eventi grandinigeni localizzati, dinamiche di prezzo/gestione, fitopatie estese).
