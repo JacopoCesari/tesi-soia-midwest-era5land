@@ -69,6 +69,15 @@ Our machine learning models in Chapter~4 are trained exclusively to predict the 
     \label{fig:yield_trajectory}
 \end{figure}
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory_dual_petrol}
+    \caption{Alternative visualization: County soybean yield trajectories, linear trend, and expanding dispersion envelopes across 135 Midwestern counties (1950--2025). Shaded dual envelopes contrast the inner 90\% cross-county dispersion core (solid borders) against historical min--max record boundaries (dotted lines), separated into positive (emerald green) and deficit (terracotta) regions relative to the long-term linear trend (deep petrol dashed line). The solid petrol-grey line traces the annual cross-sectional panel mean. Vertical arrows highlight the multidecadal expansion of cross-county dispersion from 1951 ($\Delta = 14.4\text{ bu/ac}$) to 2024 ($\Delta = 28.2\text{ bu/ac}$, $+96\%$).}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}}
+    \label{fig:yield_trajectory_dual_petrol}
+\end{figure}
+
 The secular baseline $\tau_{c,t}$ captures technological progress, including advanced breeding, transgenic traits, mechanization, and precision farming inputs. Across the 75-year panel, regional average soybean yields expanded from $22.77\text{ bu/ac}$ in the 1950s to $57.31\text{ bu/ac}$ in the 2020s (+151.7\%, Table~\ref{tab:decadal_yields}). At the regional annual level ($N = 75$), an ordinary least squares (OLS) regression indicates an average gain of $+0.484\text{ bu/ac/year}$ ($R^2 = 0.9323$, Figure~\ref{fig:yield_trajectory}):
 \begin{equation}
     \hat{y}_t = 0.484 \cdot t - 925.46 \quad (t = 1951, \dots, 2025)

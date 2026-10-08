@@ -1,7 +1,7 @@
 # Tabular Machine Learning Models, Feature Engineering & Econometric Diagnostics
 
 > **Document Status:** Consolidated Methodological and Empirical Synthesis  
-> **Tema del File:** Valutazione out-of-sample (1996–2025, 30 fold espansi, 4.050 osservazioni per orizzonte) dei modelli di Machine Learning Tabulare (Tier 1–3: ElasticNet, Random Forest, XGBoost) su tutti i 12 orizzonti previsivi ($H=12 \dots 1$). Comprende l'arricchimento bioclimatico con $\text{EDD}_{30}$, l'ablazione della memoria agronomica (Category C: anomalia ritardata $\epsilon_{t-1}$), l'analisi dell'importanza fenologica (Ipotesi H1) e la diagnostica econometrica dei residui.  
+> **Tema del File:** Valutazione out-of-sample (1996–2025, 30 fold espansi, 4.050 osservazioni per orizzonte) dei modelli di Machine Learning Tabulare (Tier 1–3: ElasticNet, Random Forest, XGBoost) su tutti i 12 orizzonti previsivi ($H=12 \dots 1$). Comprende l'arricchimento bioclimatico con $\text{EDD}_{30}$, l'ablazione della memoria agronomica (Category C: anomalia ritardata $\epsilon_{t-1}$), l'analisi dell'importanza fenologica (Ipotesi H1), la diagnostica econometrica dei residui e l'indagine comparativa sul detrending (Expanding OLS vs Rolling Window).  
 > **Regola di Demarcazione:** Questo documento registra unicamente scelte metodologiche consolidate, formulazioni matematiche e riscontri empirici validati. Tutti i TO-DO operativi, checklist e piani di azione risiedono separatamente in [`operational_todo_and_action_plans.md`](./operational_todo_and_action_plans.md).
 
 ---
@@ -165,3 +165,18 @@ Valutazione della significatività statistica dei differenziali di errore quadra
   * A $H=6$ (Maggio, pre-stagione): $I = 0.209 \pm 0.068$.
   * A $H=2$ (Settembre, post-riempimento baccelli): $I = 0.178 \pm 0.088$ per ElasticNet e $0.193 \pm 0.062$ per XGBoost.
   * La correlazione spaziale residua positiva moderata riflette forzanti regionali non catturate dalla meteorologia pura (eventi grandinigeni localizzati, dinamiche di prezzo/gestione, fitopatie estese).
+
+---
+
+## 7. Nota Metodologica: Verifica del Detrending Mobile (Rolling OLS / SMA)
+
+> **Sintesi rapida:** Abbiamo testato se un detrending a finestra mobile (media mobile o regressione lineare mobile a 25–28 anni) potesse adattarsi meglio all'accelerazione tecnologica recente (post-1996) rispetto all'Expanding Linear OLS train-only. Il test ha mostrato che l'approccio mobile peggiora le performance dei modelli di ML; pertanto si mantiene l'Expanding Linear OLS standard.
+
+* **Media mobile semplice (SMA):** Inutilizzabile a causa del ritardo di fase strutturale (*phase lag*), che introduce un forte bias positivo sistematico ($+2.9\text{ bu/ac}$ a 10 anni, $+6.5\text{ bu/ac}$ a 25 anni).
+* **Rolling OLS con pendenza (~27 anni):** A livello puramente univariato riduce leggermente il bias recente scartando gli anni '50 e '60 (MedAE $3.82$ vs $3.95\text{ bu/ac}$). Tuttavia, quando usato come **target supervisionato** per il Machine Learning ($\epsilon = y - \hat{\tau}$), l'ingresso e l'uscita di shock storici severi (es. 1988, 1993) dalla finestra fa ruotare artificiosamente la pendenza anno su anno. Questo inietta rumore non meteorologico nel target.
+* **Verifica empirica sui modelli (coorti 1986–1995 e 2006–2015):** 
+  * L'**Expanding Linear OLS vince sistematicamente** su tutti i modelli e le epoche.
+  * Sulla coorte moderna (2006–2015 a $H=1$), con Rolling OLS ElasticNet cala da $R^2 = 13.8\%$ a $9.2\%$, XGBoost crolla da $14.4\%$ a $2.1\%$, e LSTM crolla da $18.1\%$ a $-2.3\%$. I modelli non-lineari e deep learning risentono pesantemente del rumore spuro del target mobile.
+* **Conclusione:** L'Expanding Linear OLS dal 1951 rimane la scelta ottimale, parsimoniosa ed econometricamente corretta per isolare il segnale climatico puro. Nessuna modifica richiesta a codice o tesi (al più una menzione di passaggio se utile).
+
+

@@ -1,0 +1,46 @@
+{
+  "gelu": {
+    "config": {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "dropout": 0.4,
+      "batch_size": 25,
+      "head": "gelu",
+      "loss": "mse"
+    },
+    "val_rmse": 4.687431316073604
+  },
+  "linear": {
+    "config": {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "dropout": 0.4,
+      "batch_size": 25,
+      "head": "linear",
+      "loss": "mse"
+    },
+    "val_rmse": 4.684568624194331
+  },
+  "prelu": {
+    "config": {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "dropout": 0.5,
+      "batch_size": 25,
+      "head": "prelu",
+      "loss": "mse"
+    },
+    "val_rmse": 4.659697884042073
+  },
+  "asym_huber": {
+    "config": {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "dropout": 0.4,
+      "batch_size": 25,
+      "head": "prelu",
+      "loss": "asym_huber"
+    },
+    "val_rmse": 4.709774901387449
+  }
+}

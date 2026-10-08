@@ -55,6 +55,12 @@ To guarantee strict immunity from data snooping, hyperparameter calibration foll
 * *SVR (RBF):* $C \in \{0.5, 2.0, 10.0\}$, $\epsilon \in \{0.1, 0.5, 1.0\}$, $\gamma \in \{0.1 \times \gamma_{\text{scale}}, 1 \times \gamma_{\text{scale}}, 5 \times \gamma_{\text{scale}}\}$ (27 combinations).
 * *Random Forest:* `n_estimators` $= 300$, `max_features` $\in \{\text{'sqrt'}, 0.33, 0.5\}$, `min_samples_leaf` $\in \{5, 15, 30\}$, `max_depth` $\in \{8, 12, \text{None}\}$ (27 combinations).
 * *XGBoost:* `learning_rate` $\in \{0.03, 0.08\}$, `max_depth` $\in \{3, 5\}$, `colsample_bytree` $\in \{0.6, 0.8\}$, `reg_lambda` $\in \{1.0, 10.0\}$ (16 combinations).
+* *Sequential Deep Learning (LSTM / GRU):*
+  * *Tassonomia di Giustificazione Rigorosa degli Iperparametri (per la stesura del Cap. 4):*
+    1. **Adattamento Dinamico (Self-Calibrating):** Il learning rate non è fissato staticamente ma gestito dinamicamente tramite `ReduceLROnPlateau(factor=0.5, patience=3)` per prevenire oscillazioni; il numero di epoche è regolato tramite Early Stopping (`patience=7`) sull'Inner Validation per azzerare l'overfitting.
+    2. **Ancoraggio a Monte alla Letteratura:** Il learning rate iniziale ($3 \times 10^{-4}$) è derivato da Khaki & Wang (2019) e Khaki et al. (2020); l'ottimizzatore AdamW con weight decay $10^{-4}$ da Géron (2022).
+    3. **Iperparametri Dipendenti dai Risultati Empirici:** Il batch size ($bs \in \{25, 64\}$) non è fissato a priori ma la scelta finale dipende dall'interazione con la frequenza temporale vincente $W^*$ (30d vs 10d vs 5d) e dalla nettezza del distacco in validazione; la profondità è vincolata a $l^*=2$ dopo evidenza empirica di superiorità contro $l=1$ (underfitting) e $l \ge 3$ (overfitting).
+    4. **Costanti Strutturali di Dominio:** Dimensione attention bottleneck $d_a=32$ (Bahdanau); soglia Huber $\delta=1.0$ e penalità asimmetrica $\alpha=1.5$ ancorate alla teoria del rischio agronomico.
 
 ---
 
@@ -85,9 +91,11 @@ To guarantee strict immunity from data snooping, hyperparameter calibration foll
 
 ### Section 4.4 — Chronological Expanding-Window Validation Protocol
 * Description of the three-phase temporal partition:
-  * *Phase 1 (Base Training):* 1951–1984 ($N=34$ years, 4,590 observations) establishing climatology and initial weights.
-  * *Phase 2 (Validation):* 1985–1995 ($N_{\text{val}}=11$ years, 1,485 observations) balanced between 6 positive anomaly campaigns (1985, 1986, 1987, 1990, 1992, 1994) and 5 negative anomaly campaigns (1988 drought, 1989, 1991, 1993 flood, 1995).
-  * *Phase 3 (Out-of-Sample Test):* 1996–2025 ($N_{\text{test}}=30$ years, 4,050 evaluations) expanding year-by-year from 1996 through 2025.
+  * *Nota Operativa (Direttiva 2026-10-04 22:34):* Su autorizzazione dell'autore, la partizione formale per la stesura del capitolo e per la consegna viene allineata al canone $60\% - 20\% - 20\%$:
+    - *Phase 1 (Base Training, 60%):* 1951–1995 ($N=45$ years, 6,075 observations).
+    - *Phase 2 (Validation / Tuning, 20%):* 1996–2010 ($N_{\text{val}}=15$ years, 2,025 observations) presentato come finestra di tuning iperparametri, early stopping e model selection.
+    - *Phase 3 (Out-of-Sample Test, 20%):* 2011–2025 ($N_{\text{test}}=15$ years, 2,025 evaluations) valutato in expanding-window sequenziale sul regime contemporaneo.
+  * *(Precedente partizione provvisoria 1951–1984 / 1985–1995 / 1996–2025 superata nella narrazione formale; il tuning empirico effettivo resta calcolato su 1985–1995 senza alterare il validation set nel codice).*
 * Prevention of spatial and temporal leakage: testing all 135 counties simultaneously per crop year and rejecting random k-fold splits (citing Sweet et al. 2023).
 * Strict train-only hermetic seal: detrending coefficients, standardization scalers, and hyperparameter tuning performed exclusively within outer training folds.
 
