@@ -55,9 +55,10 @@ COLOR_MAP = {
     'ElasticNet': '#1f77b4',
     'RandomForest': '#ff7f0e',
     'XGBoost': '#d62728',
-    'LSTM': '#2ca02c',
-    'LSTM_GELU': '#2ca02c',
-    'LSTM_AsymHuber': '#9467bd'
+    'LSTM_PReLU': '#2ca02c',
+    'LSTM_Linear': '#17becf',
+    'LSTM_PReLU_Lag': '#9467bd',
+    'LSTM_Linear_Lag': '#8c564b'
 }
 
 MARKER_MAP = {
@@ -65,9 +66,10 @@ MARKER_MAP = {
     'ElasticNet': 'o',
     'RandomForest': '^',
     'XGBoost': 'D',
-    'LSTM': 'P',
-    'LSTM_GELU': 'P',
-    'LSTM_AsymHuber': 'X'
+    'LSTM_PReLU': 'P',
+    'LSTM_Linear': 'v',
+    'LSTM_PReLU_Lag': 'X',
+    'LSTM_Linear_Lag': '*'
 }
 
 
@@ -89,13 +91,15 @@ def load_all_predictions() -> pd.DataFrame:
         for f in lstm_files:
             try:
                 ldf = pd.read_parquet(f)
-                # Map columns: year, county_fips, actual_anomaly, pred_anomaly, horizon, head_variant
-                var_name = ldf.get('head_variant', ['LSTM'])[0]
-                model_label = f"LSTM_{var_name}" if var_name in ('asym_huber', 'gelu', 'linear', 'prelu') else 'LSTM'
-                if model_label == 'LSTM_asym_huber':
-                    model_label = 'LSTM_AsymHuber'
-                elif model_label == 'LSTM_gelu':
-                    model_label = 'LSTM_GELU'
+                var_name = str(ldf.get('head_variant', ['prelu'])[0]).lower()
+                inc_lag = bool(ldf.get('include_lag', [False])[0]) if 'include_lag' in ldf.columns else ('lag' in f.stem)
+
+                if 'prelu' in var_name:
+                    model_label = 'LSTM_PReLU_Lag' if inc_lag else 'LSTM_PReLU'
+                elif 'linear' in var_name:
+                    model_label = 'LSTM_Linear_Lag' if inc_lag else 'LSTM_Linear'
+                else:
+                    model_label = f"LSTM_{var_name}"
 
                 for row in ldf.itertuples(index=False):
                     lstm_records.append({
@@ -120,11 +124,11 @@ def load_all_predictions() -> pd.DataFrame:
 # 1. Master Comparison with Paired Wilcoxon / Diebold-Mariano Tests
 # ---------------------------------------------------------------------------
 def compute_master_comparison(preds: pd.DataFrame) -> pd.DataFrame:
-    """Compute pooled performance metrics and paired significance tests across the 30 test years."""
+    """Compute pooled performance metrics and paired significance tests across the test years."""
     print("Computing Master Statistical Comparison with Paired Inference...", flush=True)
     records = []
     horizons = sorted(preds['H'].unique(), reverse=True)
-    models = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_GELU', 'LSTM_AsymHuber', 'LSTM'] if m in preds['model'].unique()]
+    models = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_PReLU', 'LSTM_Linear', 'LSTM_PReLU_Lag', 'LSTM_Linear_Lag'] if m in preds['model'].unique()]
 
     # Reference naive pooled RMSE for skill score
     naive_rmse_by_h = {}
@@ -230,7 +234,7 @@ def compute_decile_diagnostics(preds: pd.DataFrame, target_h: int = 2) -> pd.Dat
     sub['decile'] = sub.apply(lambda r: decile_map.get((r['year'], r['county_fips'])), axis=1)
 
     decile_records = []
-    models = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_GELU', 'LSTM_AsymHuber', 'LSTM'] if m in sub['model'].unique()]
+    models = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_PReLU', 'LSTM_Linear', 'LSTM_PReLU_Lag', 'LSTM_Linear_Lag'] if m in sub['model'].unique()]
 
     for d in range(1, 11):
         d_sub = sub[sub['decile'] == d]
@@ -286,7 +290,7 @@ def compute_panel_autocorrelation(preds: pd.DataFrame) -> pd.DataFrame:
     coords = feat_df.set_index('county_fips')
 
     horizons = [1, 2, 3, 6]
-    models = [m for m in ['ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_GELU', 'LSTM_AsymHuber', 'LSTM'] if m in preds['model'].unique()]
+    models = [m for m in ['ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_PReLU', 'LSTM_Linear', 'LSTM_PReLU_Lag', 'LSTM_Linear_Lag'] if m in preds['model'].unique()]
     fips_list = sorted(coords.index.intersection(preds['county_fips'].unique()))
     N = len(fips_list)
 
@@ -353,7 +357,7 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     print("Generating Figure 5.6: Decile Calibration & Residual Diagnostics...", flush=True)
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.5, 4.8))
 
-    models_to_plot = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_GELU', 'LSTM_AsymHuber', 'LSTM'] if m in preds['model'].unique()]
+    models_to_plot = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_PReLU', 'LSTM_Linear', 'LSTM_PReLU_Lag', 'LSTM_Linear_Lag'] if m in preds['model'].unique()]
 
     # ---------------------------------------------------------
     # Panel (a): Decile Reliability & Tail Shrinkage Diagram

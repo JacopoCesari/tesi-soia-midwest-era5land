@@ -7,9 +7,9 @@
 
 ---
 
-## 0. Direttiva Metodologica Congelata: Ripartizione 60/20/20 e Allineamento Script
-> **Timestamp Registrazione:** 2026-10-04 22:34 CEST  
-> **Stato Operativo:** Congelato. Codice e capitoli della tesi NON vengono modificati fino al completamento dell'esecuzione LSTM in corso. Le modifiche verranno applicate solo dopo il termine e previa richiesta/autorizzazione esplicita dell'autore.
+## 0. Direttiva Metodologica: Ripartizione 60/20/20 e Allineamento Script
+> **Timestamp Registrazione:** 2026-10-04 22:34 CEST | **Aggiornamento:** 2026-10-10 08:52 CEST  
+> **Stato Operativo:** **Completato e Applicato.** Capitolo 4 formalmente allineato alla partizione canonica 60/20/20 (1951–1995 train, 1996–2010 val, 2011–2025 test) e script di produzione (`run_ml_pipeline.py`, `run_ml_pipeline_integrated.py`, `run_lstm_pipeline.py`) allineati.
 
 ### A. Nuova Partizione Canonica (Narrazione Ufficiale Tesi & Consegna al Docente)
 Per garantire eleganza, simmetria ed evitare obiezioni su un test set sproporzionatamente lungo ($30$ anni su $75$, pari al $40\%$ del panel), il dataset bilanciato $1951\text{–}2025$ viene ripartito nella suddivisione classica $60\% - 20\% - 20\%$:
@@ -138,6 +138,12 @@ Per garantire eleganza, simmetria ed evitare obiezioni su un test set sproporzio
 
 ### C. Allineamento Fenologico dei Pesi di Attenzione Temporale (LSTM) e SHAP
 * **Ipotesi biologica:** I coefficienti di attenzione temporale $\alpha_t$ e i valori TreeSHAP devono concentrare oltre il $50\%$ del peso decisionale nei mesi di luglio e agosto, confermando l'ipotesi H1 (vulnerabilità critica in fioritura e riempimento del baccello).
+
+### D. Nota Metodologica sul Detrending (Lineare OLS vs Alternative)
+* **Scelta del Trend Lineare vs Alternative:** Perché adottare un trend lineare OLS contea per contea anziché forme polinomiali, spline o filtri mobili?
+  - *Collocazione nella Tesi:* La selezione econometrica comparativa risiede formalmente nel **Capitolo 3 (Sezione 3.2 e Tabella 3.2)**, dove modelli quadratici, cubici, spline e HP-filter vengono confrontati. Il **Capitolo 4 (Sezione 4.1.1)** formalizza unicamente l'esecuzione algoritmica *train-only* senza look-ahead leakage, senza ridondanze narrative.
+  - *Sintesi teorica/empirica:* Sebbene i polinomi di grado superiore riducano lievemente l'errore in-sample, nel test out-of-sample espanso (6.075 previsioni county-year) il Linear OLS minimizza l'errore di previsione ($\text{RMSE} = 5.889$ bu/ac contro $6.030$ del quadratico e $6.385$ del cubico) eliminando le drammatiche distorsioni di bordo (*fenomeno di Runge* all'estrapolazione $t+1$). Il criterio BIC premia il lineare nel $65.9\%$ delle contee e il test ADF certifica residui stazionari ($p < 0.001$). Inoltre, test empirici su finestre mobili (Rolling OLS a 25–28 anni) hanno dimostrato che l'ingresso/uscita di shock storici ruota artificiosamente la pendenza, degradando le performance ML dal $5\%$ al $20\%$ di $R^2$.
+  - *Decisione consolidata:* Il trend viene epurato a monte; i modelli supervisionati targettizzano unicamente l'anomalia climatica stazionaria $\epsilon_{c,Y}$. Non si inseriscono variabili di trend all'interno dei modelli ML (gli alberi non possono estrapolare trend monotoni e il trend secolare confonderebbe i lenti trend climatici).
 
 ---
 

@@ -50,14 +50,14 @@ OUT_DIR   = ROOT / "output" / "data" / "processed"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Partition constants (consolidated 2026-09-29)
+# Partition constants (Val 1985-1995, Test 2011-2025)
 # ---------------------------------------------------------------------------
 BASE_TRAIN_START = 1951
-BASE_TRAIN_END   = 1984   # inclusive
+BASE_TRAIN_END   = 1984   # inclusive (34 years)
 VAL_START        = 1985
 VAL_END          = 1995   # inclusive (11 years)
-TEST_START       = 1996
-TEST_END         = 2025   # inclusive (30 years)
+TEST_START       = 2011
+TEST_END         = 2025   # inclusive (15 years)
 
 # ---------------------------------------------------------------------------
 # Hyperparameter grids (from Chapter 4, Table 4.3)

@@ -52,13 +52,17 @@ COLOR_MAP = {
     'Naive': '#555555',
     'ElasticNet': '#1f77b4',
     'RandomForest': '#ff7f0e',
-    'XGBoost': '#d62728'
+    'XGBoost': '#d62728',
+    'LSTM (Weather-Only)': '#2ca02c',
+    'LSTM (+Lag Yield)': '#9467bd'
 }
 MARKER_MAP = {
     'Naive': 's',
     'ElasticNet': 'o',
     'RandomForest': 'D',
-    'XGBoost': 'P'
+    'XGBoost': 'P',
+    'LSTM (Weather-Only)': '^',
+    'LSTM (+Lag Yield)': 'X'
 }
 
 MONTH_LABELS = {
@@ -81,44 +85,60 @@ MONTH_LABELS = {
 # ---------------------------------------------------------------------------
 def plot_figure_5_1(summary: pd.DataFrame):
     print("Generating Figure 5.1: R2 & RMSE progression...", flush=True)
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.2), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.8, 5.2), sharex=True)
 
-    horizons = list(range(12, 0, -1))
+    horizons = list(range(11, 0, -1))
     x_pos = np.arange(len(horizons))
 
-    # Phenological stage bands
+    # Load LSTM summary if available
+    lstm_summary_path = PROCESSED_DIR / "evaluation_summary_lstm.csv"
+    lstm_df = pd.read_csv(lstm_summary_path) if lstm_summary_path.exists() else pd.DataFrame()
+
+    # Phenological stage bands across H=11..1 (indices 0..10)
     for ax in (ax1, ax2):
-        # Winter / Dormant (H=12..8: x_pos 0..4)
-        ax.axvspan(-0.4, 4.4, color='#f0f4f8', alpha=0.6, zorder=0)
-        # Sowing & Emergence (H=7..5: x_pos 4.4..7.4)
-        ax.axvspan(4.4, 7.4, color='#eef9ee', alpha=0.6, zorder=0)
-        # Reproductive Peak R1-R6 (H=4..3: x_pos 7.4..9.4)
-        ax.axvspan(7.4, 9.4, color='#fff7e6', alpha=0.7, zorder=0)
-        # Maturity & Harvest (H=2..1: x_pos 9.4..11.4)
-        ax.axvspan(9.4, 11.4, color='#f9f0ea', alpha=0.6, zorder=0)
+        # Winter / Dormant (H=11..8: x_pos 0..3)
+        ax.axvspan(-0.4, 3.4, color='#f0f4f8', alpha=0.6, zorder=0)
+        # Sowing & Emergence (H=7..5: x_pos 4..6)
+        ax.axvspan(3.4, 6.4, color='#eef9ee', alpha=0.6, zorder=0)
+        # Reproductive Peak R1-R6 (H=4..3: x_pos 7..8)
+        ax.axvspan(6.4, 8.4, color='#fff7e6', alpha=0.7, zorder=0)
+        # Maturity & Harvest (H=2..1: x_pos 9..10)
+        ax.axvspan(8.4, 10.4, color='#f9f0ea', alpha=0.6, zorder=0)
 
     # Panel 1: R2_OOS Pooled
     for model in ['Naive', 'RandomForest', 'ElasticNet', 'XGBoost']:
         m_df = summary[summary['model'] == model].set_index('H').reindex(horizons)
         r2_vals = m_df['R2_OOS_pooled'].values
-        # For Naive at H=12, explicit 0
         if model == 'Naive':
             r2_vals = np.zeros(len(horizons))
         ax1.plot(x_pos, r2_vals, label=model, color=COLOR_MAP[model],
-                 marker=MARKER_MAP[model], markersize=6, linewidth=1.8, zorder=3)
+                 marker=MARKER_MAP[model], markersize=5.5, linewidth=1.7, zorder=3)
+
+    if not lstm_df.empty:
+        # LSTM Weather-Only (PReLU Champion)
+        lstm_wo = lstm_df[(lstm_df['variant'] == 'prelu') & (~lstm_df['include_lag'])].set_index('H').reindex(horizons)
+        r2_lstm_wo = lstm_wo['R2_OOS_pooled'].values
+        ax1.plot(x_pos, r2_lstm_wo, label='LSTM (Weather-Only)', color=COLOR_MAP['LSTM (Weather-Only)'],
+                 marker=MARKER_MAP['LSTM (Weather-Only)'], markersize=6, linewidth=2.0, zorder=4)
+
+        # LSTM Integrated (+Lag Yield)
+        lstm_lag = lstm_df[(lstm_df['variant'] == 'linear') & (lstm_df['include_lag'])].set_index('H').reindex(horizons)
+        r2_lstm_lag = lstm_lag['R2_OOS_pooled'].values
+        ax1.plot(x_pos, r2_lstm_lag, label='LSTM (+Lag Yield)', color=COLOR_MAP['LSTM (+Lag Yield)'],
+                 marker=MARKER_MAP['LSTM (+Lag Yield)'], markersize=6, linewidth=2.0, linestyle='--', zorder=4)
 
     ax1.axhline(0, color='black', linestyle='--', linewidth=0.9, alpha=0.7, label='Zero-Skill Reference')
     ax1.set_ylabel(r'Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$')
     ax1.set_title(r'(a) Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)', loc='left', fontsize=11, fontweight='bold')
-    ax1.set_ylim(-0.16, 0.25)
-    ax1.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
-    ax1.legend(loc='lower right', frameon=True, framealpha=0.9)
+    ax1.set_ylim(-0.35, 0.40)
+    ax1.yaxis.set_major_locator(ticker.MultipleLocator(0.10))
+    ax1.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.5)
 
     # Annotate key phenological milestones
-    ax1.text(2.0, 0.22, 'Overwinter Recharge', ha='center', fontsize=8.5, color='#4a607a', fontweight='semibold')
-    ax1.text(5.9, 0.22, 'Sowing & Vegetative', ha='center', fontsize=8.5, color='#3b6e3b', fontweight='semibold')
-    ax1.text(8.4, 0.22, 'Flowering &\nPod-Filling', ha='center', fontsize=8.5, color='#b26b00', fontweight='semibold')
-    ax1.text(10.4, 0.22, 'Maturity &\nHarvest', ha='center', fontsize=8.5, color='#8c3b1e', fontweight='semibold')
+    ax1.text(1.5, 0.36, 'Overwinter Recharge', ha='center', fontsize=8.5, color='#4a607a', fontweight='semibold')
+    ax1.text(4.9, 0.36, 'Sowing & Vegetative', ha='center', fontsize=8.5, color='#3b6e3b', fontweight='semibold')
+    ax1.text(7.4, 0.36, 'Flowering &\nPod-Filling', ha='center', fontsize=8.5, color='#b26b00', fontweight='semibold')
+    ax1.text(9.4, 0.36, 'Maturity &\nHarvest', ha='center', fontsize=8.5, color='#8c3b1e', fontweight='semibold')
 
     # Panel 2: RMSE and Skill Score
     naive_rmse = 5.944191
@@ -128,18 +148,28 @@ def plot_figure_5_1(summary: pd.DataFrame):
         if model == 'Naive':
             rmse_vals = np.full(len(horizons), naive_rmse)
         ax2.plot(x_pos, rmse_vals, label=model, color=COLOR_MAP[model],
-                 marker=MARKER_MAP[model], markersize=6, linewidth=1.8, zorder=3)
+                 marker=MARKER_MAP[model], markersize=5.5, linewidth=1.7, zorder=3)
+
+    if not lstm_df.empty:
+        rmse_lstm_wo = lstm_wo['RMSE_OOS_pooled'].values
+        ax2.plot(x_pos, rmse_lstm_wo, label='LSTM (Weather-Only)', color=COLOR_MAP['LSTM (Weather-Only)'],
+                 marker=MARKER_MAP['LSTM (Weather-Only)'], markersize=6, linewidth=2.0, zorder=4)
+
+        rmse_lstm_lag = lstm_lag['RMSE_OOS_pooled'].values
+        ax2.plot(x_pos, rmse_lstm_lag, label='LSTM (+Lag Yield)', color=COLOR_MAP['LSTM (+Lag Yield)'],
+                 marker=MARKER_MAP['LSTM (+Lag Yield)'], markersize=6, linewidth=2.0, linestyle='--', zorder=4)
 
     ax2.set_ylabel(r'Out-of-Sample RMSE ($\mathrm{bu/acre}$)')
     ax2.set_title(r'(b) Error Magnitude and Percentage Skill', loc='left', fontsize=11, fontweight='bold')
-    ax2.set_ylim(5.15, 6.35)
-    ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
+    ax2.set_ylim(4.80, 7.20)
+    ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.4))
+    ax2.legend(loc='upper right', frameon=True, framealpha=0.9, fontsize=8.5)
 
     # Add secondary y-axis for Skill Score
     ax2_twin = ax2.twinx()
     ax2_twin.set_ylabel(r'Skill Score vs. Naive ($\% = 1 - \mathrm{RMSE}/\mathrm{RMSE}_{\mathrm{naive}}$)', color='#333333')
-    ax2_twin.set_ylim((1 - 6.35/naive_rmse)*100, (1 - 5.15/naive_rmse)*100)
-    ax2_twin.yaxis.set_major_locator(ticker.MultipleLocator(2.5))
+    ax2_twin.set_ylim((1 - 7.20/naive_rmse)*100, (1 - 4.80/naive_rmse)*100)
+    ax2_twin.yaxis.set_major_locator(ticker.MultipleLocator(5.0))
     ax2_twin.grid(False)
 
     for ax in (ax1, ax2):
@@ -169,21 +199,16 @@ def plot_figure_5_2(preds: pd.DataFrame):
         2021: ('2021 Record Yield (+9.8%)', '#bcbd22', 'v', '-.')
     }
 
-    horizons = list(range(12, 0, -1))
+    horizons = list(range(11, 0, -1))
     x_pos = np.arange(len(horizons))
 
-    # Left: XGBoost / ElasticNet prediction bias on shock years across all 12 horizons
+    # Left: XGBoost prediction bias on shock years across all 11 horizons
     xgb_preds = preds[preds['model'] == 'XGBoost']
     for yr, (label, color, marker, ls) in shock_years.items():
         bias_by_h = []
         for h in horizons:
             sub = xgb_preds[(xgb_preds['year'] == yr) & (xgb_preds['H'] == h)]
-            if sub.empty:
-                # H=12 naive baseline bias = 0 - true_anomaly = -true_anomaly
-                sub_naive = preds[(preds['year'] == yr) & (preds['H'] == 12) & (preds['model'] == 'Naive')]
-                bias = -sub_naive['y_true_anomaly'].mean()
-            else:
-                bias = (sub['y_pred_anomaly'] - sub['y_true_anomaly']).mean()
+            bias = (sub['y_pred_anomaly'] - sub['y_true_anomaly']).mean()
             bias_by_h.append(bias)
 
         ax1.plot(x_pos, bias_by_h, label=label, color=color, marker=marker,
