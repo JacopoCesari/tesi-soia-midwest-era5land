@@ -191,9 +191,49 @@ Panel (b) of Figure~\ref{fig:shock_bias_profiles} provides critical empirical ev
 \subsection{Decile Reliability and Tail Shrinkage Diagnostics}
 \label{sec:res_decile_diagnostics}
 
-We partition out-of-sample evaluations at the peak predictive milestone ($H = 2$, September 30) into ten equal-sized deciles based on realized ground-truth yield anomalies ($D_1 \dots D_{10}$). Figure~\ref{fig:decile_calibration_and_residuals} presents the econometric diagnostic suite:
+To evaluate predictive stability across the full spectrum of yield anomalies, Table~\ref{tab:decile_error_performance} reports out-of-sample forecast errors across the ten quantiles of realized yield anomaly ($D_1 \dots D_{10}$), averaged across the five active campaign horizons ($H = 5 \dots 1$, June 30 to October 31; $10{,}125$ total evaluations).
+
+\begin{table}[htbp]
+\centering
+\singlespacing
+\footnotesize
+\setlength{\tabcolsep}{4.0pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Out-of-sample forecast error across deciles of realized yield anomaly vs.\ secular trend ($\epsilon = y - \tau$, bu/ac), averaged across the five active campaign horizons ($H = 5 \dots 1$, June 30 to October 31, 2011--2025 blind test; $10{,}125$ total evaluations). Values report Root Mean Squared Error (RMSE, bu/ac). All machine learning estimators evaluate the integrated specification (+Lag $\epsilon_{t-1}$). Bold indicates the lowest RMSE per decile.}
+\label{tab:decile_error_performance}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c c c c c c c @{}}
+\toprule
+\textbf{Decile} & \textbf{Range} & \textbf{Mean Obs.} & \textbf{Naive} & \textbf{ENet} & \textbf{RF} & \textbf{XGB} & \textbf{LSTM} \\
+\midrule
+$D_1$ (Drought) & $[-22.85, -5.22]$ & $-8.82$ & 9.35 & 7.81 & 7.98 & 7.89 & \textbf{7.17} \\
+$D_2$           & $[-5.15, -1.95]$  & $-3.43$ & 3.55 & 3.82 & \textbf{3.38} & 3.64 & 3.68 \\
+$D_3$           & $[-1.92, +0.02]$  & $-0.93$ & \textbf{1.08} & 2.44 & 1.88 & 2.53 & 2.62 \\
+$D_4$           & $[+0.02, +1.71]$  & $+0.92$ & \textbf{1.04} & 2.18 & 1.70 & 2.04 & 2.23 \\
+$D_5$           & $[+1.72, +3.15]$  & $+2.48$ & \textbf{2.51} & 2.74 & 2.87 & 3.02 & 3.11 \\
+$D_6$           & $[+3.16, +4.40]$  & $+3.80$ & 3.82 & 3.48 & 3.62 & \textbf{3.41} & 3.44 \\
+$D_7$           & $[+4.42, +5.59]$  & $+5.02$ & 5.03 & 4.17 & 4.45 & \textbf{4.09} & 4.34 \\
+$D_8$           & $[+5.60, +6.83]$  & $+6.29$ & 6.30 & \textbf{5.23} & 5.60 & 5.30 & 5.25 \\
+$D_9$           & $[+6.84, +8.83]$  & $+7.77$ & 7.80 & 6.32 & 6.82 & 6.43 & \textbf{6.22} \\
+$D_{10}$ (Bumper) & $[+8.83, +22.93]$ & $+11.01$ & 11.21 & \textbf{9.31} & 10.24 & 9.81 & 9.57 \\
+\midrule
+\textbf{Overall} & $[-22.85, +22.93]$ & $+2.41$ & 6.12 & 5.28 & 5.54 & 5.39 & \textbf{5.26} \\
+\bottomrule
+\end{tabular*}
+\vspace{0.2em}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 blind test evaluations. Naive benchmark predicts $\hat{\epsilon} = 0$. Machine learning estimators include prior-year anomaly carryover (+Lag $\epsilon_{t-1}$). ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; LSTM: sequential LSTM champion with 10-day linear head.}}
+\end{table}
+
+The decile decomposition reveals distinct structural regimes across model families:
 \begin{enumerate}
-    \item \textbf{Decile Reliability Diagram (Panel a):} Realized anomaly decile means range from $-8.82\text{ bu/ac}$ in $D_1$ (severe drought stress) to $+11.01\text{ bu/ac}$ in $D_{10}$ (record bumper harvests). The naive baseline exhibits complete horizontal collapse ($\hat{\epsilon} = 0$, bias $+8.82\text{ bu/ac}$ in $D_1$). Tabular estimators (Random Forest, XGBoost, ElasticNet) attenuate extreme contractions toward the unconditional mean (predicting $-1.27$ to $-2.21\text{ bu/ac}$ in $D_1$) due to $L_2$ shrinkage. Recurrent LSTM architectures generate sharper shock responses: the LSTM PReLU model predicts $-2.78\text{ bu/ac}$ ($\text{RMSE} = 7.18\text{ bu/ac}$), while the integrated LSTM with lag reaches $-3.09\text{ bu/ac}$ ($\text{RMSE} = 6.73\text{ bu/ac}$), reducing tail prediction error variance relative to tabular baselines.
+    \item \textbf{Severe Drought Stress ($D_1$, mean realized anomaly $-8.82\text{ bu/ac}$):} The naive secular trend incurs an error of $9.35\text{ bu/ac}$. Tabular models (ElasticNet and XGBoost) reduce this error to $7.81$ and $7.89\text{ bu/ac}$. The champion sequential LSTM (+Lag) achieves the lowest error at $\mathbf{7.17\text{ bu/ac}}$, an error contraction of $2.18\text{ bu/ac}$ over naive and $0.72\text{ bu/ac}$ over gradient boosted trees. The sequential network captures intra-seasonal heat and vapor-pressure pulses that monthly aggregations smooth out.
+    \item \textbf{Central Benign Regimes ($D_3$--$D_5$, $\epsilon \in [-1.9, +3.2]\text{ bu/ac}$):} When yields align with secular trends, the naive baseline ($\hat{\epsilon} = 0$) achieves artificially low error ($\text{RMSE} = 1.04\text{--}2.51\text{ bu/ac}$). Candidate machine learning estimators predict small non-zero deviations and exhibit residual dispersion ($\text{RMSE} \approx 1.70\text{--}3.11\text{ bu/ac}$), reflecting baseline environmental noise.
+    \item \textbf{Record Bumper Harvests ($D_9$--$D_{10}$, mean anomaly up to $+11.01\text{ bu/ac}$):} Tree ensembles suffer from piecewise-constant leaf saturation: predictions cannot extrapolate beyond historical tree splits, elevating error to $9.81\text{ bu/ac}$ for XGBoost and $10.24\text{ bu/ac}$ for Random Forest. In contrast, ElasticNet compounds positive linear increments smoothly, achieving the lowest error in $D_{10}$ ($\mathbf{9.31\text{ bu/ac}}$), while LSTM achieves $9.57\text{ bu/ac}$.
+    \item \textbf{Overall Active Season Error:} Across the full test panel ($D_1 \dots D_{10}$ pooled across $H = 5 \dots 1$), LSTM (+Lag) achieves the top overall precision ($\text{RMSE} = \mathbf{5.26\text{ bu/ac}}$), followed by ElasticNet ($5.28\text{ bu/ac}$), XGBoost ($5.39\text{ bu/ac}$), Random Forest ($5.54\text{ bu/ac}$), and Naive ($6.12\text{ bu/ac}$).
+\end{enumerate}
+
+To evaluate point calibration and residual properties at peak lead time, Figure~\ref{fig:decile_calibration_and_residuals} presents the econometric diagnostic suite at milestone $H = 2$ (September 30):
+\begin{enumerate}
+    \item \textbf{Decile Reliability Diagram (Panel a):} Realized anomaly decile means range from $-8.82\text{ bu/ac}$ in $D_1$ to $+11.01\text{ bu/ac}$ in $D_{10}$. The naive baseline exhibits complete horizontal collapse ($\hat{\epsilon} = 0$, bias $+8.82\text{ bu/ac}$ in $D_1$). Tabular estimators (Random Forest, XGBoost, ElasticNet) attenuate extreme contractions toward the unconditional mean (predicting $-1.27$ to $-2.21\text{ bu/ac}$ in $D_1$) due to $L_2$ shrinkage. Recurrent LSTM architectures generate sharper shock responses: the LSTM PReLU model predicts $-2.78\text{ bu/ac}$ ($\text{RMSE} = 7.18\text{ bu/ac}$), while the integrated LSTM with lag reaches $-3.09\text{ bu/ac}$ ($\text{RMSE} = 6.73\text{ bu/ac}$), reducing tail prediction error variance relative to tabular baselines.
     \item \textbf{Quantile-Quantile (Q-Q) Distribution (Panel b):} Standardized forecast residuals follow the theoretical normal distribution closely across the $[-2.0, +2.0]\sigma$ core. Heavy empirical tails emerge beyond $\pm 2.5\sigma$, reflecting unmodelled microclimatic events such as localized hail, severe wind damage, or intense flash flooding.
     \item \textbf{Residuals versus Fitted Values (Panel c):} Residuals remain centered near zero across predicted values with mild variance expansion under extreme negative predictions, confirming homoscedastic stability across typical commercial yields.
 \end{enumerate}
