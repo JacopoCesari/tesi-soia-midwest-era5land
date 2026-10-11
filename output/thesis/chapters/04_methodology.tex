@@ -53,11 +53,18 @@ where $\mathcal{K}_{\text{flux}} = \{P, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35
 
 The crop campaign spans November 1 (year $Y-1$) to October 31 (year $Y$). Forecasts are generated at the end of each campaign month $m \in \{1, \dots, 12\}$, establishing lead times $H = 13 - m$ prior to harvest.
 
-At forecast horizon $H$, tabular feature vector $\mathbf{x}_{c,Y}^{(H)}$ concatenates normalized spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ (Section~\ref{sec:meth_spatial_covariates}) with elapsed monthly weather summaries:
+At forecast horizon $H$, the pure meteorological feature vector $\mathbf{x}_{c,Y}^{(H)}$ concatenates normalized spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ (Section~\ref{sec:meth_spatial_covariates}) with elapsed monthly weather summaries:
 \begin{equation}
     \mathbf{x}_{c,Y}^{(H)} = \left[ \, \tilde{\text{Lat}}_c, \, \tilde{\text{Lon}}_c, \, \mathbf{w}_{c,Y, 1}^T, \, \dots, \, \mathbf{w}_{c,Y, m}^T \, \right]^T \in \mathbb{R}^{P_H}
     \label{eq:tabular_feature_vector}
 \end{equation}
+To isolate the marginal value of multi-year agronomic memory against pure meteorological forcing, we formulate an integrated predictor space ingesting historical yield persistence:
+\begin{equation}
+    \mathbf{x}_{c,Y}^{(H, \text{int})} = \left[ \, \mathbf{x}_{c,Y}^{(H)T}, \, \epsilon_{c, Y-1} \, \right]^T \in \mathbb{R}^{P_H + 1}
+    \label{eq:integrated_feature_vector}
+\end{equation}
+where $\epsilon_{c, Y-1} = y_{c, Y-1} - \hat{\tau}_{c, Y-1}$ designates the prior-year detrended yield anomaly estimated strictly within training partition $\mathcal{T}_{\text{train}}(Y)$. Ingesting detrended anomaly $\epsilon_{c, Y-1}$ rather than gross yield $y_{c, Y-1}$ prevents secular trend leakage ($\tau_{c, Y-1}$) while capturing genuine biophysical carryover, such as deep root-zone moisture recharge and rotational soil health.
+
 Feature dimensionality expands as meteorological records accumulate:
 \begin{equation}
     P_H = 
@@ -70,9 +77,17 @@ Feature dimensionality expands as meteorological records accumulate:
 This schedule structures information accumulation:
 \begin{itemize}
     \item \textbf{Horizon $H = 12$ ($m = 1$, Nov 30): Zero-Weather Benchmark.} Ingests spatial coordinates only ($P_{12} = 2, P_{\text{met}} = 0$). Candidate models output $\hat{\epsilon}_{c,Y}^{(12)} = 0$, defining the unaugmented secular trend baseline ($\hat{y}_{c,Y}^{(12)} = \hat{\tau}_{c,Y}$, $R^2_{\text{OOS}} = 0$).
-    \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather through Month $m$, expanding feature dimensionality from $P_{11} = 34$ to $P_1 = 194$ in October.
+    \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather through Month $m$, expanding feature dimensionality from $P_{11} = 34$ to $P_1 = 194$ in October (or $P_1 = 195$ under integrated carryover).
 \end{itemize}
-This formulation evaluates whether autumn recharge ($H = 11$) provides predictive skill over trend inertia, while identifying the lead time where weather forcing dominates. Dimensionality remains bounded by $P_1 = 194$.
+
+\subsection{Two-Tier Evaluation Strategy: Generalist Screening and Active Season Focus}
+\label{sec:meth_two_tier_strategy}
+
+Empirical evaluation operates through a structured two-tier hierarchy:
+\begin{enumerate}
+    \item \textbf{Tier 1: Preliminary Generalist Screening ($H = 12 \dots 1$):} We benchmark all candidate architectures (Naive, ElasticNet, Random Forest, XGBoost, LSTM) across all twelve lead times under both pure meteorological and integrated (+lag) specifications. This initial sweep serves two empirical purposes: determining the exact lead time where weather forcing transitions from uninformative winter noise to statistically detectable skill, and quantifying the systematic performance premium delivered by soil memory $\epsilon_{t-1}$.
+    \item \textbf{Tier 2: In-Depth Operational Focus ($H = 5 \dots 1$):} Once empirical screening demonstrates that cold-season weather prior to late June contains zero predictive signal ($R^2_{\text{OOS}} \le 0$), all granular diagnostic stress tests, tail-risk shock evaluations, and biophysical feature attributions are concentrated strictly on the five active campaign months ($H = 5 \dots 1$, June 30 to October 31). Within this active window, analysis centers on the top-performing candidate architectures to avoid narrative dilution across uninformative lead times.
+\end{enumerate}
 
 \subsection{Direct Horizon-Specific Modeling Paradigm}
 \label{sec:meth_direct_horizon}
@@ -398,6 +413,13 @@ To assess regional stability without presenting 135 separate county tables, we c
     \label{eq:annual_regional_metrics}
 \end{equation}
 tracking how predictive accuracy and directional bias evolve during extreme shortfall and bumper seasons.
+
+\subsection{Metric Prioritization: Error Magnitude over Binary Directional Hit Rates}
+\label{sec:meth_metric_prioritization}
+
+In agricultural machine learning, studies frequently report binary directional hit rates ($H_{\text{dir}} = \frac{1}{M} \sum \mathbb{I}(\text{sgn}(\hat{\epsilon}) = \text{sgn}(\epsilon))$). We formally de-emphasize this metric as uninformative for supply-chain risk management. In commercial crop production, historical yield anomalies cluster heavily around the origin: across the 75-year panel, over 68\% of county-years fall within $\pm 3.0\text{ bu/ac}$ of the secular trend. Predicting a fractional positive deviation ($\hat{\epsilon} = +0.2\text{ bu/ac}$) when realized anomaly is marginally positive ($\epsilon = +0.5\text{ bu/ac}$) registers a nominal directional ``success'', yet provides negligible economic utility.
+
+Operationally, supply chains require accurate estimation of \textit{error magnitude}. The primary objective is determining how many bushels per acre production deviates during acute biophysical stress, and whether models can differentiate between a localized dry spell ($-3\text{ bu/ac}$) and a catastrophic multi-state flash drought ($-15\text{ bu/ac}$). We therefore prioritize continuous magnitude metrics ($\text{RMSE}_{\text{OOS}}$, $\text{MAE}_{\text{OOS}}$), benchmarking forecast errors directly against the unconditional standard deviation of historical anomalies ($\sigma_{\epsilon} \approx 5.94\text{ bu/ac}$).
 
 \subsection{Out-of-Sample Tail-Risk Stress Testing}
 \label{sec:meth_tail_risk}
