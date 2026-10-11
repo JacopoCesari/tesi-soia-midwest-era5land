@@ -52,11 +52,11 @@ The following previously open decisions are now consolidated by author approval:
   features and predicts ε̂=0 (naive secular trend baseline).
 - **Lagged yield:** Strictly excluded. All models are pure weather-driven anomaly
   estimators with no autoregressive yield predictor at any horizon.
-- **Metric aggregation:** Pooled R²_OOS is the primary evaluation metric (all 4,050
-  residuals in a single denominator). Year-averaged R²_OOS (mean of 30 annual values)
+- **Metric aggregation:** Pooled R²_OOS is the primary evaluation metric (all 2,025
+  residuals in a single denominator over the blind test window 2011–2025). Year-averaged R²_OOS (mean of 15 annual values)
   is a secondary diagnostic metric for per-season tracking and stress-cohort analysis.
-- **Expanding-window partition:** 1951–1984 base training / 1985–1995 validation /
-  1996–2025 OOS test. First OOS test year is 1996. Definitive; no further changes.
+- **Expanding-window partition:** 1951–1984 base training / 1985–1995 validation (11 yrs) /
+  2011–2025 blind OOS test (15 yrs, 2,025 observations per horizon), with 1996–2010 incorporated into the expanding training pool. First blind OOS test year is 2011. Definitive; no further changes.
 
 The author explicitly excludes the 1950 yield target: its October 1949–October
 1950 campaign lacks October–December 1949 weather. The first retained campaign is

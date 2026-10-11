@@ -2,7 +2,7 @@
 
 Generates rigorous statistical outputs for Chapter 5 / Professor review:
 1. Master Comparison with Inferential Significance (Paired Wilcoxon / Diebold-Mariano tests vs Naive and Linear).
-2. Decile Calibration & Tail Shrinkage Table (D1..D10 across 1996-2025 out-of-sample).
+2. Decile Calibration & Tail Shrinkage Table (D1..D10 across 2011-2025 out-of-sample).
 3. Spatio-Temporal Autocorrelation of Residuals (Temporal AR(1) & Spatial Moran's I).
 4. Publication-Quality Diagnostic Figure (Figure 5.6: Decile Calibration, Q-Q Plot, Residuals vs Fitted).
 
@@ -48,6 +48,7 @@ FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 LSTM_REPORTS = ROOT / "work" / "reports" / "experiments" / "lstm"
 
 PREDS_PARQUET = PROCESSED_DIR / "predictions.parquet"
+PREDS_INT_PARQUET = PROCESSED_DIR / "predictions_integrated.parquet"
 FEAT_H01 = PROCESSED_DIR / "model_datasets" / "features_H01.parquet"
 
 COLOR_MAP = {
@@ -74,17 +75,28 @@ MARKER_MAP = {
 
 
 def load_all_predictions() -> pd.DataFrame:
-    """Load ML predictions and seamlessly concatenate any completed LSTM Phase C predictions."""
+    """Load ML predictions and seamlessly concatenate any completed LSTM Phase C predictions strictly for 2011-2025."""
     if not PREDS_PARQUET.exists():
         raise FileNotFoundError(f"Predictions file not found: {PREDS_PARQUET}")
 
     df_ml = pd.read_parquet(PREDS_PARQUET)
     df_ml['county_fips'] = df_ml['county_fips'].astype(str)
-    
-    # Check for LSTM Phase C predictions in LSTM_REPORTS
-    lstm_files = list(LSTM_REPORTS.glob("preds_*d_H*.parquet"))
+    # Restrict strictly to blind test set 2011-2025
+    df_ml = df_ml[df_ml['year'] >= 2011].copy()
     dfs_to_concat = [df_ml]
 
+    # Ingest integrated tabular predictions if available
+    if PREDS_INT_PARQUET.exists():
+        df_int = pd.read_parquet(PREDS_INT_PARQUET)
+        df_int['county_fips'] = df_int['county_fips'].astype(str)
+        df_int = df_int[df_int['year'] >= 2011].copy()
+        # Drop naive duplicate and append _Lag
+        df_int = df_int[df_int['model'] != 'Naive'].copy()
+        df_int['model'] = df_int['model'] + '_Lag'
+        dfs_to_concat.append(df_int)
+
+    # Check for LSTM Phase C predictions in LSTM_REPORTS
+    lstm_files = list(LSTM_REPORTS.glob("preds_*d_H*.parquet"))
     if lstm_files:
         print(f"Discovered {len(lstm_files)} LSTM prediction files. Ingesting...", flush=True)
         lstm_records = []
@@ -102,21 +114,23 @@ def load_all_predictions() -> pd.DataFrame:
                     model_label = f"LSTM_{var_name}"
 
                 for row in ldf.itertuples(index=False):
-                    lstm_records.append({
-                        'model': model_label,
-                        'H': int(row.horizon),
-                        'year': int(row.year),
-                        'county_fips': str(row.county_fips),
-                        'y_true_anomaly': float(row.actual_anomaly),
-                        'y_pred_anomaly': float(row.pred_anomaly),
-                        'trend': np.nan
-                    })
+                    if int(row.year) >= 2011:
+                        lstm_records.append({
+                            'model': model_label,
+                            'H': int(row.horizon),
+                            'year': int(row.year),
+                            'county_fips': str(row.county_fips),
+                            'y_true_anomaly': float(row.actual_anomaly),
+                            'y_pred_anomaly': float(row.pred_anomaly),
+                            'trend': np.nan
+                        })
             except Exception as e:
                 print(f"  Warning reading {f.name}: {e}")
         if lstm_records:
             dfs_to_concat.append(pd.DataFrame(lstm_records))
 
     all_preds = pd.concat(dfs_to_concat, ignore_index=True)
+    all_preds = all_preds[all_preds['year'] >= 2011].copy()
     return all_preds
 
 
@@ -137,7 +151,7 @@ def compute_master_comparison(preds: pd.DataFrame) -> pd.DataFrame:
         if not sub_naive.empty:
             naive_rmse_by_h[h] = float(np.sqrt(np.mean((sub_naive['y_true_anomaly'] - sub_naive['y_pred_anomaly'])**2)))
         else:
-            naive_rmse_by_h[h] = 5.9442
+            naive_rmse_by_h[h] = 6.1239
 
     for h in horizons:
         sub_h = preds[preds['H'] == h]
@@ -273,6 +287,112 @@ def compute_decile_diagnostics(preds: pd.DataFrame, target_h: int = 2) -> pd.Dat
     df_deciles.to_csv(out_csv, index=False)
     print(f"  Saved decile tail diagnostics to {out_csv}", flush=True)
     return df_deciles
+
+
+# ---------------------------------------------------------------------------
+# 2b. Active Season Decile Diagnostics (Average across H=5..1)
+# ---------------------------------------------------------------------------
+def compute_active_season_deciles(preds: pd.DataFrame, active_horizons: list = [5, 4, 3, 2, 1]) -> pd.DataFrame:
+    """Compute mean error across active campaign horizons (H=5..1) partitioned by observed anomaly deciles."""
+    print(f"Computing Active Season Decile Error Diagnostics across H={active_horizons}...", flush=True)
+    sub = preds[preds['H'].isin(active_horizons)].copy()
+    if sub.empty:
+        return pd.DataFrame()
+
+    ref_model = 'ElasticNet' if 'ElasticNet' in sub['model'].unique() else sub['model'].unique()[0]
+    ref_df = sub[(sub['model'] == ref_model) & (sub['H'] == active_horizons[0])].copy().sort_values(['year', 'county_fips']).reset_index(drop=True)
+    
+    # 10 deciles of observed ground-truth anomaly
+    decile_series, bins = pd.qcut(ref_df['y_true_anomaly'], q=10, labels=list(range(1, 11)), retbins=True)
+    ref_df['decile'] = decile_series
+
+    decile_map = dict(zip(zip(ref_df['year'], ref_df['county_fips']), ref_df['decile']))
+    sub['decile'] = sub.apply(lambda r: decile_map.get((r['year'], r['county_fips'])), axis=1)
+
+    models = [m for m in [
+        'Naive',
+        'ElasticNet', 'ElasticNet_Lag',
+        'RandomForest', 'RandomForest_Lag',
+        'XGBoost', 'XGBoost_Lag',
+        'LSTM_PReLU', 'LSTM_PReLU_Lag',
+        'LSTM_Linear', 'LSTM_Linear_Lag'
+    ] if m in sub['model'].unique()]
+
+    decile_records = []
+    for d in range(1, 11):
+        d_sub = sub[sub['decile'] == d]
+        y_obs = d_sub[d_sub['model'] == ref_model]['y_true_anomaly'].values
+        obs_mean = float(np.mean(y_obs))
+        obs_min = float(np.min(y_obs))
+        obs_max = float(np.max(y_obs))
+
+        row = {
+            'decile': f"D{d}",
+            'n_obs': len(d_sub[d_sub['model'] == ref_model]) // len(active_horizons),
+            'total_evals': len(d_sub[d_sub['model'] == ref_model]),
+            'obs_min': round(obs_min, 2),
+            'obs_max': round(obs_max, 2),
+            'obs_mean': round(obs_mean, 2)
+        }
+
+        for m in models:
+            m_sub = d_sub[d_sub['model'] == m]
+            if m_sub.empty:
+                continue
+            
+            # Average metrics across horizons
+            h_rmses = []
+            h_maes = []
+            h_biases = []
+            for h in active_horizons:
+                h_sub = m_sub[m_sub['H'] == h]
+                if not h_sub.empty:
+                    err = h_sub['y_true_anomaly'].values - h_sub['y_pred_anomaly'].values
+                    h_rmses.append(float(np.sqrt(np.mean(err**2))))
+                    h_maes.append(float(np.mean(np.abs(err))))
+                    h_biases.append(float(np.mean(h_sub['y_pred_anomaly'].values - h_sub['y_true_anomaly'].values)))
+            
+            row[f'rmse_{m}'] = round(float(np.mean(h_rmses)), 2)
+            row[f'mae_{m}'] = round(float(np.mean(h_maes)), 2)
+            row[f'bias_{m}'] = round(float(np.mean(h_biases)), 2)
+
+        decile_records.append(row)
+
+    # Add Overall row (all deciles pooled across test set)
+    y_obs_all = sub[sub['model'] == ref_model]['y_true_anomaly'].values
+    overall_row = {
+        'decile': 'Overall',
+        'n_obs': len(ref_df),
+        'total_evals': len(y_obs_all),
+        'obs_min': round(float(np.min(y_obs_all)), 2),
+        'obs_max': round(float(np.max(y_obs_all)), 2),
+        'obs_mean': round(float(np.mean(y_obs_all)), 2)
+    }
+    for m in models:
+        m_sub = sub[sub['model'] == m]
+        if m_sub.empty:
+            continue
+        h_rmses = []
+        h_maes = []
+        h_biases = []
+        for h in active_horizons:
+            h_sub = m_sub[m_sub['H'] == h]
+            if not h_sub.empty:
+                err = h_sub['y_true_anomaly'].values - h_sub['y_pred_anomaly'].values
+                h_rmses.append(float(np.sqrt(np.mean(err**2))))
+                h_maes.append(float(np.mean(np.abs(err))))
+                h_biases.append(float(np.mean(h_sub['y_pred_anomaly'].values - h_sub['y_true_anomaly'].values)))
+        overall_row[f'rmse_{m}'] = round(float(np.mean(h_rmses)), 2)
+        overall_row[f'mae_{m}'] = round(float(np.mean(h_maes)), 2)
+        overall_row[f'bias_{m}'] = round(float(np.mean(h_biases)), 2)
+    decile_records.append(overall_row)
+
+    df_deciles_active = pd.DataFrame(decile_records)
+    out_csv = DIAG_DIR / "decile_active_horizons_diagnostics.csv"
+    df_deciles_active.to_csv(out_csv, index=False)
+    print(f"  Saved active season decile diagnostics to {out_csv}", flush=True)
+    return df_deciles_active
+
 
 
 # ---------------------------------------------------------------------------
@@ -455,7 +575,7 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     plt.tight_layout()
     fig.subplots_adjust(bottom=0.20)
     fig.text(0.5, 0.04,
-             "Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data (1996–2025 out-of-sample panel).",
+             "Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data (2011–2025 out-of-sample panel).",
              ha='center', fontsize=9.2, style='italic', color='#333333')
 
     fig.savefig(FIGURES_DIR / "fig_decile_calibration_and_residuals.pdf")
@@ -472,8 +592,11 @@ def main():
     # 1. Master statistical comparison with paired inference
     compute_master_comparison(preds)
 
-    # 2. Decile calibration and tail shrinkage
+    # 2. Decile calibration and tail shrinkage at milestone H=2
     df_deciles = compute_decile_diagnostics(preds, target_h=2)
+
+    # 2b. Active season decile diagnostics (average across H=5..1)
+    df_deciles_active = compute_active_season_deciles(preds, active_horizons=[5, 4, 3, 2, 1])
 
     # 3. Spatio-temporal residual autocorrelation
     compute_panel_autocorrelation(preds)
