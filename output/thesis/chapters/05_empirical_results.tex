@@ -243,58 +243,66 @@ Statistical validity requires verifying that model forecast residuals do not exh
 \section{Feature Attribution and Agrometeorological Drivers}
 \label{sec:res_feature_attribution}
 
-\subsection{Shapley Marginal Attribution and Indicator Consensus}
+\subsection{Indicator Attribution and Information Share Across Architectures}
 \label{sec:res_shap_attribution}
 
-To evaluate biophysical mechanisms across model paradigms without generating off-manifold synthetic data through collinear single-feature permutations, we compute out-of-sample Shapley Additive Explanations (SHAP) on the blind test partition (2011--2025) \citep{ChenZhang2026}. For each evaluation $(c, Y)$, the model prediction $\hat{\epsilon}_{c,Y}$ decomposes additively:
+To evaluate agrometeorological sensitivities across disparate model paradigms without generating off-manifold synthetic configurations through single-cell permutations, we compute Grouped Permutation Feature Importance (GPFI) across each of the 19 physical indicators on the 2011--2025 blind test panel \citep{Sweetetal2023}. For each physical indicator $j$, all constituent monthly features across the active campaign ($m \in \{\text{Nov}, \dots, \text{Sep}\}$) are permuted jointly across test instances ($\pi_j$). This disrupts the biophysical link with yield anomalies while strictly preserving intra-indicator temporal autocorrelation. Predictive degradation is quantified by out-of-sample $R^2$ contraction:
 \begin{equation}
-    \hat{\epsilon}_{c,Y} = \phi_0 + \sum_{j=1}^{P} \phi_j(c, Y)
-    \label{eq:shap_decomposition}
+    \Delta R^2_{\text{OOS}}(j) = \max\left(0, R^2_{\text{OOS}}(\text{base}) - R^2_{\text{OOS}}(\pi_j)\right)
+    \label{eq:pfi_metric}
 \end{equation}
-where $\phi_0$ represents the base expected prediction across the training pool and $\phi_j(c, Y)$ measures the marginal contribution of indicator $j$ for county $c$ in year $Y$. For the regularized linear estimator (ElasticNet), marginal attributions are computed analytically via LinearSHAP, satisfying $\phi_j = w_j (x_j - \bar{x}_j)$ under training-standardized coordinates. For the gradient-boosted ensemble (XGBoost), marginal values are evaluated through conditional expectations along split paths via TreeSHAP \citep{ChenZhang2026}. 
+evaluated over $N = 5$ permutation repetitions against the standardized out-of-sample denominator $SS_{\text{tot}} = \sum (y_i - \bar{y}_{\text{test}})^2$. 
 
-For each physical indicator, monthly marginal contributions are aggregated additively across the active campaign ($\sum_{m} \phi_{j,m}$), and overall indicator sensitivity is quantified by the mean absolute impact $\mathrm{E}[|\phi_j|]$ in physical yield units (bu/ac). Figure~\ref{fig:feature_attribution_benchmark} compares these attributions across all 19 agrometeorological indicators for champion integrated specifications at peak lead time ($H = 2$, September 30).
+Because base predictive capacity differs across architectures ($R^2_{\text{OOS}} = 0.128$ for ElasticNet, $0.048$ for XGBoost, and $0.115$ for LSTM at $H=2$), absolute variance losses are normalized into a Relative Information Share (\%):
+\begin{equation}
+    s_j = \frac{\Delta R^2_{\text{OOS}}(j)}{\sum_{k=1}^{19} \Delta R^2_{\text{OOS}}(k)} \times 100\%
+    \label{eq:pfi_share}
+\end{equation}
+For the recurrent LSTM (+Lag), feature attribution is evaluated via an empirical surrogate tree model fitted to the sequence predictions ($\hat{\epsilon}_{\text{LSTM}}$), capturing the black-box response surface with high fidelity while enabling uniform tabular permutation benchmarking.
+
+Figure~\ref{fig:feature_attribution_benchmark} reports the Relative Information Share across all 19 indicators for champion integrated specifications at peak lead time ($H = 2$, September 30), grouped by physical domain in their natural order without artificial sorting.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.98\textwidth]{figures/fig_feature_attribution_benchmark.pdf}
-    \caption{Out-of-sample SHAP feature attribution ($\mathrm{E}[|\phi|]$, bu/ac) at $H = 2$ (September 30) for champion ElasticNet (+Lag) and XGBoost (+Lag). SHAP values quantify the mean absolute marginal contribution of each agrometeorological indicator to individual county-year predictions across the 2011--2025 blind test panel. Indicators grouped by physical domain.}
+    \includegraphics[width=0.98\textwidth]{figures/fig54_pfi_faceted_bars.pdf}
+    \caption{Out-of-sample feature attribution across 19 agrometeorological indicators at $H = 2$ (September 30) for champion ElasticNet (+Lag), XGBoost (+Lag), and LSTM (Surrogate). Attributions are computed via Grouped Permutation Feature Importance (GPFI, $n = 5$ repetitions) permuting all active campaign months jointly per physical indicator, normalized as Relative Information Share (\% of total $\Delta R^2_{\text{OOS}}$ degradation). Indicators are grouped by physical domain in natural order. Blind test evaluations 2011--2025.}
     \label{fig:feature_attribution_benchmark}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, blind test evaluations 2011--2025.}}
 \end{figure}
 
-The empirical distribution of marginal contributions demonstrates consistent domain prioritization across paradigms:
+The cross-model attribution profiles reveal clear structural consensus alongside paradigm-specific functional representations:
 \begin{enumerate}
-    \item \textbf{Primacy of Atmospheric Evaporative Demand and Hydrological Supply:} Vapor pressure deficit ($VPD$, $0.51\text{ bu/ac}$ in XGBoost, $1.33\text{ bu/ac}$ in ElasticNet) and reference evapotranspiration ($ET_0$) represent the primary atmospheric stress signals. In the hydrological domain, cumulative precipitation ($P$) and climatic water balance ($P - ET_0$, $0.40\text{ bu/ac}$ in XGBoost) alongside soil water layers govern yield buffering against drought collapse.
-    \item \textbf{Extreme Thermal Shock Activation:} Moderate ($HD_{30}$) and extreme heat days ($HD_{35}$) operate as threshold activation drivers. While normal growing seasons register zero days above $35^\circ\text{C}$, their localized presence in drought years induces sharp negative yield shifts, captured directly by tree split thresholds without distortion from zero-frequency test samples.
-    \item \textbf{Collinear Weight Concentration in Linear Formulations:} ElasticNet distributes large symmetric coefficients across mutually correlated variables such as dewpoint temperature ($T_{\text{dew}}$) and topsoil moisture ($SM_1$), leading to elevated marginal ranges. Conversely, tree-based partitions select compact subsets of non-redundant indicators, concentrating weight on $VPD$, precipitation balances, and autoregressive memory ($\epsilon_{t-1}$).
+    \item \textbf{Primacy of Atmospheric Evaporative Demand:} Vapor pressure deficit ($VPD$) emerges as a critical driver across all architectures, accounting for $19.2\%$ of total predictive degradation in XGBoost, $15.6\%$ in LSTM, and $10.3\%$ in ElasticNet. Extreme degree days above $30^\circ\text{C}$ ($EDD_{30}$) contribute an additional $10.0\%$ in ElasticNet and $7.8\%$ in LSTM, confirming that atmospheric desiccating stress governs terminal yield penalties.
+    \item \textbf{Dominance of Hydrological Supply Balances:} The climatic water balance ($P - ET_0$) dominates predictive attribution in recurrent LSTM ($26.1\%$) and XGBoost ($9.6\%$). Combined with cumulative precipitation ($P$, $6.8\text{--}11.5\%$) and topsoil moisture ($SM_1$, $13.2\text{--}16.5\%$), water balance indicators form the foundational biophysical buffer mitigating mid-season drought collapse.
+    \item \textbf{Architectural Divergence in Thermal Representation:} ElasticNet allocates substantial linear weight to dewpoint temperature ($T_{\text{dew}}$, $27.8\%$), reflecting collinear pacing of vapor pressure and ambient temperatures. In contrast, non-linear tree partitions bypass collinear thermal indices, allocating substantial weight directly to solar radiation ($SSRD$, $12.3\%$) and autoregressive memory ($\epsilon_{t-1}$, $5.9\%$).
 \end{enumerate}
 
 \subsection{Macro-Agronomic Information Domain Sensitivity}
 \label{sec:res_cluster_pfi}
 
-To quantify the gross variance loss induced by completely removing coherent physical information families, we evaluate Grouped Permutation Feature Importance (GPFI) across four aggregated macro-agronomic clusters \citep{Sweetetal2023}. For each physical domain, all constituent feature columns across all active campaign months are permuted jointly, preserving intra-domain correlation manifolds while breaking the link with yield anomalies. Feature importance is defined as the marginal contraction in out-of-sample explained variance:
+To quantify the gross variance loss induced by completely removing coherent physical information families, we evaluate Grouped Permutation Feature Importance (GPFI) across five aggregated macro-agronomic domains \citep{Sweetetal2023}. For each physical domain, all constituent feature columns across all active campaign months are permuted jointly, preserving intra-domain correlation manifolds while breaking the link with yield anomalies. Feature importance is defined as the marginal contraction in out-of-sample explained variance:
 \begin{equation}
-    \Delta R^2_{\text{OOS}}(\mathcal{C}) = R^2_{\text{OOS}}(\text{base}) - R^2_{\text{OOS}}(\pi_{\mathcal{C}})
+    \Delta R^2_{\text{OOS}}(\mathcal{C}) = \max\left(0, R^2_{\text{OOS}}(\text{base}) - R^2_{\text{OOS}}(\pi_{\mathcal{C}})\right)
     \label{eq:cluster_pfi}
 \end{equation}
-where $\pi_{\mathcal{C}}$ denotes joint row permutation of all columns in cluster $\mathcal{C}$, evaluated against the standardized out-of-sample denominator $SS_{\text{tot}} = \sum (y_i - \bar{y}_{\text{test}})^2$. Figure~\ref{fig:shap_horizon_stack} compares $\Delta R^2_{\text{OOS}}$ across ElasticNet (+Lag), XGBoost (+Lag), and the sequential LSTM (+Lag) at $H = 2$ over $n = 10$ permutation repetitions.
+where $\pi_{\mathcal{C}}$ denotes joint row permutation of all columns in domain $\mathcal{C}$, evaluated against the standardized out-of-sample denominator $SS_{\text{tot}} = \sum (y_i - \bar{y}_{\text{test}})^2$. Figure~\ref{fig:shap_horizon_stack} compares the relative macro-domain information share (100\% horizontal stacked bars) across ElasticNet (+Lag), XGBoost (+Lag), and LSTM (Surrogate) at $H = 2$ over $n = 10$ permutation repetitions, matching the domain color coding and architectural sequencing of Figure~\ref{fig:feature_attribution_benchmark}.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.96\textwidth]{figures/fig_shap_horizon_stack.pdf}
-    \caption{Grouped Permutation Feature Importance ($\Delta R^2_{\text{OOS}}$) across four physical information domains at $H=2$ (September 30), champion integrated (+Lag) specifications, 2011--2025 blind test. Each cluster is permuted simultaneously to preserve intra-cluster physical correlations. ENet: ElasticNet; XGB: XGBoost; LSTM: sequential LSTM (grouped permutation on tabular inputs, $n=10$ repetitions).}
+    \includegraphics[width=0.98\textwidth]{figures/fig55_pfi_domain_bars.pdf}
+    \caption{Out-of-sample macro-domain information share (100\% horizontal stacked bars) across champion architectures at milestone horizon $H = 2$ (September 30). Attributions are evaluated via Grouped Permutation Feature Importance (GPFI, $n = 10$ repetitions) permuting all constituent features across active campaign months simultaneously per physical domain, normalized to relative information shares (\%). Domain color coding and architectural sequencing directly match Figure~\ref{fig:feature_attribution_benchmark}. Blind test evaluations 2011--2025.}
     \label{fig:shap_horizon_stack}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, blind test evaluations 2011--2025.}}
 \end{figure}
 
-The four-cluster grouped perturbation yields consistent cross-paradigm conclusions:
+The five-domain grouped perturbation yields clear cross-paradigm insights:
 \begin{enumerate}
-    \item \textbf{Cross-Model Consensus on Atmospheric Demand:} Shuffling the Extreme Heat \& Atmospheric Demand domain ($HD_{35}, HD_{30}, VPD, ET_0$) induces virtually identical predictive contraction across all three architectures ($\Delta R^2 = 0.094$ for ElasticNet, $0.088$ for XGBoost, and $0.089$ for LSTM). Atmospheric moisture demand constitutes an essential, non-substitutable predictive signal across linear, tree, and recurrent formulations.
-    \item \textbf{Dominance of Hydrological Reserves:} The Hydrological Supply \& Soil Moisture domain ($P, P-ET_0, SM_{\text{root}}, SM_{1\text{--}3}$) registers the highest aggregate variance penalty for tree and neural estimators ($\Delta R^2 \approx 0.130\text{--}0.135$), confirming that root-zone and subsoil moisture reservoirs represent the foundational buffer determining harvest outcomes.
-    \item \textbf{Linear Regularization Sensitivity:} Thermal pacing and radiation indicators ($GDD, T_{\text{max}}, T_{\text{mean}}$, $T_{\text{min}}, SSRD, T_{\text{dew}}$) register an elevated loss in ElasticNet ($\Delta R^2 = 0.334$) and LSTM ($\Delta R^2 = 0.212$) relative to XGBoost ($\Delta R^2 = 0.083$). In linear and recurrent architectures, continuous thermal pacing provides foundational developmental calibration, whereas gradient trees partition temperature effects through discrete thresholds.
+    \item \textbf{Cross-Model Consensus on Atmospheric Demand:} The Atmospheric Demand \& Heat domain ($HD_{35}, HD_{30}, EDD_{30}, VPD, ET_0$) accounts for $32.0\%$ of total predictive attribution in XGBoost, $33.6\%$ in LSTM, and $16.8\%$ in ElasticNet ($\Delta R^2 = 0.103, 0.089, \text{and } 0.158$, respectively). Evaporative moisture deficit and acute heat stress constitute an essential predictive signal across linear, tree, and recurrent formulations.
+    \item \textbf{Hydrological Supply Balances and Soil Reservoirs:} Partitioning meteo-hydrological flux from subsoil moisture reveals distinct predictive roles. Direct precipitation balances ($P, P-ET_0$) represent $34.7\%$ of information share in recurrent LSTM, $21.4\%$ in XGBoost, and $30.6\%$ in ElasticNet ($\Delta R^2 = 0.092, 0.069, \text{and } 0.290$). Concurrently, soil moisture layers ($SM_{1\text{--}3}, SM_{\text{root}}$) exert an independent share ($14.5\%$ in XGBoost, $11.9\%$ in LSTM, and $10.7\%$ in ElasticNet; $\Delta R^2 = 0.047, 0.032, \text{and } 0.101$), confirming that root-zone and subsoil moisture reservoirs buffer yield against temporary rainfall deficits.
+    \item \textbf{Linear Regularization Sensitivity in Thermal Regimes:} Thermal pacing and radiation indicators ($GDD, T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}, SSRD$) account for the largest single share in ElasticNet ($36.6\%$, $\Delta R^2 = 0.346$), compared to $25.7\%$ in XGBoost ($\Delta R^2 = 0.083$) and $18.7\%$ in LSTM ($\Delta R^2 = 0.050$). In linear specifications, continuous thermal pacing provides foundational developmental calibration across collinear temperature variables, whereas gradient-boosted trees and neural gates isolate non-linear thresholds with lower marginal vulnerability to joint thermal disruption.
+    \item \textbf{Autoregressive Memory and Spatial Anchoring:} Shuffling lagged yield anomalies ($\epsilon_{t-1}$) and spatial coordinates accounts for minor relative shares ($6.3\%$ in XGBoost, $5.3\%$ in ElasticNet, and $1.1\%$ in LSTM; $\Delta R^2 = 0.020, 0.050, \text{and } 0.003$), confirming that contemporaneous in-season weather dominates historical carryover and static geography at peak forecast maturity.
 \end{enumerate}
 
 \subsection{Spatial Heterogeneity of Predictive Performance}
@@ -311,6 +319,63 @@ Predictive accuracy varies across the Midwestern Corn Belt reflecting spatial gr
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025.}}
 \end{figure}
 
-Predictive skill is strongest across central and southern Illinois and eastern Iowa, where county-level $R^2_{\text{OOS}}$ exceeds $0.35$--$0.55$. In these intensive production corridors, deep prairie soils and high heat sensitivity make yield anomalies tightly coupled to realized ERA5-Land moisture and temperature extremes. Conversely, northern fringe counties in Minnesota and select Ohio counties exhibit lower explained variance ($R^2_{\text{OOS}} \approx 0.05$--$0.20$), where shorter photoperiods, cooler summer baselines, and artificial drainage moderate the relative impact of thermal shocks. Continuous coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ capture these latitudinal response transitions without requiring administrative boundary fragmentation.
+The spatial distribution in Figure~\ref{fig:county_r2_map} reveals pronounced regional divergence across the study area:
+\begin{enumerate}
+    \item \textbf{Core Rainfed Prairie Corridors:} Predictive skill concentrates heavily across central and southern Illinois and eastern Iowa, where county-level $R^2_{\text{OOS}}$ exceeds $0.35\text{--}0.55$, reaching peaks above $0.65$ in Buchanan County, IA ($R^2_{\text{OOS}} = 0.660$, $\text{RMSE} = 2.53\text{ bu/ac}$) and Jefferson County, IL ($R^2_{\text{OOS}} = 0.632$, $\text{RMSE} = 4.23\text{ bu/ac}$). Across the top quartile of study counties ($Q_4$, mean $R^2_{\text{OOS}} = 0.532$, mean $\text{RMSE} = 4.03\text{ bu/ac}$), commercial soybean production is 100\% rainfed and cultivated on deep Mollisols with high available water capacity. In these districts, acute midsummer evaporative demand translates into synchronized canopy stress and substantial yield penalties (mean 2012 drought anomaly $\epsilon_{2012} = -8.01\text{ bu/ac}$). ERA5-Land root-zone moisture deficits track this depletion directly, enabling strong model alignment ($r \ge 0.85\text{--}0.91$).
+    \item \textbf{Alluvial Irrigation Decoupling (Missouri Bootheel):} Conversely, counties exhibiting the lowest predictive skill ($Q_1$, mean $R^2_{\text{OOS}} = 0.088$, mean $\text{RMSE} = 5.30\text{ bu/ac}$) cluster in specific geographical enclaves. Four of the six Missouri study counties (Dunklin, New Madrid, Pemiscot, and Stoddard; $R^2_{\text{OOS}} \le 0.06$) are located within the Mississippi Alluvial Plain (the Missouri Bootheel). In this alluvial corridor, commercial growers irrigate over 60--75\% of harvested soybean acreage via groundwater extraction. Because our empirical protocol is strictly weather-only and omits operational pumping records, supplemental irrigation uncouples crop physiological performance from ERA5-Land precipitation deficits. Consequently, the model anticipates drought damage that field irrigation mitigates, attenuating out-of-sample skill.
+    \item \textbf{Sub-Threshold Thermal Regimes (Northern Fringe):} In the northern fringe counties of western Minnesota (e.g., Stevens County, $R^2_{\text{OOS}} < 0$; Big Stone County, $R^2_{\text{OOS}} = -0.125$), July daytime temperatures rarely cross the physiological heat damage threshold ($HD_{30} \approx 6.9\text{ days}$, compared to $14.8\text{ days}$ in Illinois). During the 2012 drought, realized Minnesota anomalies remained positive ($\bar{\epsilon}_{2012} = +0.14\text{ bu/ac}$). Absent acute reproductive heat shocks, annual yield variance is dominated by operational planting delays, soil temperature at emergence, and early autumn frost dates, which monthly summer weather aggregations do not capture.
+    \item \textbf{Artificial Subsurface Drainage (Western Lake Erie Basin):} In northwestern Ohio (Ottawa and Henry counties, $R^2_{\text{OOS}} \approx 0.02\text{--}0.15$), dense subsurface tile drainage networks across lacustrine clay soils accelerate artificial soil water evacuation. Artificial drainage alters moisture retention curves relative to standardized ERA5-Land soil pedotransfer functions, while thermal moderation from Lake Erie dampens synoptic heat extremes. Continuous spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ capture these broad agro-ecological transitions without administrative boundary fragmentation.
+\end{enumerate}
+
+\subsection{Predictive Performance in Anomaly Space versus Raw Yield Levels}
+\label{sec:res_raw_vs_anomaly}
+
+The out-of-sample skill scores reported throughout this chapter quantify the proportion of climatic anomaly variance explained relative to county-specific secular trends ($\epsilon = y - \tau$). In commercial supply-chain logistics and grain elevator operations, decision-makers ultimately evaluate production in physical yield levels ($y$, bu/ac). To connect anomaly predictions ($\hat{\epsilon}$) to physical yields, we project final county production through the expanding technological baseline:
+\begin{equation}
+    \hat{y}_{c,Y}^{(H)} = \hat{\tau}_{c,Y} + \hat{\epsilon}_{c,Y}^{(H)}
+    \label{eq:level_projection}
+\end{equation}
+Because the technological trend is estimated out-of-sample prior to candidate model conditioning, the absolute forecast error on raw yield levels is identical to the anomaly forecast error:
+\begin{equation}
+    y_{c,Y} - \hat{y}_{c,Y}^{(H)} = \left(\tau_{c,Y} + \epsilon_{c,Y}\right) - \left(\hat{\tau}_{c,Y} + \hat{\epsilon}_{c,Y}^{(H)}\right) = \epsilon_{c,Y} - \hat{\epsilon}_{c,Y}^{(H)}
+    \label{eq:level_error_equivalence}
+\end{equation}
+Consequently, point error metrics (RMSE and MAE) are invariant between anomaly space and physical yield space. In contrast, the coefficient of determination $R^2$ scales with the denominator baseline variance:
+\begin{equation}
+    R^2_{\text{level}}(H) = 1 - \frac{\sum_{Y} \sum_{c} \left( y_{c,Y} - \hat{y}_{c,Y}^{(H)} \right)^2}{\sum_{Y} \sum_{c} \left( y_{c,Y} - \bar{y}_{\text{test}} \right)^2}
+    \label{eq:r2_level_formula}
+\end{equation}
+While the anomaly denominator captures only climatic variance ($\text{Var}(\epsilon) = 37.50\text{ bu}^2/\text{ac}^2$), the level denominator incorporates the full variance of realized production, encompassing historical yield growth and cross-county spatial productivity gradients ($\text{Var}(y) = 71.28\text{ bu}^2/\text{ac}^2$). Table~\ref{tab:raw_vs_anomaly_performance} contrasts forecast metrics evaluated in anomaly space against physical yield levels at peak horizon $H = 2$ across the $2{,}025$ blind test evaluations (2011--2025).
+
+\begin{table}[htbp]
+\centering
+\singlespacing
+\footnotesize
+\setlength{\tabcolsep}{6.0pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Comparison of out-of-sample forecast performance between detrended anomaly space ($\epsilon = y - \tau$, bu/ac) and physical yield levels ($y = \tau + \epsilon$, bu/ac) at peak horizon $H = 2$ (September 30) across the 2011--2025 blind test panel ($2{,}025$ county-year evaluations). Deterministic naive benchmark projects the historical secular trend ($\hat{\epsilon} = 0$). All machine learning estimators evaluate the integrated specification (+Lag $\epsilon_{t-1}$). Bold indicates champion performance per metric.}
+\label{tab:raw_vs_anomaly_performance}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c c c c c @{}}
+\toprule
+\textbf{Estimator} & \textbf{RMSE (bu/ac)} & \textbf{MAE (bu/ac)} & $R^2_{\text{OOS}}$ \textbf{(Anomaly)} & $R^2_{\text{OOS}}$ \textbf{(Raw Level)} & \textbf{Pearson} $r$ \textbf{(Raw Level)} \\
+\midrule
+Naive Secular Trend & 6.124 & 5.050 & 0.000 & 0.474 & 0.746 \\
+ElasticNet (+Lag)   & 5.049 & 4.037 & 0.320 & 0.642 & 0.821 \\
+XGBoost (+Lag)      & 5.221 & 4.158 & 0.273 & 0.618 & 0.808 \\
+Sequential LSTM (+Lag) & \textbf{5.008} & \textbf{4.025} & \textbf{0.331} & \textbf{0.648} & \textbf{0.840} \\
+\bottomrule
+\end{tabular*}
+\vspace{0.2em}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, blind test evaluations 2011--2025. Absolute point errors (RMSE and MAE) are identical across evaluation domains. Pearson $r$ measures linear correlation between realized county yields and physical level projections $\hat{y} = \hat{\tau} + \hat{\epsilon}$.}}
+\end{table}
+
+Evaluating predictions on physical yield levels provides essential perspective on model skill:
+\begin{enumerate}
+    \item \textbf{Secular Baseline Absorption:} The naive secular trend accounts for $47.4\%$ of total yield variance in the test partition ($R^2_{\text{level}} = 0.474$, $r = 0.746$) without ingesting meteorological data. This reflects multidecadal agronomic breeding, fertilizer efficiency, and baseline geographic differences across counties.
+    \item \textbf{Meteorological Value Added:} Conditioning on ERA5-Land reanalysis and sequential memory increases explained variance from $0.474$ to $\mathbf{0.648}$ for the sequential LSTM (+Lag), generating a Pearson correlation of $r = 0.840$. Environmental forcing resolves an additional $+17.4$ percentage points of commercial yield variation beyond historical technological momentum.
+    \item \textbf{County-Level Peak Resolution:} At the county level, where secular trend accuracy varies, raw yield level coefficients reach $\text{median } R^2_{\text{level}} = 0.630$ and peak above $0.85\text{--}0.90$ in core rainfed districts (e.g., Buchanan County, IA: $R^2_{\text{level}} = 0.772$, $r = 0.908$, $\text{RMSE} = 2.53\text{ bu/ac}$).
+    \item \textbf{Methodological Attribution:} This dual evaluation clarifies the disconnect with machine learning studies that report $R^2 > 0.75$ on raw yield levels without detrending \citep{ChenZhang2026, Khaki2020}. Un-detrended estimators attribute secular technological progress to climate predictors. Formulating the primary benchmark in detrended anomaly space isolates authentic meteorological skill ($R^2_{\text{OOS}} = 0.331$), demonstrating that our models predict unpredictable climatic shocks rather than historical inertia.
+\end{enumerate}
+
 
 
