@@ -477,7 +477,14 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     print("Generating Figure 5.6: Decile Calibration & Residual Diagnostics...", flush=True)
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.5, 4.8))
 
-    models_to_plot = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_PReLU', 'LSTM_Linear', 'LSTM_PReLU_Lag', 'LSTM_Linear_Lag'] if m in preds['model'].unique()]
+    # Clean selection of candidate models: 1 per paradigm family, champion LSTM only
+    clean_models = [
+        ('Naive', 'Naive', '#555555', 's'),
+        ('ElasticNet', 'ElasticNet', '#1f77b4', 'o'),
+        ('RandomForest', 'Random Forest', '#ff7f0e', '^'),
+        ('XGBoost', 'XGBoost', '#d62728', 'D'),
+        ('LSTM_Linear_Lag', 'LSTM (+Lag)', '#9467bd', 'X')
+    ]
 
     # ---------------------------------------------------------
     # Panel (a): Decile Reliability & Tail Shrinkage Diagram
@@ -488,27 +495,20 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
 
     # 1:1 Reference Line of perfect calibration
     ax1.plot([min_val - 2, max_val + 2], [min_val - 2, max_val + 2],
-             color='#111111', linestyle='--', linewidth=1.1, alpha=0.75, label='1:1 Perfect Calibration', zorder=1)
+             color='#111111', linestyle='--', linewidth=1.1, alpha=0.75, label='1:1 Calibration', zorder=1)
 
-    for m in models_to_plot:
-        if f'pred_mean_{m}' in df_deciles.columns:
-            y_pred = df_deciles[f'pred_mean_{m}'].values
-            ax1.plot(x_obs, y_pred, label=m, color=COLOR_MAP.get(m, '#333333'),
-                     marker=MARKER_MAP.get(m, 'o'), markersize=5.5, linewidth=1.7, zorder=3)
-
-    # Annotate Tail Shrinkage Zones
-    ax1.annotate(r'Severe Drought ($D_1$)' + '\n' + 'Tail Shrinkage',
-                 xy=(x_obs[0], df_deciles.get('pred_mean_XGBoost', df_deciles['obs_mean']).values[0]),
-                 xytext=(x_obs[0] + 1.0, -3.5),
-                 arrowprops=dict(facecolor='#d62728', edgecolor='#d62728', arrowstyle='->', lw=1.2),
-                 fontsize=8.5, fontweight='bold', color='#a01818')
+    for m_key, m_lbl, m_col, m_mk in clean_models:
+        if f'pred_mean_{m_key}' in df_deciles.columns:
+            y_pred = df_deciles[f'pred_mean_{m_key}'].values
+            ax1.plot(x_obs, y_pred, label=m_lbl, color=m_col,
+                     marker=m_mk, markersize=5.5, linewidth=1.7, zorder=3)
 
     ax1.set_xlabel(r'Mean Observed Anomaly ($\bar{\epsilon}$, bu/acre by Decile)')
     ax1.set_ylabel(r'Mean Predicted Anomaly ($\bar{\hat{\epsilon}}$, bu/acre)')
     ax1.set_title(r'(a) Decile Reliability Diagram ($H=2$)', loc='left', fontsize=11, fontweight='bold')
     ax1.set_xlim(min_val - 1.5, max_val + 1.5)
     ax1.set_ylim(-6.0, 5.0)
-    ax1.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.5)
+    ax1.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.2)
 
     # ---------------------------------------------------------
     # Panel (b): Normal Q-Q Plot of Standardized Residuals
@@ -519,13 +519,19 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     theo_q = np.linspace(-3.5, 3.5, 100)
     ax2.plot(theo_q, theo_q, color='#111111', linestyle='--', linewidth=1.1, alpha=0.75, label='Theoretical Normal', zorder=1)
 
-    for m in ['ElasticNet', 'XGBoost']:
-        if m in sub_h['model'].unique():
-            sub_m = sub_h[sub_h['model'] == m]
+    qq_models = [
+        ('ElasticNet', 'ElasticNet', '#1f77b4'),
+        ('XGBoost', 'XGBoost', '#d62728'),
+        ('LSTM_Linear_Lag', 'LSTM (+Lag)', '#9467bd')
+    ]
+
+    for m_key, m_lbl, m_col in qq_models:
+        if m_key in sub_h['model'].unique():
+            sub_m = sub_h[sub_h['model'] == m_key]
             e = (sub_m['y_true_anomaly'] - sub_m['y_pred_anomaly']).values
             std_e = (e - np.mean(e)) / np.std(e)
             osm, osr = stats.probplot(std_e, dist='norm', fit=False)
-            ax2.scatter(osm[::10], osr[::10], color=COLOR_MAP[m], label=f'{m} Residuals',
+            ax2.scatter(osm[::10], osr[::10], color=m_col, label=f'{m_lbl} Residuals',
                         alpha=0.6, s=16, edgecolors='none', zorder=3)
 
     ax2.set_xlabel('Theoretical Normal Quantiles ($z$)')
@@ -533,17 +539,20 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     ax2.set_title(r'(b) Normal Q-Q Plot of Residuals ($H=2$)', loc='left', fontsize=11, fontweight='bold')
     ax2.set_xlim(-3.6, 3.6)
     ax2.set_ylim(-4.2, 3.8)
-    ax2.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.5)
+    ax2.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.2)
 
     # ---------------------------------------------------------
-    # Panel (c): Residuals vs Fitted Values (Conditional Heteroscedasticity)
+    # Panel (c): Residuals vs Fitted Values (Champion Model: LSTM +Lag)
     # ---------------------------------------------------------
-    m_focus = 'XGBoost' if 'XGBoost' in sub_h['model'].unique() else 'ElasticNet'
+    m_focus = 'LSTM_Linear_Lag' if 'LSTM_Linear_Lag' in sub_h['model'].unique() else ('XGBoost' if 'XGBoost' in sub_h['model'].unique() else 'ElasticNet')
     sub_foc = sub_h[sub_h['model'] == m_focus]
     y_fit = sub_foc['y_pred_anomaly'].values
     y_res = (sub_foc['y_true_anomaly'] - sub_foc['y_pred_anomaly']).values
 
-    ax3.scatter(y_fit[::4], y_res[::4], color=COLOR_MAP[m_focus], alpha=0.30, s=14, edgecolors='none', label=f'{m_focus} (Subsampled)')
+    label_foc = 'LSTM (+Lag)' if 'LSTM' in m_focus else m_focus
+    color_foc = '#9467bd' if 'LSTM' in m_focus else COLOR_MAP.get(m_focus, '#d62728')
+
+    ax3.scatter(y_fit[::4], y_res[::4], color=color_foc, alpha=0.30, s=14, edgecolors='none', label=f'{label_foc} (Subsampled)')
     ax3.axhline(0, color='black', linestyle=':', linewidth=1.0, alpha=0.8)
 
     # Binned standard deviation curve to clearly illustrate heteroscedasticity
@@ -559,12 +568,12 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     ax3.fill_between(bin_stats['fit_mean'],
                      bin_stats['res_mean'] - bin_stats['res_std'],
                      bin_stats['res_mean'] + bin_stats['res_std'],
-                     color=COLOR_MAP[m_focus], alpha=0.18, label=r'$\pm 1\sigma$ Residual Band')
+                     color=color_foc, alpha=0.18, label=r'$\pm 1\sigma$ Residual Band')
 
     ax3.set_xlabel(r'Fitted Yield Anomaly ($\hat{\epsilon}$, bu/acre)')
     ax3.set_ylabel(r'Residual Error ($e = \epsilon - \hat{\epsilon}$, bu/acre)')
-    ax3.set_title(rf'(c) Residual Variance vs Fitted Values ({m_focus})', loc='left', fontsize=11, fontweight='bold')
-    ax3.set_xlim(-5.5, 4.0)
+    ax3.set_title(rf'(c) Residual Variance vs Fitted Values ({label_foc})', loc='left', fontsize=11, fontweight='bold')
+    ax3.set_xlim(-10.5, 6.0)
     ax3.set_ylim(-18, 16)
     ax3.legend(loc='lower left', frameon=True, framealpha=0.9, fontsize=8.2)
 

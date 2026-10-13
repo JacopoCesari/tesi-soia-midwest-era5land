@@ -66,26 +66,18 @@ MARKER_MAP = {
 }
 
 MONTH_LABELS = {
-    12: 'Nov Y-1\n(H=12)',
-    11: 'Dec Y-1\n(H=11)',
-    10: 'Jan Y\n(H=10)',
-    9: 'Feb Y\n(H=9)',
-    8: 'Mar Y\n(H=8)',
-    7: 'Apr Y\n(H=7)',
-    6: 'May Y\n(H=6)',
-    5: 'Jun Y\n(H=5)',
-    4: 'Jul Y\n(H=4)',
-    3: 'Aug Y\n(H=3)',
-    2: 'Sep Y\n(H=2)',
-    1: 'Oct Y\n(H=1)'
-}
-
-ACTIVE_MONTH_LABELS = {
-    5: 'Jun 30\n(H=5, Pre-Flw)',
-    4: 'Jul 31\n(H=4, Flowering)',
-    3: 'Aug 31\n(H=3, Pod-Fill)',
-    2: 'Sep 30\n(H=2, Maturity)',
-    1: 'Oct 31\n(H=1, Harvest)'
+    12: 'Nov\n(H=12)',
+    11: 'Dec\n(H=11)',
+    10: 'Jan\n(H=10)',
+    9: 'Feb\n(H=9)',
+    8: 'Mar\n(H=8)',
+    7: 'Apr\n(H=7)',
+    6: 'May\n(H=6)',
+    5: 'Jun\n(H=5)',
+    4: 'Jul\n(H=4)',
+    3: 'Aug\n(H=3)',
+    2: 'Sep\n(H=2)',
+    1: 'Oct\n(H=1)'
 }
 
 # ---------------------------------------------------------------------------
@@ -93,24 +85,22 @@ ACTIVE_MONTH_LABELS = {
 # ---------------------------------------------------------------------------
 def plot_figure_5_1(summary_wo: pd.DataFrame, summary_int: pd.DataFrame, summary_lstm: pd.DataFrame):
     print("Generating Figure 5.1: Comprehensive Multi-Horizon Progression (All Models)...", flush=True)
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.4), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.2), sharex=True)
 
     horizons = list(range(11, 0, -1))
     x_pos = np.arange(len(horizons))
 
-    # Demarcate Regime 1: Noise / Zero Skill (H=11..6, indices 0..5) vs Regime 2: Active Signal (H=5..1, indices 6..10)
+    # Pre-sowing noise boundary: indices 0..4 (H=11..7, Dec-Apr) vs In-season campaign: indices 5..10 (H=6..1, May-Oct)
+    # The demarcation line is set exactly at May Y (H=6, index 5.0)
     for ax in (ax1, ax2):
-        # Noise regime: H=11..6
-        ax.axvspan(-0.5, 5.5, color='#f2f4f8', alpha=0.75, zorder=0)
-        # Active agronomic signal regime: H=5..1
-        ax.axvspan(5.5, 10.5, color='#fdfbf2', alpha=0.85, zorder=0)
-        # Vertical boundary between Noise and Active Signal
-        ax.axvline(5.5, color='#c0392b', linestyle=':', linewidth=1.5, alpha=0.85, zorder=2)
+        ax.axvspan(-0.5, 5.0, color='#f4f5f8', alpha=0.75, zorder=0)
+        ax.axvspan(5.0, 10.5, color='#fefdf9', alpha=0.85, zorder=0)
+        ax.axvline(5.0, color='#7f8c8d', linestyle=':', linewidth=1.4, alpha=0.85, zorder=2)
 
     # Panel 1: R2_OOS Pooled across all candidate models
-    # Naive baseline
-    ax1.plot(x_pos, np.zeros(len(horizons)), label=r'Naive Secular Trend ($\mathcal{B}_{\mathrm{naive}}$)',
-             color=COLOR_MAP['Naive'], linestyle='-', linewidth=1.8, marker='s', markersize=5, zorder=3)
+    ax1.axhline(0, color='black', linestyle='--', linewidth=0.9, alpha=0.6, zorder=2)
+    ax1.plot(x_pos, np.zeros(len(horizons)), label=r'Naive Baseline ($\mathcal{B}_{\mathrm{naive}}$)',
+             color=COLOR_MAP['Naive'], linestyle=':', linewidth=1.5, marker='s', markersize=4.5, zorder=3)
 
     # Tabular Models: Weather-Only (solid) vs Integrated (+Lag) (dashed)
     for model in ['ElasticNet', 'RandomForest', 'XGBoost']:
@@ -120,83 +110,59 @@ def plot_figure_5_1(summary_wo: pd.DataFrame, summary_int: pd.DataFrame, summary
         r2_wo = m_wo['R2_OOS_pooled'].values
         r2_int = m_int['R2_OOS_pooled'].values
 
-        # Solid: Pure Meteorological
         ax1.plot(x_pos, r2_wo, label=f'{model} (Weather-Only)', color=COLOR_MAP[model],
-                 marker=MARKER_MAP[model], markersize=5.0, linewidth=1.5, linestyle='-', zorder=4)
-        # Dashed: Integrated with Lag
+                 marker=MARKER_MAP[model], markersize=5.0, linewidth=1.4, linestyle='-', zorder=4)
         ax1.plot(x_pos, r2_int, label=f'{model} (+Lag)', color=COLOR_MAP[model],
-                 marker=MARKER_MAP[model], markersize=5.0, linewidth=1.5, linestyle='--', alpha=0.85, zorder=4)
+                 marker=MARKER_MAP[model], markersize=5.0, linewidth=1.4, linestyle='--', alpha=0.85, zorder=4)
 
     # Sequential LSTM Models: Weather-Only vs Integrated (+Lag)
     if not summary_lstm.empty:
-        # LSTM Weather-Only champion (PReLU head)
         lstm_wo = summary_lstm[(summary_lstm['variant'] == 'prelu') & (~summary_lstm['include_lag'])].set_index('H').reindex(horizons)
         r2_lstm_wo = lstm_wo['R2_OOS_pooled'].values
-        ax1.plot(x_pos, r2_lstm_wo, label='LSTM (Weather-Only)', color=COLOR_MAP['LSTM'],
-                 marker=MARKER_MAP['LSTM'], markersize=5.5, linewidth=2.0, linestyle='-', zorder=5)
+        ax1.plot(x_pos, r2_lstm_wo, label='LSTM (Weather-Only)', color=COLOR_MAP['LSTM (Weather-Only)'],
+                 marker=MARKER_MAP['LSTM'], markersize=5.5, linewidth=1.8, linestyle='-', zorder=5)
 
-        # LSTM Integrated champion (Linear head)
         lstm_int = summary_lstm[(summary_lstm['variant'] == 'linear') & (summary_lstm['include_lag'])].set_index('H').reindex(horizons)
         r2_lstm_int = lstm_int['R2_OOS_pooled'].values
-        ax1.plot(x_pos, r2_lstm_int, label=r'LSTM (+Lag $\epsilon_{t-1}$)', color='#8e44ad',
-                 marker='X', markersize=6.0, linewidth=2.2, linestyle='--', zorder=5)
+        ax1.plot(x_pos, r2_lstm_int, label=r'LSTM (+Lag $\epsilon_{t-1}$)', color=COLOR_MAP['LSTM (+Lag Yield)'],
+                 marker='X', markersize=6.0, linewidth=2.0, linestyle='--', zorder=5)
 
-    ax1.axhline(0, color='black', linestyle='--', linewidth=0.9, alpha=0.6)
     ax1.set_ylabel(r'Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$')
-    ax1.set_title(r'(a) Generalist Model Benchmark: Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)', loc='left', fontsize=11, fontweight='bold')
+    ax1.set_title(r'(a) Out-of-Sample Performance Trajectory ($R^2_{\mathrm{OOS}}$)', loc='left', fontsize=11, fontweight='bold')
     ax1.set_ylim(-0.35, 0.42)
     ax1.yaxis.set_major_locator(ticker.MultipleLocator(0.10))
-    ax1.legend(loc='lower left', frameon=True, framealpha=0.92, fontsize=8.0, ncol=2)
+    ax1.legend(loc='upper left', frameon=True, framealpha=0.92, fontsize=8.0, ncol=2)
 
-    # Annotate Regimes
-    ax1.text(2.5, 0.38, r'NOISE REGIME ($H \geq 6$)' + '\n' + r'$R^2 \leq 0$ (Secular Trend Optimal)', ha='center',
-             fontsize=9.0, color='#5a6b7c', fontweight='bold', bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.8, edgecolor='#bdc3c7'))
-    ax1.text(8.0, 0.38, r'ACTIVE SIGNAL REGIME ($H \leq 5$)' + '\n' + 'Rapid Agronomic Skill Accumulation', ha='center',
-             fontsize=9.0, color='#8c3b1e', fontweight='bold', bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.8, edgecolor='#e0b49c'))
-
-    # Panel 2: Out-of-Sample RMSE & Skill Score
-    naive_rmse = 6.123918
-    ax2.plot(x_pos, np.full(len(horizons), naive_rmse), label=r'Naive Secular Baseline ($6.12\,\mathrm{bu/ac}$)',
-             color=COLOR_MAP['Naive'], linestyle='-', linewidth=1.8, marker='s', markersize=5, zorder=3)
+    # Panel 2: Marginal Gain of Historical Memory with Symmetrical Log Scale (symlog)
+    ax2.axhline(0, color='black', linestyle='--', linewidth=0.9, alpha=0.6, zorder=2)
 
     for model in ['ElasticNet', 'RandomForest', 'XGBoost']:
         m_wo = summary_wo[summary_wo['model'] == model].set_index('H').reindex(horizons)
         m_int = summary_int[summary_int['model'] == model].set_index('H').reindex(horizons)
+        delta_r2 = m_int['R2_OOS_pooled'].values - m_wo['R2_OOS_pooled'].values
 
-        rmse_wo = m_wo['RMSE_OOS_pooled'].values
-        rmse_int = m_int['RMSE_OOS_pooled'].values
-
-        ax2.plot(x_pos, rmse_wo, label=f'{model} (Weather-Only)', color=COLOR_MAP[model],
-                 marker=MARKER_MAP[model], markersize=5.0, linewidth=1.5, linestyle='-', zorder=4)
-        ax2.plot(x_pos, rmse_int, label=f'{model} (+Lag)', color=COLOR_MAP[model],
-                 marker=MARKER_MAP[model], markersize=5.0, linewidth=1.5, linestyle='--', alpha=0.85, zorder=4)
+        ax2.plot(x_pos, delta_r2, label=rf'{model} $\Delta R^2$', color=COLOR_MAP[model],
+                 marker=MARKER_MAP[model], markersize=5.5, linewidth=1.5, linestyle='-', zorder=4)
 
     if not summary_lstm.empty:
-        rmse_lstm_wo = lstm_wo['RMSE_OOS_pooled'].values
-        ax2.plot(x_pos, rmse_lstm_wo, label='LSTM (Weather-Only)', color=COLOR_MAP['LSTM'],
-                 marker=MARKER_MAP['LSTM'], markersize=5.5, linewidth=2.0, linestyle='-', zorder=5)
+        delta_lstm = r2_lstm_int - r2_lstm_wo
+        ax2.plot(x_pos, delta_lstm, label=r'LSTM $\Delta R^2$', color=COLOR_MAP['LSTM (+Lag Yield)'],
+                 marker='X', markersize=6.5, linewidth=2.0, linestyle='-', zorder=5)
 
-        rmse_lstm_int = lstm_int['RMSE_OOS_pooled'].values
-        ax2.plot(x_pos, rmse_lstm_int, label=r'LSTM (+Lag $\epsilon_{t-1}$)', color='#8e44ad',
-                 marker='X', markersize=6.0, linewidth=2.2, linestyle='--', zorder=5)
+    ax2.set_yscale('symlog', linthresh=0.03, linscale=1.2)
+    ax2.set_ylim(-0.35, 0.22)
+    ticks2 = [-0.30, -0.10, -0.03, 0.0, 0.03, 0.10, 0.18]
+    ax2.set_yticks(ticks2)
+    ax2.set_yticklabels(['-0.30', '-0.10', '-0.03', '0.00', '+0.03', '+0.10', '+0.18'])
 
-    ax2.set_ylabel(r'Out-of-Sample RMSE ($\mathrm{bu/acre}$)')
-    ax2.set_title(r'(b) Forecast Error Magnitude and Percentage Skill Score', loc='left', fontsize=11, fontweight='bold')
-    ax2.set_ylim(4.80, 7.20)
-    ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.4))
-    ax2.legend(loc='upper right', frameon=True, framealpha=0.92, fontsize=8.0, ncol=2)
-
-    # Secondary y-axis for percentage skill score
-    ax2_twin = ax2.twinx()
-    ax2_twin.set_ylabel(r'Skill Score vs. Secular Baseline ($\% = 1 - \mathrm{RMSE}/\mathrm{RMSE}_{\mathrm{naive}}$)', color='#333333')
-    ax2_twin.set_ylim((1 - 7.20/naive_rmse)*100, (1 - 4.80/naive_rmse)*100)
-    ax2_twin.yaxis.set_major_locator(ticker.MultipleLocator(5.0))
-    ax2_twin.grid(False)
+    ax2.set_ylabel(r'Marginal Information Gain ($\Delta R^2_{\mathrm{OOS}} = R^2_{\mathrm{int}} - R^2_{\mathrm{wo}}$)')
+    ax2.set_title(r'(b) Marginal Contribution of Lagged Yield Memory ($\epsilon_{t-1}$)', loc='left', fontsize=11, fontweight='bold')
+    ax2.legend(loc='upper left', frameon=True, framealpha=0.92, fontsize=8.5, ncol=2)
 
     for ax in (ax1, ax2):
         ax.set_xticks(x_pos)
         ax.set_xticklabels([MONTH_LABELS[h] for h in horizons], rotation=0)
-        ax.set_xlabel('Forecast Horizon & Campaign Month')
+        ax.set_xlabel('Forecast Horizon')
 
     plt.tight_layout()
     fig.savefig(FIGURES_DIR / "fig_r2_horizon_progression.pdf")
@@ -228,19 +194,13 @@ def plot_figure_5_2(preds_int: pd.DataFrame, preds_lstm: pd.DataFrame):
 
     # Panel (a): Mean Anomaly Bias & Shock Resolution across the 5 Active Lead Times
     # Shocks: 2012 Severe Drought (actual anomaly: -4.07 bu/ac) and 2016 Bumper Season (actual anomaly: +7.34 bu/ac)
-    for yr, true_anom, name_lbl, c_base in [(2012, -4.07, '2012 Flash Drought (-11.7%)', '#d62728'),
-                                            (2016, +7.34, '2016 Bumper Crop (+14.8%)', '#27ae60')]:
-        # Models to compare: Champion Tabular (ElasticNet & XGBoost) and Champion Sequential (LSTM Linear)
-        # XGBoost
+    for yr, true_anom, name_lbl in [(2012, -4.07, '2012 Drought'),
+                                    (2016, +7.34, '2016 Bumper')]:
         xgb_biases = []
         elnet_biases = []
         lstm_biases = []
-        naive_biases = []
 
         for h in active_h:
-            # Naive bias = 0 - true_anomaly = -true_anomaly
-            naive_biases.append(-true_anom)
-
             sub_xgb = df_tab[(df_tab['year'] == yr) & (df_tab['H'] == h) & (df_tab['model'] == 'XGBoost')]
             xgb_biases.append((sub_xgb['y_pred_anomaly'] - sub_xgb['y_true_anomaly']).mean())
 
@@ -251,52 +211,51 @@ def plot_figure_5_2(preds_int: pd.DataFrame, preds_lstm: pd.DataFrame):
             sub_lst = df_l[(df_l['year'] == yr) & (df_l['H'] == h)]
             lstm_biases.append((sub_lst['y_pred_anomaly'] - sub_lst['y_true_anomaly']).mean())
 
-        # Plot trajectories
+        # Consistent styling: same color per model as Figure 5.1
+        # Solid line + filled marker for 2012 Drought; dashed line + open marker for 2016 Bumper
         ls = '-' if yr == 2012 else '--'
-        mk = 'o' if yr == 2012 else '^'
-        ax1.plot(x_pos, xgb_biases, label=f'XGBoost ({name_lbl})', color='#d62728' if yr == 2012 else '#e67e22',
-                 linestyle=ls, marker='D', markersize=5.5, linewidth=1.8)
-        ax1.plot(x_pos, elnet_biases, label=f'ElasticNet ({name_lbl})', color='#2980b9' if yr == 2012 else '#27ae60',
-                 linestyle=ls, marker='o', markersize=5.5, linewidth=1.8)
-        ax1.plot(x_pos, lstm_biases, label=f'LSTM (+Lag) ({name_lbl})', color='#8e44ad' if yr == 2012 else '#16a085',
-                 linestyle=ls, marker='X', markersize=6.0, linewidth=2.0)
+        fill_st = 'full' if yr == 2012 else 'none'
+        alpha_val = 1.0 if yr == 2012 else 0.85
 
-    ax1.axhline(0, color='black', linestyle=':', linewidth=1.2, alpha=0.85, label='Zero Bias (Unbiased)')
-    ax1.set_ylabel(r'Mean Anomaly Bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/acre)')
-    ax1.set_title(r'(a) Lead-Time Shock Bias Trajectory Across Active Horizons ($H=5 \dots 1$)', loc='left', fontsize=11, fontweight='bold')
+        ax1.plot(x_pos, elnet_biases, label=f'ElasticNet ({name_lbl})', color=COLOR_MAP['ElasticNet'],
+                 linestyle=ls, marker='o', fillstyle=fill_st, markersize=6.0, linewidth=1.8, alpha=alpha_val)
+        ax1.plot(x_pos, xgb_biases, label=f'XGBoost ({name_lbl})', color=COLOR_MAP['XGBoost'],
+                 linestyle=ls, marker='D', fillstyle=fill_st, markersize=5.5, linewidth=1.8, alpha=alpha_val)
+        ax1.plot(x_pos, lstm_biases, label=f'LSTM (+Lag) ({name_lbl})', color=COLOR_MAP['LSTM (+Lag Yield)'],
+                 linestyle=ls, marker='X', fillstyle=fill_st, markersize=6.5, linewidth=2.0, alpha=alpha_val)
+
+    ax1.axhline(0, color='black', linestyle=':', linewidth=1.2, alpha=0.85, label='Zero Bias')
+    ax1.set_ylabel(r'Mean Anomaly Bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/ac)')
+    ax1.set_title(r'(a) Regional Shock Bias Convergence ($H=5 \dots 1$)', loc='left', fontsize=11, fontweight='bold')
     ax1.set_xticks(x_pos)
-    ax1.set_xticklabels([ACTIVE_MONTH_LABELS[h] for h in active_h], rotation=0)
-    ax1.set_xlabel('Active Campaign Milestone')
-    ax1.legend(loc='lower left', frameon=True, framealpha=0.92, fontsize=8.0, ncol=2)
-    ax1.set_ylim(-8.5, 5.5)
+    ax1.set_xticklabels([MONTH_LABELS[h] for h in active_h], rotation=0)
+    ax1.set_xlabel('Forecast Horizon')
+    ax1.set_ylim(-8.8, 3.8)
+    ax1.legend(loc='upper right', frameon=True, framealpha=0.92, fontsize=8.0, ncol=2)
 
     # Panel (b): County-Level Anomaly Scatter (Predicted vs Observed) for the 2012 Flash Drought at H=5, H=3, H=1
-    colors_h = {5: '#e67e22', 3: '#2980b9', 1: '#27ae60'}
-    labels_h = {
-        5: 'H=5 (Jun 30, Pre-Flowering)',
-        3: 'H=3 (Aug 31, Pod-Filling Peak Stress)',
-        1: 'H=1 (Oct 31, Final Harvest Resolution)'
-    }
+    colors_h = {5: '#e67e22', 3: '#1f77b4', 1: '#2ca02c'}
 
     sub_2012 = df_l[df_l['year'] == 2012]
     for h in [5, 3, 1]:
         h_data = sub_2012[sub_2012['H'] == h]
-        ax2.scatter(h_data['y_true_anomaly'], h_data['y_pred_anomaly'],
-                    alpha=0.65, color=colors_h[h], s=30, label=labels_h[h], edgecolors='none')
-        # Regression slope
         z = np.polyfit(h_data['y_true_anomaly'], h_data['y_pred_anomaly'], 1)
         p = np.poly1d(z)
         x_lin = np.linspace(-18, 5, 50)
-        ax2.plot(x_lin, p(x_lin), color=colors_h[h], linewidth=1.8, label=f'Slope: {z[0]:.2f}')
+        ax2.scatter(h_data['y_true_anomaly'], h_data['y_pred_anomaly'],
+                    alpha=0.60, color=colors_h[h], s=28, edgecolors='none')
+        clean_lbl = MONTH_LABELS[h].replace('\n', ' ')
+        ax2.plot(x_lin, p(x_lin), color=colors_h[h], linewidth=1.8,
+                 label=f'{clean_lbl} (slope: {z[0]:.2f})')
 
     # 45-degree 1:1 line
-    ax2.plot([-20, 10], [-20, 10], 'k--', linewidth=1.1, alpha=0.75, label='1:1 Line (Perfect Prediction)')
-    ax2.set_xlabel(r'Observed 2012 County Anomaly ($\epsilon_{c, 2012}$, bu/acre)')
-    ax2.set_ylabel(r'Predicted Anomaly ($\hat{\epsilon}_{c, 2012}$, bu/acre)')
-    ax2.set_title(r'(b) 2012 Flash Drought: Trajectory from Blind to Resolved (LSTM +Lag)', loc='left', fontsize=11, fontweight='bold')
-    ax2.set_xlim(-20, 8)
-    ax2.set_ylim(-16, 6)
-    ax2.legend(loc='upper left', frameon=True, framealpha=0.92, fontsize=8.0, ncol=2)
+    ax2.plot([-20, 10], [-20, 10], 'k--', linewidth=1.1, alpha=0.75, label='1:1 Diagonal')
+    ax2.set_xlabel(r'Observed County Anomaly ($\epsilon_{c, 2012}$, bu/ac)')
+    ax2.set_ylabel(r'Predicted Anomaly ($\hat{\epsilon}_{c, 2012}$, bu/ac)')
+    ax2.set_title(r'(b) 2012 Drought: County Anomaly Resolution ($N=135$, LSTM)', loc='left', fontsize=11, fontweight='bold')
+    ax2.set_xlim(-19, 6)
+    ax2.set_ylim(-15, 4)
+    ax2.legend(loc='upper left', frameon=True, framealpha=0.92, fontsize=8.2, ncol=1)
 
     plt.tight_layout()
     fig.savefig(FIGURES_DIR / "fig_shock_bias_profiles.pdf")

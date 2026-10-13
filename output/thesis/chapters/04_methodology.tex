@@ -80,15 +80,6 @@ This schedule structures information accumulation:
     \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather through Month $m$, expanding feature dimensionality from $P_{11} = 34$ to $P_1 = 194$ in October (or $P_1 = 195$ under integrated carryover).
 \end{itemize}
 
-\subsection{Two-Tier Evaluation Strategy: Generalist Screening and Active Season Focus}
-\label{sec:meth_two_tier_strategy}
-
-Empirical evaluation operates through a structured two-tier hierarchy:
-\begin{enumerate}
-    \item \textbf{Tier 1: Preliminary Generalist Screening ($H = 12 \dots 1$):} We benchmark all candidate architectures (Naive, ElasticNet, Random Forest, XGBoost, LSTM) across all twelve lead times under both pure meteorological and integrated (+lag) specifications. This initial sweep serves two empirical purposes: determining the exact lead time where weather forcing transitions from uninformative winter noise to statistically detectable skill, and quantifying the systematic performance premium delivered by soil memory $\epsilon_{t-1}$.
-    \item \textbf{Tier 2: In-Depth Operational Focus ($H = 5 \dots 1$):} Once empirical screening demonstrates that cold-season weather prior to late June contains zero predictive signal ($R^2_{\text{OOS}} \le 0$), all granular diagnostic stress tests, tail-risk shock evaluations, and biophysical feature attributions are concentrated strictly on the five active campaign months ($H = 5 \dots 1$, June 30 to October 31). Within this active window, analysis centers on the top-performing candidate architectures to avoid narrative dilution across uninformative lead times.
-\end{enumerate}
-
 \subsection{Direct Horizon-Specific Modeling Paradigm}
 \label{sec:meth_direct_horizon}
 
@@ -447,3 +438,22 @@ Let $\bar{d}(H) = \frac{1}{N_{\text{test}}} \sum_{Y=2011}^{2025} d_Y(H)$ denote 
     \label{eq:dm_statistic}
 \end{equation}
 where $\widehat{\text{Var}}(\bar{d}(H))$ is estimated via the Newey-West HAC variance estimator. The statistic tests the null hypothesis of equal predictive accuracy ($\mathbb{E}[d_Y] = 0$) against the one-sided alternative of superior model precision.
+
+\subsection{Residual Diagnostics: Temporal and Spatial Autocorrelation}
+\label{sec:meth_residual_diagnostics}
+
+Valid statistical inference requires verifying that out-of-sample forecast residuals $e_{c,Y}^{(H)}$ do not exhibit persistent temporal autocorrelation or uncontrolled spatial clustering:
+\begin{enumerate}
+    \item \textbf{Temporal Autocorrelation ($\text{AR}(1)$):} For each individual county $c$, we compute the first-order serial correlation coefficient of out-of-sample forecast errors across the $N_{\text{test}} = 15$ test years:
+    \begin{equation}
+        \widehat{\rho}_{c,1}^{(H)} = \frac{\sum_{Y=2012}^{2025} (e_{c,Y}^{(H)} - \bar{e}_c^{(H)})(e_{c,Y-1}^{(H)} - \bar{e}_c^{(H)})}{\sum_{Y=2011}^{2025} (e_{c,Y}^{(H)} - \bar{e}_c^{(H)})^2}
+        \label{eq:temporal_ar1}
+    \end{equation}
+    The panel-level temporal persistence $\overline{\text{AR}(1)}^{(H)} = \frac{1}{C}\sum_{c=1}^C \widehat{\rho}_{c,1}^{(H)}$ tests whether multi-year agronomic memory or rotational inertia remains uncaptured by the feature space.
+    \item \textbf{Spatial Autocorrelation (Moran's $I$):} To measure cross-sectional spatial clustering of forecast errors across contiguous counties, we compute Moran's $I$ for each test year $Y$:
+    \begin{equation}
+        I_Y^{(H)} = \frac{C}{\sum_{i=1}^C \sum_{j=1}^C w_{ij}} \frac{\sum_{i=1}^C \sum_{j=1}^C w_{ij} (e_{i,Y}^{(H)} - \bar{e}_Y^{(H)})(e_{j,Y}^{(H)} - \bar{e}_Y^{(H)})}{\sum_{i=1}^C (e_{i,Y}^{(H)} - \bar{e}_Y^{(H)})^2}
+        \label{eq:morans_i}
+    \end{equation}
+    where $w_{ij} = 1/d_{ij}$ ($i \ne j$, $w_{ii} = 0$) represents the row-standardized inverse Euclidean distance between county centroids $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ \citep{Sweetetal2023}. Values of Moran's $I \in [-1, 1]$ near zero indicate spatial randomness of residuals, whereas positive values indicate geographic clustering of errors (suggesting omitted regional atmospheric forcing or unmodelled pest outbreaks). Annual estimates are averaged across the test window: $\overline{I}^{(H)} = \frac{1}{N_{\text{test}}}\sum_{Y=2011}^{2025} I_Y^{(H)}$.
+\end{enumerate}
