@@ -211,17 +211,17 @@ The decile decomposition reveals distinct structural regimes across model famili
     \item \textbf{Overall Active Season Error:} Across the full test panel ($D_1 \dots D_{10}$ pooled across $H = 5 \dots 1$), LSTM (+Lag) and ElasticNet (+Lag) perform almost identically: $\text{RMSE} = \mathbf{5.26\text{ bu/ac}}$ for LSTM versus $5.28\text{ bu/ac}$ for ElasticNet, followed by XGBoost ($5.39\text{ bu/ac}$), Random Forest ($5.54\text{ bu/ac}$), and Naive ($6.12\text{ bu/ac}$).
 \end{enumerate}
 
-To evaluate point calibration and residual properties at peak lead time, Figure~\ref{fig:decile_calibration_and_residuals} presents the econometric diagnostic suite at milestone $H = 2$ (September 30):
+To evaluate point calibration and residual properties at peak lead time, Figure~\ref{fig:decile_calibration_and_residuals} presents the econometric diagnostic suite at milestone $H = 2$ (September 30), evaluating the optimal integrated specification (incorporating historical yield memory) for each paradigm family:
 \begin{enumerate}
-    \item \textbf{Decile Reliability Diagram (Panel a):} Realized anomaly decile means range from $-8.82\text{ bu/ac}$ in $D_1$ to $+11.01\text{ bu/ac}$ in $D_{10}$. The naive baseline exhibits complete horizontal collapse ($\hat{\epsilon} = 0$, bias $+8.82\text{ bu/ac}$ in $D_1$). Tabular estimators (Random Forest, XGBoost, ElasticNet) attenuate extreme contractions toward the unconditional mean (predicting $-1.27$ to $-2.21\text{ bu/ac}$ in $D_1$) due to $L_2$ shrinkage. The sequential LSTM (+Lag) generates the sharpest shock response among candidate architectures (predicting $-3.09\text{ bu/ac}$ in $D_1$, $\text{RMSE} = 6.73\text{ bu/ac}$), mitigating tail attenuation relative to tabular baselines.
+    \item \textbf{Decile Reliability Diagram (Panel a):} Realized anomaly decile means range from $-8.82\text{ bu/ac}$ in $D_1$ to $+11.01\text{ bu/ac}$ in $D_{10}$. The naive baseline exhibits complete horizontal collapse ($\hat{\epsilon} = 0$, bias $+8.82\text{ bu/ac}$ in $D_1$). Tabular estimators (Random Forest, XGBoost, ElasticNet) attenuate extreme contractions toward the unconditional mean (predicting $-1.51$ to $-2.19\text{ bu/ac}$ in $D_1$) due to $L_2$ shrinkage. The sequential LSTM generates the sharpest shock response among candidate architectures (predicting $-3.09\text{ bu/ac}$ in $D_1$, $\text{RMSE} = 6.73\text{ bu/ac}$), mitigating tail attenuation relative to tabular baselines.
     \item \textbf{Quantile-Quantile (Q-Q) Distribution (Panel b):} Standardized forecast residuals across linear (ElasticNet), tree ensemble (XGBoost), and deep sequential (LSTM) architectures follow the theoretical normal distribution closely across the $[-2.0, +2.0]\sigma$ core. Heavy empirical tails emerge beyond $\pm 2.5\sigma$, reflecting unmodelled microclimatic events such as localized hail, severe wind damage, or intense flash flooding.
-    \item \textbf{Residuals versus Fitted Values (Panel c):} Residuals for the sequential LSTM (+Lag) remain centered near zero across the full prediction spectrum (spanning $-9.5$ to $+5.0\text{ bu/ac}$), with stable $\pm 1\sigma$ error bands confirming homoscedastic reliability across commercial yield regimes.
+    \item \textbf{Residuals versus Fitted Values (Panel c):} Residuals for the sequential LSTM remain centered near zero across the full prediction spectrum (spanning $-9.5$ to $+5.0\text{ bu/ac}$), with stable $\pm 1\sigma$ error bands confirming homoscedastic reliability across commercial yield regimes.
 \end{enumerate}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{figures/fig_decile_calibration_and_residuals.pdf}
-    \caption{Out-of-sample econometric diagnostics at milestone horizon $H = 2$ (September 30). Panel (a) shows the Decile Reliability Diagram across ten anomaly quantiles ($D_1$ severe drought to $D_{10}$ bumper harvest) against the 1:1 line for candidate architectures. Panel (b) shows the normal Q-Q plot of standardized forecast residuals comparing ElasticNet, XGBoost, and LSTM (+Lag) against theoretical normality. Panel (c) displays out-of-sample residuals versus fitted values for the sequential LSTM (+Lag) with $\pm 1\sigma$ binned variance bands.}
+    \caption{Out-of-sample econometric diagnostics at milestone horizon $H = 2$ (September 30) across candidate paradigm champions. Panel (a) shows the Decile Reliability Diagram across ten anomaly quantiles ($D_1$ severe drought to $D_{10}$ bumper harvest) against the 1:1 line. Panel (b) shows the normal Q-Q plot of standardized forecast residuals comparing ElasticNet, XGBoost, and LSTM against theoretical normality. Panel (c) displays out-of-sample residuals versus fitted values for the sequential LSTM with kernel-smoothed conditional mean bias and $\pm 1\sigma$ residual variance bands spanning the full support.}
     \label{fig:decile_calibration_and_residuals}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, blind test evaluations.}}
@@ -233,7 +233,7 @@ To evaluate point calibration and residual properties at peak lead time, Figure~
 Statistical validity requires verifying that model forecast residuals do not exhibit persistent temporal autocorrelation or uncontrolled spatial clustering. We evaluate serial correlation via county-level temporal $\text{AR}(1)$ coefficients and spatial clustering via cross-sectional Moran's $I$ across the 135 study counties using inverse-distance spatial weights:
 \begin{enumerate}
     \item \textbf{Temporal Serial Persistence ($\text{AR}(1)$):} Across all lead times, mean temporal $\text{AR}(1)$ coefficients of forecast residuals remain negligible: for ElasticNet (+Lag), $\overline{\text{AR}(1)} = 0.080$ at $H=1$; for XGBoost (+Lag), $\overline{\text{AR}(1)} = 0.049$ at $H=2$; and for the sequential LSTM (+Lag), $\overline{\text{AR}(1)} = -0.043$ at $H=1$. Importantly, the absence of serial autocorrelation in forecast residuals does not contradict the predictive value of lagged yield memory ($\epsilon_{t-1}$). Rather, historical yield carryover successfully captures rotational and deep soil persistence at the input stage \citep{ChenZhang2026}; once the model conditions on prior-year memory and realized weather, no unmodelled temporal inertia remains in the prediction errors.
-    \item \textbf{Spatial Autocorrelation (Moran's $I$):} Spatial clustering of forecast errors is quantified via Moran's $I \in [-1, 1]$, where values near zero indicate spatial randomness and positive values reflect geographical clustering of similar errors across contiguous counties \citep{Sweetetal2023}. At early overwinter horizons ($H = 6$), unmodelled regional climate patterns generate modest residual spatial clustering (Moran's $I \approx 0.205$). As midsummer meteorological features are ingested ($H \le 2$), spatial clustering declines steadily to Moran's $I = 0.168$ for ElasticNet (+Lag), $0.152$ for XGBoost (+Lag), and $0.145$ for the sequential LSTM (+Lag). Ingesting continuous spatial centroid coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ absorbs large-scale geographical covariance without administrative border discontinuities.
+    \item \textbf{Spatial Autocorrelation (Moran's $I$):} Spatial clustering of forecast errors is quantified via Moran's $I \in [-1, 1]$, where values near zero indicate spatial randomness and positive values reflect geographical clustering of similar errors across contiguous counties \citep{Sweetetal2023}. Raw historical yield anomalies exhibit a baseline spatial autocorrelation of $\overline{I} = 0.183$ across the 135-county panel, reaching peaks above $0.30$ during synchronized drought years. At early sowing horizons ($H = 6$), model forecast residuals maintain this spatial clustering ($\overline{I} \approx 0.188\text{--}0.203$). Accumulating midsummer meteorological features and continuous centroid coordinates reduces residual clustering modestly to $\overline{I} = 0.142$ for ElasticNet (+Lag) and $0.145$ for LSTM (+Lag) at $H = 1$. Crucially, the persistence of a positive spatial structure ($\overline{I} \approx 0.15$) is theoretically expected: under a strictly weather-only design, unmodelled pedological drivers that cluster geographically—such as static soil moisture retention capacity, tile drainage density, and localized pest infestations—necessarily remain in the error term. This finding directly validates our methodological reliance on the complete-year spatial block-bootstrap (Section~\ref{sec:meth_significance_bootstrap}), as standard i.i.d.\ inference would produce artificially narrow confidence intervals.
 \end{enumerate}
 
 % ==============================================================================
@@ -243,57 +243,69 @@ Statistical validity requires verifying that model forecast residuals do not exh
 \section{Feature Attribution and Agrometeorological Drivers}
 \label{sec:res_feature_attribution}
 
-\subsection{SHAP Value Decomposition}
-\label{sec:res_shap}
+\subsection{Shapley Marginal Attribution and Indicator Consensus}
+\label{sec:res_shap_attribution}
 
-To investigate biophysical mechanisms, we apply SHAP (SHapley Additive exPlanations) decomposition to the tree ensemble. For each evaluation $(c, Y)$, the prediction $\hat{\epsilon}_{c,Y}^{(H)}$ decomposes additively:
+To evaluate biophysical mechanisms across model paradigms without generating off-manifold synthetic data through collinear single-feature permutations, we compute out-of-sample Shapley Additive Explanations (SHAP) on the blind test partition (2011--2025) \citep{ChenZhang2026}. For each evaluation $(c, Y)$, the model prediction $\hat{\epsilon}_{c,Y}$ decomposes additively:
 \begin{equation}
-    \hat{\epsilon}_{c,Y}^{(H)} = \phi_0 + \sum_{k=1}^{P_H} \phi_k(c, Y)
+    \hat{\epsilon}_{c,Y} = \phi_0 + \sum_{j=1}^{P} \phi_j(c, Y)
     \label{eq:shap_decomposition}
 \end{equation}
-where $\phi_0$ is the base prediction across the training pool, and $\phi_k(c, Y)$ is the marginal contribution of feature $k$ for county $c$ in year $Y$. SHAP values satisfy efficiency ($\sum_k \phi_k = \hat{\epsilon} - \phi_0$), symmetry, and the null-player axiom \citep{Sharmaetal2025}.
+where $\phi_0$ represents the base expected prediction across the training pool and $\phi_j(c, Y)$ measures the marginal contribution of indicator $j$ for county $c$ in year $Y$. For the regularized linear estimator (ElasticNet), marginal attributions are computed analytically via LinearSHAP, satisfying $\phi_j = w_j (x_j - \bar{x}_j)$ under training-standardized coordinates. For the gradient-boosted ensemble (XGBoost), marginal values are evaluated through conditional expectations along split paths via TreeSHAP \citep{ChenZhang2026}. 
 
-\subsection{Phenological Driver Mapping}
-\label{sec:res_phenological_drivers}
-
-Figure~\ref{fig:shap_beeswarm} displays the top 20 agrometeorological predictors ordered by mean absolute SHAP value for XGBoost at Horizon $H = 2$ (September 30).
+For each physical indicator, monthly marginal contributions are aggregated additively across the active campaign ($\sum_{m} \phi_{j,m}$), and overall indicator sensitivity is quantified by the mean absolute impact $\mathrm{E}[|\phi_j|]$ in physical yield units (bu/ac). Figure~\ref{fig:feature_attribution_benchmark} compares these attributions across all 19 agrometeorological indicators for champion integrated specifications at peak lead time ($H = 2$, September 30).
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.92\textwidth]{figures/fig_shap_beeswarm.pdf}
-    \caption{Mean absolute SHAP value contributions ($\mathrm{E}[|\phi_j|]$, bu/ac) for the top 20 agrometeorological predictors from XGBoost at the peak predictive milestone ($H = 2$, September 30). Predictors indicate variable name and corresponding campaign month bracket.}
-    \label{fig:shap_beeswarm}
+    \includegraphics[width=0.98\textwidth]{figures/fig_feature_attribution_benchmark.pdf}
+    \caption{Out-of-sample SHAP feature attribution ($\mathrm{E}[|\phi|]$, bu/ac) at $H = 2$ (September 30) for champion ElasticNet (+Lag) and XGBoost (+Lag). SHAP values quantify the mean absolute marginal contribution of each agrometeorological indicator to individual county-year predictions across the 2011--2025 blind test panel. Indicators grouped by physical domain.}
+    \label{fig:feature_attribution_benchmark}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, blind test evaluations 2011--2025.}}
 \end{figure}
 
-The ranking demonstrates the dominance of late-summer reproductive stresses: extreme heat days in August ($HD_{35}$), vapor pressure deficit ($VPD$), and reference evapotranspiration ($ET_0$) during pod-filling constitute the top three individual drivers of negative yield anomalies. Soil moisture indicators ($SM_{\text{root}}$ and $SM_3$) provide a strong positive buffer, where abundant subsoil reserves mitigate high evaporative demand. Early antecedent features (November--February) exhibit minor marginal contributions, confirming that seasonal anomaly trajectories depend primarily on compound hydrothermal conditions during the R1--R6 reproductive stages.
+The empirical distribution of marginal contributions demonstrates consistent domain prioritization across paradigms:
+\begin{enumerate}
+    \item \textbf{Primacy of Atmospheric Evaporative Demand and Hydrological Supply:} Vapor pressure deficit ($VPD$, $0.51\text{ bu/ac}$ in XGBoost, $1.33\text{ bu/ac}$ in ElasticNet) and reference evapotranspiration ($ET_0$) represent the primary atmospheric stress signals. In the hydrological domain, cumulative precipitation ($P$) and climatic water balance ($P - ET_0$, $0.40\text{ bu/ac}$ in XGBoost) alongside soil water layers govern yield buffering against drought collapse.
+    \item \textbf{Extreme Thermal Shock Activation:} Moderate ($HD_{30}$) and extreme heat days ($HD_{35}$) operate as threshold activation drivers. While normal growing seasons register zero days above $35^\circ\text{C}$, their localized presence in drought years induces sharp negative yield shifts, captured directly by tree split thresholds without distortion from zero-frequency test samples.
+    \item \textbf{Collinear Weight Concentration in Linear Formulations:} ElasticNet distributes large symmetric coefficients across mutually correlated variables such as dewpoint temperature ($T_{\text{dew}}$) and topsoil moisture ($SM_1$), leading to elevated marginal ranges. Conversely, tree-based partitions select compact subsets of non-redundant indicators, concentrating weight on $VPD$, precipitation balances, and autoregressive memory ($\epsilon_{t-1}$).
+\end{enumerate}
 
-\subsection{Horizon-Resolved Feature Importance}
-\label{sec:res_horizon_importance}
+\subsection{Macro-Agronomic Information Domain Sensitivity}
+\label{sec:res_cluster_pfi}
 
-To trace how the information structure evolves across lead times, Figure~\ref{fig:shap_horizon_stack} illustrates the feature space composition from $H = 11$ (December $Y-1$) to $H = 1$ (October $Y$).
+To quantify the gross variance loss induced by completely removing coherent physical information families, we evaluate Grouped Permutation Feature Importance (GPFI) across four aggregated macro-agronomic clusters \citep{Sweetetal2023}. For each physical domain, all constituent feature columns across all active campaign months are permuted jointly, preserving intra-domain correlation manifolds while breaking the link with yield anomalies. Feature importance is defined as the marginal contraction in out-of-sample explained variance:
+\begin{equation}
+    \Delta R^2_{\text{OOS}}(\mathcal{C}) = R^2_{\text{OOS}}(\text{base}) - R^2_{\text{OOS}}(\pi_{\mathcal{C}})
+    \label{eq:cluster_pfi}
+\end{equation}
+where $\pi_{\mathcal{C}}$ denotes joint row permutation of all columns in cluster $\mathcal{C}$, evaluated against the standardized out-of-sample denominator $SS_{\text{tot}} = \sum (y_i - \bar{y}_{\text{test}})^2$. Figure~\ref{fig:shap_horizon_stack} compares $\Delta R^2_{\text{OOS}}$ across ElasticNet (+Lag), XGBoost (+Lag), and the sequential LSTM (+Lag) at $H = 2$ over $n = 10$ permutation repetitions.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.96\textwidth]{figures/fig_shap_horizon_stack.pdf}
-    \caption{Evolution of ingested information structure across progressive monthly forecast horizons ($H = 11$ to $H = 1$). Bars decompose feature space composition across four macro-agronomic categories: extreme heat and atmospheric demand ($HD_{35}, HD_{30}, VPD, ET_0$), hydrological supply and soil moisture ($P, P-ET_0, SM_{\text{root}}, SM_1\text{--}3$), thermal pacing and radiation ($GDD, T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, SSRD$), and invariant spatial coordinates.}
+    \caption{Grouped Permutation Feature Importance ($\Delta R^2_{\text{OOS}}$) across four physical information domains at $H=2$ (September 30), champion integrated (+Lag) specifications, 2011--2025 blind test. Each cluster is permuted simultaneously to preserve intra-cluster physical correlations. ENet: ElasticNet; XGB: XGBoost; LSTM: sequential LSTM (grouped permutation on tabular inputs, $n=10$ repetitions).}
     \label{fig:shap_horizon_stack}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, blind test evaluations 2011--2025.}}
 \end{figure}
 
-At early horizons ($H \ge 8$), the feature vector is dominated by spatial coordinates and baseline winter soil moisture. As the growing season advances, the feature budget expands dynamically to ingest midsummer heat stress ($HD_{30}, HD_{35}, VPD$) and cumulative water balances ($P - ET_0$). By Horizon $H = 2$, atmospheric demand and hydrothermal extremes account for over 60\% of the predictive weight, formalizing the sequential accumulation of physiological signal.
+The four-cluster grouped perturbation yields consistent cross-paradigm conclusions:
+\begin{enumerate}
+    \item \textbf{Cross-Model Consensus on Atmospheric Demand:} Shuffling the Extreme Heat \& Atmospheric Demand domain ($HD_{35}, HD_{30}, VPD, ET_0$) induces virtually identical predictive contraction across all three architectures ($\Delta R^2 = 0.094$ for ElasticNet, $0.088$ for XGBoost, and $0.089$ for LSTM). Atmospheric moisture demand constitutes an essential, non-substitutable predictive signal across linear, tree, and recurrent formulations.
+    \item \textbf{Dominance of Hydrological Reserves:} The Hydrological Supply \& Soil Moisture domain ($P, P-ET_0, SM_{\text{root}}, SM_{1\text{--}3}$) registers the highest aggregate variance penalty for tree and neural estimators ($\Delta R^2 \approx 0.130\text{--}0.135$), confirming that root-zone and subsoil moisture reservoirs represent the foundational buffer determining harvest outcomes.
+    \item \textbf{Linear Regularization Sensitivity:} Thermal pacing and radiation indicators ($GDD, T_{\text{max}}, T_{\text{mean}}$, $T_{\text{min}}, SSRD, T_{\text{dew}}$) register an elevated loss in ElasticNet ($\Delta R^2 = 0.334$) and LSTM ($\Delta R^2 = 0.212$) relative to XGBoost ($\Delta R^2 = 0.083$). In linear and recurrent architectures, continuous thermal pacing provides foundational developmental calibration, whereas gradient trees partition temperature effects through discrete thresholds.
+\end{enumerate}
 
 \subsection{Spatial Heterogeneity of Predictive Performance}
 \label{sec:res_spatial_performance}
 
-Predictive accuracy varies across the Midwestern Corn Belt reflecting spatial gradients in soil water storage capacity, tile drainage density, and climatological exposure. Figure~\ref{fig:county_r2_map} maps county-level out-of-sample $R^2_{\text{OOS}}$ for XGBoost at Horizon $H = 2$ across all 135 balanced study counties.
+Predictive accuracy varies across the Midwestern Corn Belt reflecting spatial gradients in soil water storage capacity, tile drainage density, and climatological exposure. Figure~\ref{fig:county_r2_map} maps county-level out-of-sample $R^2_{\text{OOS}}$ for the sequential LSTM (+Lag) at Horizon $H = 2$ across all 135 balanced study counties.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{figures/fig_county_r2_map.pdf}
-    \caption{Spatial heterogeneity of out-of-sample predictive performance ($R^2_{\text{OOS}}$ at peak horizon $H = 2$, September 30) across the 135 study counties, blind test period 2011--2025. Non-study counties within the six Midwestern states (IL, IN, IA, MN, MO, OH) are shown in light grey. Solid black lines delineate state boundaries.}
+    \caption{Spatial heterogeneity of out-of-sample predictive performance ($R^2_{\text{OOS}}$ at peak horizon $H = 2$, September 30) for the sequential LSTM (+Lag) across the 135 study counties, blind test period 2011--2025. Non-study counties within the six Midwestern states (IL, IN, IA, MN, MO, OH) are shown in light grey. Solid black lines delineate state boundaries.}
     \label{fig:county_r2_map}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025.}}
@@ -301,47 +313,4 @@ Predictive accuracy varies across the Midwestern Corn Belt reflecting spatial gr
 
 Predictive skill is strongest across central and southern Illinois and eastern Iowa, where county-level $R^2_{\text{OOS}}$ exceeds $0.35$--$0.55$. In these intensive production corridors, deep prairie soils and high heat sensitivity make yield anomalies tightly coupled to realized ERA5-Land moisture and temperature extremes. Conversely, northern fringe counties in Minnesota and select Ohio counties exhibit lower explained variance ($R^2_{\text{OOS}} \approx 0.05$--$0.20$), where shorter photoperiods, cooler summer baselines, and artificial drainage moderate the relative impact of thermal shocks. Continuous coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ capture these latitudinal response transitions without requiring administrative boundary fragmentation.
 
-% ==============================================================================
-% SECTION 5.5: HYPOTHESIS SYNTHESIS
-% ==============================================================================
-
-\section{Hypothesis Synthesis}
-\label{sec:res_hypothesis_synthesis}
-
-We revisit the five research hypotheses formalized in Chapter~\ref{chap:literature_review} against the complete empirical evidence established across Sections~\ref{sec:res_horizon_progression}--\ref{sec:res_spatial_performance}.
-
-\textbf{H1 (Incremental weather skill):} The null hypothesis of zero incremental meteorological value over the secular trend ($R^2_{\text{OOS}} = 0.00$ for all $H < 12$) is decisively \textbf{rejected} ($p < 0.0001$). The skill emergence horizon is identified at $H^* = 6$ (May 31), where candidate models cross into positive territory (Integrated XGBoost $R^2_{\text{OOS}} = +0.05$). Predictive accuracy expands monotonically as reproductive weather accumulates, peaking at $R^2_{\text{OOS}} = 0.30$ under pure weather forcing, and reaching $R^2_{\text{OOS}} = 0.35$ ($\text{Skill}_{\text{RMSE}} = +19.3\%$) when combined with historical yield memory. Diebold-Mariano tests confirm that weather-augmented architectures significantly outperform the naive secular baseline at the 0.1\% significance level ($p < 0.0001$).
-
-\textbf{H2 (Monotone lead-time dependence):} The hypothesis of monotonic skill expansion as the growing season unfolds is \textbf{supported}. Forecast error declines systematically from $\text{RMSE} = 6.12\text{ bu/ac}$ at $H = 12$ to $5.01\text{ bu/ac}$ at $H = 2$ ($4.94\text{ bu/ac}$ integrated). Overwinter horizons ($H \ge 7$) contain zero actionable signal ($R^2_{\text{OOS}} \le 0$), confirming that predictability is concentrated within the July--August reproductive phase (R1--R6), after which skill stabilizes at physiological maturity.
-
-\textbf{H3 (Model complexity value):} The hypothesis that non-linear algorithmic complexity provides genuine advantages over parsimonious linear models is \textbf{supported}. On static monthly tabular inputs, non-linear tree ensembles perform comparably to regularized linear models (ElasticNet $R^2 = 0.30$ vs.\ XGBoost $R^2 = 0.27$ weather-only at $H=2$; ElasticNet $0.31$ vs.\ XGBoost $0.31$ integrated at $H=1$). However, when evaluated on sequential 10-day trajectories, the recurrent LSTM network outperforms tabular estimators, reaching $0.35$ with integrated yield memory. Algorithmic complexity delivers decisive gains when paired with temporal architectures that preserve sequential hydrothermal dependencies.
-
-\textbf{H4 (Temporal aggregation representation):} The hypothesis regarding temporal aggregation is \textbf{supported with refinement}. While monthly blocks maintain dimensional stability for flattened tabular estimators ($P_1 = 194$), 10-day decad intervals ($W^* = 10\text{d}$, 35 sequence steps) provide the optimal physiological representation for sequential architectures. Decads resolve acute heat stress spells ($HD_{35}, VPD$) that are diluted within monthly averages, while avoiding the parameter inflation and noise of 5-day pentads \citep{Yinetal2026}.
-
-\textbf{H5 (Tail-risk shock anticipation):} The hypothesis that continuous regression models anticipate extreme climate shocks is \textbf{supported}. During the benchmark 2012 flash drought, candidate models identify severe negative anomalies as early as July 31 ($H = 4$), resolving the directional shortfall before harvest ($H = 1$, bias near zero). Decile calibration diagnostics confirm that recurrent architectures (champion LSTM with integrated yield memory) mitigate conditional shrinkage bias, reducing tail prediction error variance on severe drought campaigns ($D_1$) relative to tabular baselines.
-
-Table~\ref{tab:hypothesis_summary} synthesizes the empirical verdicts across all five formal hypotheses.
-
-\begin{table}[htbp]
-\centering
-\singlespacing
-\footnotesize
-\setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.15}
-\caption{Empirical hypothesis assessment against out-of-sample findings (blind test 2011--2025). Verdict: $\checkmark$ = supported, $\sim$ = nuanced / partially supported, $\times$ = rejected.}
-\label{tab:hypothesis_summary}
-\begin{tabularx}{\textwidth}{l l X c}
-\toprule
-\textbf{Hypothesis} & \textbf{Formal Claim} & \textbf{Empirical Verdict \& Key Evidence} & \textbf{Status} \\
-\midrule
-H1 & Incremental weather skill & Decisively rejected null: $R^2_{\text{OOS}}$ reaches $+0.30$ (weather-only) and $+0.35$ (integrated), DM test $p < 0.0001$. & $\checkmark$ \\
-H2 & Monotone lead-time dependence & Monotonic skill growth from sowing ($H=6$) to maturity ($H=2$), error declines from $6.12$ to $5.01$ bu/ac. & $\checkmark$ \\
-H3 & Non-linear complexity value & Advantage of 10-day LSTM over tabular models ($R^2$ reaches $0.35$ integrated vs.\ $0.31$ for XGBoost). & $\checkmark$ \\
-H4 & Temporal aggregation representation & 10-day decad resolution optimal: captures acute heat pulses without pentad noise or monthly dilution. & $\checkmark$ \\
-H5 & Tail-risk shock anticipation & 2012 flash drought resolved at $H=4$; LSTM (+Lag) mitigates $D_1$ tail shrinkage error. & $\checkmark$ \\
-\bottomrule
-\end{tabularx}
-\vspace{0.2em}
-{\footnotesize \textit{Source: Author's evaluation against research hypotheses formalized in Chapter~\ref{chap:literature_review}.}}
-\end{table}
 

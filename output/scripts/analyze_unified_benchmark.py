@@ -248,7 +248,13 @@ def compute_decile_diagnostics(preds: pd.DataFrame, target_h: int = 2) -> pd.Dat
     sub['decile'] = sub.apply(lambda r: decile_map.get((r['year'], r['county_fips'])), axis=1)
 
     decile_records = []
-    models = [m for m in ['Naive', 'ElasticNet', 'RandomForest', 'XGBoost', 'LSTM_PReLU', 'LSTM_Linear', 'LSTM_PReLU_Lag', 'LSTM_Linear_Lag'] if m in sub['model'].unique()]
+    models = [m for m in [
+        'Naive',
+        'ElasticNet', 'ElasticNet_Lag',
+        'RandomForest', 'RandomForest_Lag',
+        'XGBoost', 'XGBoost_Lag',
+        'LSTM_PReLU', 'LSTM_Linear', 'LSTM_PReLU_Lag', 'LSTM_Linear_Lag'
+    ] if m in sub['model'].unique()]
 
     for d in range(1, 11):
         d_sub = sub[sub['decile'] == d]
@@ -477,13 +483,13 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     print("Generating Figure 5.6: Decile Calibration & Residual Diagnostics...", flush=True)
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.5, 4.8))
 
-    # Clean selection of candidate models: 1 per paradigm family, champion LSTM only
+    # Clean selection of candidate models: 1 per paradigm family (all champion integrated specifications)
     clean_models = [
         ('Naive', 'Naive', '#555555', 's'),
-        ('ElasticNet', 'ElasticNet', '#1f77b4', 'o'),
-        ('RandomForest', 'Random Forest', '#ff7f0e', '^'),
-        ('XGBoost', 'XGBoost', '#d62728', 'D'),
-        ('LSTM_Linear_Lag', 'LSTM (+Lag)', '#9467bd', 'X')
+        ('ElasticNet_Lag', 'ElasticNet', '#1f77b4', 'o'),
+        ('RandomForest_Lag', 'Random Forest', '#ff7f0e', '^'),
+        ('XGBoost_Lag', 'XGBoost', '#d62728', 'D'),
+        ('LSTM_Linear_Lag', 'LSTM', '#9467bd', 'X')
     ]
 
     # ---------------------------------------------------------
@@ -520,9 +526,9 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     ax2.plot(theo_q, theo_q, color='#111111', linestyle='--', linewidth=1.1, alpha=0.75, label='Theoretical Normal', zorder=1)
 
     qq_models = [
-        ('ElasticNet', 'ElasticNet', '#1f77b4'),
-        ('XGBoost', 'XGBoost', '#d62728'),
-        ('LSTM_Linear_Lag', 'LSTM (+Lag)', '#9467bd')
+        ('ElasticNet_Lag', 'ElasticNet', '#1f77b4'),
+        ('XGBoost_Lag', 'XGBoost', '#d62728'),
+        ('LSTM_Linear_Lag', 'LSTM', '#9467bd')
     ]
 
     for m_key, m_lbl, m_col in qq_models:
@@ -542,32 +548,32 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     ax2.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.2)
 
     # ---------------------------------------------------------
-    # Panel (c): Residuals vs Fitted Values (Champion Model: LSTM +Lag)
+    # Panel (c): Residuals vs Fitted Values (Champion Model: LSTM)
     # ---------------------------------------------------------
-    m_focus = 'LSTM_Linear_Lag' if 'LSTM_Linear_Lag' in sub_h['model'].unique() else ('XGBoost' if 'XGBoost' in sub_h['model'].unique() else 'ElasticNet')
+    m_focus = 'LSTM_Linear_Lag' if 'LSTM_Linear_Lag' in sub_h['model'].unique() else ('XGBoost_Lag' if 'XGBoost_Lag' in sub_h['model'].unique() else 'ElasticNet_Lag')
     sub_foc = sub_h[sub_h['model'] == m_focus]
     y_fit = sub_foc['y_pred_anomaly'].values
     y_res = (sub_foc['y_true_anomaly'] - sub_foc['y_pred_anomaly']).values
 
-    label_foc = 'LSTM (+Lag)' if 'LSTM' in m_focus else m_focus
+    label_foc = 'LSTM' if 'LSTM' in m_focus else ('XGBoost' if 'XGBoost' in m_focus else 'ElasticNet')
     color_foc = '#9467bd' if 'LSTM' in m_focus else COLOR_MAP.get(m_focus, '#d62728')
 
     ax3.scatter(y_fit[::4], y_res[::4], color=color_foc, alpha=0.30, s=14, edgecolors='none', label=f'{label_foc} (Subsampled)')
     ax3.axhline(0, color='black', linestyle=':', linewidth=1.0, alpha=0.8)
 
-    # Binned standard deviation curve to clearly illustrate heteroscedasticity
-    bins_fit = pd.qcut(y_fit, q=12, duplicates='drop')
-    df_fit = pd.DataFrame({'fit': y_fit, 'res': y_res, 'bin': bins_fit})
-    bin_stats = df_fit.groupby('bin', observed=False).agg(
-        fit_mean=('fit', 'mean'),
-        res_mean=('res', 'mean'),
-        res_std=('res', 'std')
-    ).dropna()
+    # Kernel-smoothed conditional mean and standard deviation across full data support
+    grid_x = np.linspace(y_fit.min(), y_fit.max(), 120)
+    bandwidth = (y_fit.max() - y_fit.min()) / 10.0
+    weights = np.exp(-0.5 * ((y_fit[:, None] - grid_x[None, :]) / bandwidth) ** 2)
+    w_sum = weights.sum(axis=0)
+    mu_smooth = (weights * y_res[:, None]).sum(axis=0) / w_sum
+    var_smooth = (weights * (y_res[:, None] - mu_smooth[None, :]) ** 2).sum(axis=0) / w_sum
+    sigma_smooth = np.sqrt(var_smooth)
 
-    ax3.plot(bin_stats['fit_mean'], bin_stats['res_mean'], color='#111111', linewidth=1.8, label=r'Binned Mean Bias')
-    ax3.fill_between(bin_stats['fit_mean'],
-                     bin_stats['res_mean'] - bin_stats['res_std'],
-                     bin_stats['res_mean'] + bin_stats['res_std'],
+    ax3.plot(grid_x, mu_smooth, color='#111111', linewidth=1.8, label=r'Smoothed Mean Bias')
+    ax3.fill_between(grid_x,
+                     mu_smooth - sigma_smooth,
+                     mu_smooth + sigma_smooth,
                      color=color_foc, alpha=0.18, label=r'$\pm 1\sigma$ Residual Band')
 
     ax3.set_xlabel(r'Fitted Yield Anomaly ($\hat{\epsilon}$, bu/acre)')
