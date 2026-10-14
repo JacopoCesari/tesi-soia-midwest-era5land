@@ -199,6 +199,12 @@ Tutti i valori sono calcolati su **$2.025$ osservazioni out-of-sample aggregate 
 - **Calibrazione per Decili e Tail Shrinkage ($D_1 \dots D_{10}$)**:
   - Sul decile estremo peggiore ($D_1$, crollo medio reale di $-8.82\text{ bu/ac}$ nel periodo di test), l'architettura sequenziale LSTM (+Lag) predice $-3.09\text{ bu/ac}$ con un RMSE di $6.73\text{ bu/ac}$, dimezzando l'errore rispetto al Naive ($11.06\text{ bu/ac}$) e superando nettamente ElasticNet ($-2.19\text{ bu/ac}$) e XGBoost ($-1.56\text{ bu/ac}$).
 
+### 6.5 Diagnostica Econometrica dei Residui e Dipendenza Spazio-Temporale
+- **Non-Gaussianità e Asimmetria Negativa**: I residui out-of-sample mostrano persistente asimmetria negativa ($\gamma_1 \in [-0.66, -0.54]$) e forte leptocurtosi ($\gamma_2 \in [+0.95, +1.30]$, code pesanti). Il test di normalità di Jarque-Bera rigetta l'ipotesi di normalità con $p < 0.0001$, riflettendo l'asimmetria biologica intrinseca del danno da shock termico rispetto al plateau delle annate favorevoli.
+- **Eteroschedasticità Condizionata allo Shock**: Sotto regimi climatici ordinari ($-5 \le \epsilon \le +5$ bu/ac), la varianza residua è contenuta ($\sigma^2 \approx 7.4 - 10.2$), mentre raddoppia sotto shock severi ($\epsilon < -5$ bu/ac, $\sigma^2 \approx 16.0 - 19.6$).
+- **Autocorrelazione Temporale AR(1)**: La correlazione seriale media per contea sui residui di previsione è statisticamente nulla ($\rho_{\text{AR(1)}} = 0.049 \pm 0.177$), confermando che il detrending lineare OLS train-only per contea ha eliminato ogni persistenza temporale non climatica.
+- **Autocorrelazione Spaziale (Moran's $I$)**: A fine stagione ($H=2$), il Moran's $I$ sui residui scende a $0.178 \pm 0.088$ per ElasticNet e $0.193 \pm 0.062$ per XGBoost, riflettendo la frazione residua di forzanti micro-regionali non catturate dalla meteorologia pura (eventi grandinigeni circoscritti, micro-variazioni pedologiche).
+
 ---
 
 ## 7. Sintesi dei Verdetti sulle Ipotesi di Ricerca (H1–H5)
