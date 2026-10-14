@@ -95,7 +95,12 @@
 - **Text and Table Coordination**: Surrounding text must provide critical commentary and analytical synthesis instead of repeating tabular numbers verbatim.
 - **Academic Defense of Exclusions**: Methodological boundaries (weather-only, excluding satellites, management records, static soil features, or dynamical forecasts) must be justified through rigorous academic rationale in the narrative.
 
-
+### 5. Scientific Objectivity, Super Partes Validation, and Hypothesis Discipline (Author Rule)
+- **Strict Empirical Neutrality (Super Partes)**: Every theoretical reflection, agronomic intuition, or working hypothesis must be vetted strictly against out-of-sample quantitative evidence and consensus peer-reviewed literature. Never force data, model specifications, or narrative interpretations to flatter preconceived theories or confirm author biases.
+- **Binary Outcome for Working Hypotheses**: In active research notes (such as `discussion_insights.md`), hypotheses face a strict binary test:
+  - If corroborated by empirical metrics, residual diagnostics, and domain literature, the finding is formally promoted to accepted status in `consolidated_memory.md` and integrated into the thesis narrative.
+  - If refuted or unsupported by empirical evidence, the hypothesis must be discarded immediately without lingering as speculative folklore.
+- **No Theoretical Complacency**: Refusal to assume machine learning or deep learning superiority over parsimonious linear models without conclusive, out-of-sample statistical significance tests (e.g., Diebold-Mariano). Accept null, negative, or nuanced findings (such as linear-tree parity) as rigorous scientific results.
 
 ## Scientific constraints
 
