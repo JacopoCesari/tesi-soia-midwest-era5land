@@ -39,6 +39,23 @@
   directories (`work/thesis_notes/` and `output/docs/decisions.md`), ensuring the thesis
   narrative remains concise, structured, and non-repetitive.
 
+## Code architecture, replication pipeline, and zero-scoria lifecycle
+
+- **Single Source of Truth (`scripts/`)**: The sequential scripts (`01_` through `09_`) in `scripts/` constitute the **exclusive** official codebase for replication, public GitHub release, and delivery to the professor. No permanent standalone scripts may be created outside this suite. All figures and tables presented in the work must be reproducible solely by running `scripts/`.
+- **Sandbox and Immediate Cleanup (Zero-Scoria Policy)**: Exploratory checks, temporary tests, and pipeline prototypes must reside strictly in `work/scratch/`. Once an experiment concludes:
+  - If discarded: delete all temporary scratch files immediately.
+  - If accepted: port the validated logic directly into the appropriate canonical script in `scripts/` (01–09), and delete the scratch file immediately. Never leave orphan scripts, duplicate runners, or partial pipeline fragments in the repository.
+- **Synchronized Text-Code Propagation**: Whenever a script in `scripts/` is re-run and alters a metric, table, or figure:
+  - The corresponding LaTeX table (`output/thesis/tables/`) or figure (`output/thesis/figures/`) must be refreshed immediately.
+  - The narrative in the matching thesis chapter (`output/thesis/chapters/`) must be checked and updated immediately to maintain strict numerical alignment with the new empirical outputs (no text-data divergence).
+  - If script inputs, outputs, or requirements change, update `scripts/README.md` concurrently.
+- **Centralized Figure Management**: All figure generation code belongs strictly inside `08_generate_eda_figures.py` (EDA and study area) or `09_generate_results_figures.py` (empirical results and benchmarks). Deprecated or exploratory figures must be moved to `output/thesis/figures_archive/`, ensuring that `output/thesis/figures/` contains strictly a 1:1 match with figures included in the thesis text.
+- **Simplicity and Realism in Code, Figures, and Exhibits (Author Rule)**:
+  - *No unnecessary complexity*: Every script, model, and visualization must remain strictly minimal, readable, and realistic for a master's graduate / junior researcher. Ban over-engineered architectures, unnecessary wrapper classes, and fragile plotting hacks.
+  - *Clean, readable figures*: Visualizations must convey a single clear finding. Avoid visual clutter, dense multi-layered legends, overcrowded annotations, or charts with excessive subplots. Use clean, standard scientific palettes, readable font sizes, and straightforward matplotlib/seaborn code.
+  - *Clean tables*: Tables must present only essential metrics with minimal footnotes and clean column headers.
+  - *Generic, professional terminology*: Avoid parochial or thesis-specific nomenclature in scripts, paths, and identifiers. Code and directory names should reflect universal open-science standards suitable for a public research repository.
+
 ## Thesis writing protocol and chapter scoping
 
 ### 1. Strict Chapter Role Demarcation
@@ -65,13 +82,16 @@
   - *No dramatic discourse adverbs*: Ban sentence starters like `Crucially,`, `Importantly,`, `Notably,`, `Remarkably,`, `Intriguingly,`. Start directly with the subject or factual observation.
   - *No AI cliché vocabulary*: Ban words such as `delve`, `foster`, `testament`, `tapestry`, `pivotal`, `intricate`, `multifaceted`, `nuanced`, `beacon`, `cornerstone`.
   - *No pre-emptive apologetics*: Ban defensive justifications (`To maintain strict methodological hygiene...`). State research protocols as the normal professional standard.
+  - *No heavy parenthetical loading*: Avoid sentences with more than one inline `(symbol = value)` specifier. Split into two sentences instead.
   - *Enforce burstiness*: Alternate concise, punchy factual statements with analytical periods; discourage subordinate clauses beyond the first degree (in strict compliance with Vademecum p. 5).
 - Technical terms in Data Science, ML, and Econometrics must be rigorous and expert-level; define acronyms once upon first occurrence (e.g., *VPD, GDD, OOS, OLS*) and use the acronym exclusively thereafter.
 - Use standard scientific authorial "we" (*"We evaluate...", "We observe..."*) and active functional subjects (*"The model estimates..."*); avoid singular "I" and passive convolutions.
 
 ### 4. Tables, Figures, and Vademecum Compliance
 - **Source Attribution**: Every table and figure must include an explicit, formal source attribution line immediately below (e.g., `\textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}`).
-- **Self-Contained Captions**: Captions must provide all necessary details for understanding (variables, units, periods, thresholds).
+- **Concise Captions**: Captions state the overall subject, key variables, units, and time span. Multi-panel figures use a single introductory sentence followed by brief per-panel labels — not a full sentence per panel. Information already stated in the surrounding text need not be repeated in the caption.
+- **Table Footnotes**: Footnotes define only symbols and non-standard abbreviations not already defined in the column headers or the text. They do not restate methodology, justify modelling choices, or repeat information from the body text.
+- **Section and Subsection Titles**: Titles are concise noun phrases. Do not append a descriptive subtitle after a colon unless the subtitle adds information the title cannot convey alone (e.g., avoid patterns like `"Topic: A Long Explanation of What This Section Does"`).
 - **Text and Table Coordination**: Surrounding text must provide critical commentary and analytical synthesis instead of repeating tabular numbers verbatim.
 - **Academic Defense of Exclusions**: Methodological boundaries (weather-only, excluding satellites, management records, static soil features, or dynamical forecasts) must be justified through rigorous academic rationale in the narrative.
 

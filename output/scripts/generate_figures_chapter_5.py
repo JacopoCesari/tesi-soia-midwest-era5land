@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import matplotlib.ticker as ticker
 import geopandas as gpd
 from xgboost import XGBRegressor
@@ -194,6 +195,8 @@ def plot_figure_5_2(preds_int: pd.DataFrame, preds_lstm: pd.DataFrame):
 
     # Panel (a): Mean Anomaly Bias & Shock Resolution across the 5 Active Lead Times
     # Shocks: 2012 Severe Drought (actual anomaly: -4.07 bu/ac) and 2016 Bumper Season (actual anomaly: +7.34 bu/ac)
+    handles_dict = {}
+
     for yr, true_anom, name_lbl in [(2012, -4.07, '2012 Drought'),
                                     (2016, +7.34, '2016 Bumper')]:
         xgb_biases = []
@@ -217,21 +220,36 @@ def plot_figure_5_2(preds_int: pd.DataFrame, preds_lstm: pd.DataFrame):
         fill_st = 'full' if yr == 2012 else 'none'
         alpha_val = 1.0 if yr == 2012 else 0.85
 
-        ax1.plot(x_pos, elnet_biases, label=f'ElasticNet ({name_lbl})', color=COLOR_MAP['ElasticNet'],
-                 linestyle=ls, marker='o', fillstyle=fill_st, markersize=6.0, linewidth=1.8, alpha=alpha_val)
-        ax1.plot(x_pos, xgb_biases, label=f'XGBoost ({name_lbl})', color=COLOR_MAP['XGBoost'],
-                 linestyle=ls, marker='D', fillstyle=fill_st, markersize=5.5, linewidth=1.8, alpha=alpha_val)
-        ax1.plot(x_pos, lstm_biases, label=f'LSTM (+Lag) ({name_lbl})', color=COLOR_MAP['LSTM (+Lag Yield)'],
-                 linestyle=ls, marker='X', fillstyle=fill_st, markersize=6.5, linewidth=2.0, alpha=alpha_val)
+        l_el = ax1.plot(x_pos, elnet_biases, label=f'ElasticNet ({name_lbl})', color=COLOR_MAP['ElasticNet'],
+                        linestyle=ls, marker='o', fillstyle=fill_st, markersize=6.0, linewidth=1.8, alpha=alpha_val)[0]
+        l_xgb = ax1.plot(x_pos, xgb_biases, label=f'XGBoost ({name_lbl})', color=COLOR_MAP['XGBoost'],
+                         linestyle=ls, marker='D', fillstyle=fill_st, markersize=5.5, linewidth=1.8, alpha=alpha_val)[0]
+        l_lstm = ax1.plot(x_pos, lstm_biases, label=f'LSTM (+Lag) ({name_lbl})', color=COLOR_MAP['LSTM (+Lag Yield)'],
+                          linestyle=ls, marker='X', fillstyle=fill_st, markersize=6.5, linewidth=2.0, alpha=alpha_val)[0]
 
-    ax1.axhline(0, color='black', linestyle=':', linewidth=1.2, alpha=0.85, label='Zero Bias')
+        handles_dict[f'el_{yr}'] = l_el
+        handles_dict[f'xgb_{yr}'] = l_xgb
+        handles_dict[f'lstm_{yr}'] = l_lstm
+
+    l_zero = ax1.axhline(0, color='black', linestyle=':', linewidth=1.2, alpha=0.85, label='Zero Bias')
+    handles_dict['zero'] = l_zero
     ax1.set_ylabel(r'Mean Anomaly Bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/ac)')
     ax1.set_title(r'(a) Regional Shock Bias Convergence ($H=5 \dots 1$)', loc='left', fontsize=11, fontweight='bold')
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels([MONTH_LABELS[h] for h in active_h], rotation=0)
     ax1.set_xlabel('Forecast Horizon')
     ax1.set_ylim(-8.8, 3.8)
-    ax1.legend(loc='upper right', frameon=True, framealpha=0.92, fontsize=8.0, ncol=2)
+
+    # 3-column legend: Col 1 = 2012 Drought, Col 2 = 2016 Bumper, Col 3 = Zero Bias
+    dummy = Line2D([], [], color='none')
+    h_3col = [
+        handles_dict['el_2012'], handles_dict['xgb_2012'], handles_dict['lstm_2012'],
+        handles_dict['el_2016'], handles_dict['xgb_2016'], handles_dict['lstm_2016'],
+        handles_dict['zero'], dummy, dummy
+    ]
+    lbl_3col = [h.get_label() if h != dummy else "" for h in h_3col]
+    ax1.legend(h_3col, lbl_3col, loc='upper right', frameon=True, framealpha=0.92,
+               fontsize=8.0, ncol=3, columnspacing=1.1, handletextpad=0.5)
 
     # Panel (b): County-Level Anomaly Scatter (Predicted vs Observed) for the 2012 Flash Drought at H=5, H=3, H=1
     colors_h = {5: '#e67e22', 3: '#1f77b4', 1: '#2ca02c'}

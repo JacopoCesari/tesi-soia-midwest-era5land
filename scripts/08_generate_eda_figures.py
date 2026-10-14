@@ -1,5 +1,5 @@
 """
-08_generate_chapter3_figures.py
+08_generate_eda_figures.py
 
 Generates exploratory data analysis figures for Chapter 3 (Data & Study Area):
 1. Figure 3.1: Geographic Distribution of the 135 Study Counties (fig_study_area_map.pdf).

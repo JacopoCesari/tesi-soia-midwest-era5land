@@ -478,9 +478,9 @@ def compute_panel_autocorrelation(preds: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # 4. Publication-Quality Figure 5.6: Decile Calibration & Residuals
 # ---------------------------------------------------------------------------
-def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target_h: int = 2) -> None:
+def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target_h: int = 1) -> None:
     """Generate high-clarity 3-panel figure: Decile Calibration, Q-Q Plot, and Residuals vs Fitted."""
-    print("Generating Figure 5.6: Decile Calibration & Residual Diagnostics...", flush=True)
+    print("Generating Figure 5.3: Decile Calibration & Residual Diagnostics (H=1)...", flush=True)
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.5, 4.8))
 
     # Clean selection of candidate models: 1 per paradigm family (all champion integrated specifications)
@@ -511,7 +511,7 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
 
     ax1.set_xlabel(r'Mean Observed Anomaly ($\bar{\epsilon}$, bu/acre by Decile)')
     ax1.set_ylabel(r'Mean Predicted Anomaly ($\bar{\hat{\epsilon}}$, bu/acre)')
-    ax1.set_title(r'(a) Decile Reliability Diagram ($H=2$)', loc='left', fontsize=11, fontweight='bold')
+    ax1.set_title(r'(a) Decile Reliability Diagram ($H=1$)', loc='left', fontsize=11, fontweight='bold')
     ax1.set_xlim(min_val - 1.5, max_val + 1.5)
     ax1.set_ylim(-6.0, 5.0)
     ax1.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.2)
@@ -542,7 +542,7 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
 
     ax2.set_xlabel('Theoretical Normal Quantiles ($z$)')
     ax2.set_ylabel(r'Standardized Residuals ($e / \sigma_e$)')
-    ax2.set_title(r'(b) Normal Q-Q Plot of Residuals ($H=2$)', loc='left', fontsize=11, fontweight='bold')
+    ax2.set_title(r'(b) Normal Q-Q Plot of Residuals ($H=1$)', loc='left', fontsize=11, fontweight='bold')
     ax2.set_xlim(-3.6, 3.6)
     ax2.set_ylim(-4.2, 3.8)
     ax2.legend(loc='upper left', frameon=True, framealpha=0.9, fontsize=8.2)
@@ -596,7 +596,7 @@ def plot_diagnostic_figure(preds: pd.DataFrame, df_deciles: pd.DataFrame, target
     fig.savefig(FIGURES_DIR / "fig_decile_calibration_and_residuals.pdf")
     fig.savefig(FIGURES_DIR / "fig_decile_calibration_and_residuals.png")
     plt.close(fig)
-    print("  Saved Figure 5.6 to output/thesis/figures/", flush=True)
+    print("  Saved Figure 5.3 to output/thesis/figures/", flush=True)
 
 
 def main():
@@ -607,8 +607,8 @@ def main():
     # 1. Master statistical comparison with paired inference
     compute_master_comparison(preds)
 
-    # 2. Decile calibration and tail shrinkage at milestone H=2
-    df_deciles = compute_decile_diagnostics(preds, target_h=2)
+    # 2. Decile calibration and tail shrinkage at milestone H=1
+    df_deciles = compute_decile_diagnostics(preds, target_h=1)
 
     # 2b. Active season decile diagnostics (average across H=5..1)
     df_deciles_active = compute_active_season_deciles(preds, active_horizons=[5, 4, 3, 2, 1])
@@ -616,8 +616,8 @@ def main():
     # 3. Spatio-temporal residual autocorrelation
     compute_panel_autocorrelation(preds)
 
-    # 4. Diagnostic Figure 5.6
-    plot_diagnostic_figure(preds, df_deciles, target_h=2)
+    # 4. Diagnostic Figure 5.3
+    plot_diagnostic_figure(preds, df_deciles, target_h=1)
 
     print("=== Diagnostic Suite Completed Successfully ===", flush=True)
 

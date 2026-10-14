@@ -1,7 +1,7 @@
 """Script per la generazione della Figura 5.5: Grouped PFI Macro-Domini a 3 modelli.
 
 Calcola il Grouped Permutation Feature Importance (GPFI) out-of-sample per i modelli
-a Horizon H=2 (ElasticNet, XGBoost e LSTM surrogato) permutando congiuntamente tutte
+a Horizon H=1 (ElasticNet, XGBoost e LSTM surrogato) permutando congiuntamente tutte
 le variabili appartenenti a ciascuno dei 5 macro-domini fisici agronomici.
 Genera tre pannelli orizzontali affiancati speculari alla Figura 5.4.
 """
@@ -21,10 +21,10 @@ from xgboost import XGBRegressor
 # 1. Configurazione percorsi
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[2]
-FEATURES_PATH = ROOT / "output/data/processed/model_datasets/features_H02.parquet"
+FEATURES_PATH = ROOT / "output/data/processed/model_datasets/features_H01.parquet"
 TARGET_PATH = ROOT / "data/target/soybean_yield_1951_2025.csv"
 HPARAMS_PATH = ROOT / "output/data/processed/hyperparameters_optimal_integrated.json"
-LSTM_PREDS_PATH = ROOT / "work/reports/experiments/lstm/preds_10d_H02_linear_lag.parquet"
+LSTM_PREDS_PATH = ROOT / "work/reports/experiments/lstm/preds_10d_H01_linear_lag.parquet"
 OUTPUT_FIG_PATH = ROOT / "output/thesis/figures/fig55_pfi_domain_bars.png"
 
 # ---------------------------------------------------------------------------
@@ -86,13 +86,13 @@ X_test_sc = scaler.transform(X_test)
 ss_tot = np.sum((y_test - np.mean(y_test)) ** 2)
 
 # ---------------------------------------------------------------------------
-# 3. Addestramento modelli con iperparametri ottimali (Horizon 2)
+# 3. Addestramento modelli con iperparametri ottimali (Horizon 1)
 # ---------------------------------------------------------------------------
 with open(HPARAMS_PATH, "r", encoding="utf-8") as f:
-    hparams_h2 = json.load(f)["2"]
+    hparams_h1 = json.load(f)["1"]
 
-enet_params = hparams_h2["ElasticNet"]
-xgb_params = hparams_h2["XGBoost"]
+enet_params = hparams_h1["ElasticNet"]
+xgb_params = hparams_h1["XGBoost"]
 
 # ElasticNet
 enet = ElasticNet(**enet_params, max_iter=2000, tol=1e-3, random_state=42)
@@ -118,7 +118,7 @@ print(f"R2 Out-of-Sample Base: ENet={r2_base_enet:.4f}, XGB={r2_base_xgb:.4f}, L
 # ---------------------------------------------------------------------------
 # 4. Definizione dei 5 macro-domini fisici (identici a Figura 5.4)
 # ---------------------------------------------------------------------------
-domains = [
+canonical_domains = [
     {
         "domain": "Atmospheric Demand & Heat",
         "color": "#e66101",
@@ -146,6 +146,15 @@ domains = [
     }
 ]
 
+# Sequenza visiva concordata: raggruppa le due classi dell'area termica/atmosferica (Arancione e Rosa)
+DISPLAY_DOMAIN_ORDER = [
+    "Atmospheric Demand & Heat",
+    "Thermal & Radiation Regimes",
+    "Hydrological Supply",
+    "Soil Moisture Dynamics",
+    "Memory & Spatial Baseline"
+]
+
 # ---------------------------------------------------------------------------
 # 5. Calcolo Grouped Permutation Feature Importance (GPFI per Macro-Dominio)
 # ---------------------------------------------------------------------------
@@ -153,7 +162,7 @@ np.random.seed(42)
 N_REPS = 10
 
 domain_results = []
-for d_info in domains:
+for d_info in canonical_domains:
     col_idx = []
     for key in d_info["vars"]:
         if key == "lag_anomaly":
@@ -200,6 +209,10 @@ for d_info in domains:
 
 df_domains = pd.DataFrame(domain_results)
 
+# Riordino per sequenza espositiva di macro-area
+df_domains["domain_cat"] = pd.Categorical(df_domains["domain"], categories=DISPLAY_DOMAIN_ORDER, ordered=True)
+df_domains = df_domains.sort_values("domain_cat", kind="stable").reset_index(drop=True).drop(columns=["domain_cat"])
+
 # ---------------------------------------------------------------------------
 # 6. Plot Horizontal 100% Stacked Bars (Armonizzato con Figura 5.4)
 # ---------------------------------------------------------------------------
@@ -210,6 +223,13 @@ model_cols = ["gpfi_enet", "gpfi_xgb", "gpfi_lstm"]
 matrix_vals = np.array([df_domains[c].values for c in model_cols])  # shape: (3, 5)
 totals = matrix_vals.sum(axis=1, keepdims=True)
 shares_matrix = (matrix_vals / totals) * 100.0  # shape: (3, 5)
+
+print("\n=== GPFI 5 MACRO DOMAINS H=1 ===")
+for i, d_name in enumerate(df_domains["domain"]):
+    enet_share, xgb_share, lstm_share = shares_matrix[0, i], shares_matrix[1, i], shares_matrix[2, i]
+    enet_d, xgb_d, lstm_d = matrix_vals[0, i], matrix_vals[1, i], matrix_vals[2, i]
+    print(f"{d_name:<28} | ENet={enet_share:5.1f}% (dR2={enet_d:.3f}) | XGB={xgb_share:5.1f}% (dR2={xgb_d:.3f}) | LSTM={lstm_share:5.1f}% (dR2={lstm_d:.3f})")
+print("================================\n")
 
 fig, ax = plt.subplots(figsize=(11.5, 4.8))
 y_pos = np.arange(len(models))[::-1]

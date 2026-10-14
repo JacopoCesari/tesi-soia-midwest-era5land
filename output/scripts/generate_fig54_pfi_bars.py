@@ -1,7 +1,7 @@
 """Script per la generazione della Figura 5.4: Barplot a tre modelli (PFI).
 
 Calcola la Grouped Permutation Feature Importance (PFI) out-of-sample per i modelli
-a Horizon H=2 (XGBoost, ElasticNet e LSTM surrogato) e genera tre grafici a barre
+a Horizon H=1 (XGBoost, ElasticNet e LSTM surrogato) e genera tre grafici a barre
 orizzontali affiancati, raggruppati e colorati per macro-dominio fisico agronomico.
 """
 
@@ -20,10 +20,10 @@ from xgboost import XGBRegressor
 # 1. Configurazione percorsi
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[2]
-FEATURES_PATH = ROOT / "output/data/processed/model_datasets/features_H02.parquet"
+FEATURES_PATH = ROOT / "output/data/processed/model_datasets/features_H01.parquet"
 TARGET_PATH = ROOT / "data/target/soybean_yield_1951_2025.csv"
 HPARAMS_PATH = ROOT / "output/data/processed/hyperparameters_optimal_integrated.json"
-LSTM_PREDS_PATH = ROOT / "work/reports/experiments/lstm/preds_10d_H02_linear_lag.parquet"
+LSTM_PREDS_PATH = ROOT / "work/reports/experiments/lstm/preds_10d_H01_linear_lag.parquet"
 OUTPUT_FIG_PATH = ROOT / "output/thesis/figures/fig54_pfi_faceted_bars.png"
 
 # ---------------------------------------------------------------------------
@@ -85,13 +85,13 @@ X_test_sc = scaler.transform(X_test)
 ss_tot = np.sum((y_test - np.mean(y_test)) ** 2)
 
 # ---------------------------------------------------------------------------
-# 3. Addestramento modelli con iperparametri ottimali (Horizon 2)
+# 3. Addestramento modelli con iperparametri ottimali (Horizon 1)
 # ---------------------------------------------------------------------------
 with open(HPARAMS_PATH, "r", encoding="utf-8") as f:
-    hparams_h2 = json.load(f)["2"]
+    hparams_h1 = json.load(f)["1"]
 
-enet_params = hparams_h2["ElasticNet"]
-xgb_params = hparams_h2["XGBoost"]
+enet_params = hparams_h1["ElasticNet"]
+xgb_params = hparams_h1["XGBoost"]
 
 # ElasticNet
 enet = ElasticNet(**enet_params, max_iter=2000, tol=1e-3, random_state=42)
@@ -117,7 +117,7 @@ print(f"R2 Out-of-Sample Base: ENet={r2_base_enet:.4f}, XGB={r2_base_xgb:.4f}, L
 # ---------------------------------------------------------------------------
 # 4. Definizione variabili e macro-domini fisici
 # ---------------------------------------------------------------------------
-domains = [
+canonical_domains = [
     {
         "domain": "Atmospheric Demand & Heat",
         "color": "#e66101",  # Arancio
@@ -169,6 +169,15 @@ domains = [
     }
 ]
 
+# Sequenza visiva concordata: raggruppa le due classi dell'area termica/atmosferica (Arancione e Rosa)
+DISPLAY_DOMAIN_ORDER = [
+    "Atmospheric Demand & Heat",
+    "Thermal & Radiation Regimes",
+    "Hydrological Supply",
+    "Soil Moisture Dynamics",
+    "Memory & Spatial Baseline"
+]
+
 # ---------------------------------------------------------------------------
 # 5. Calcolo Grouped Permutation Feature Importance (PFI)
 # ---------------------------------------------------------------------------
@@ -176,7 +185,7 @@ np.random.seed(42)
 N_REPS = 5
 
 all_rows = []
-for d_info in domains:
+for d_info in canonical_domains:
     for key, label in d_info["vars"]:
         if key == "lag_anomaly":
             col_idx = [feature_cols.index("lag_anomaly")]
@@ -225,8 +234,16 @@ for m in ["xgb", "enet", "lstm"]:
     tot = results_df[f"pfi_{m}"].sum()
     results_df[f"pct_{m}"] = (results_df[f"pfi_{m}"] / tot) * 100.0 if tot > 0 else 0.0
 
-# ---------------------------------------------------------------------------
-# 6. Plot Faceted Bars a 3 modelli (Semplice, lineare e pulito)
+# Riordino per sequenza espositiva di macro-area
+results_df["domain_cat"] = pd.Categorical(results_df["domain"], categories=DISPLAY_DOMAIN_ORDER, ordered=True)
+results_df = results_df.sort_values("domain_cat", kind="stable").reset_index(drop=True).drop(columns=["domain_cat"])
+
+print("\n=== PFI 19 INDICATORS H=1 ===")
+for _, r in results_df.iterrows():
+    clean_lbl = r['label'].encode('ascii', errors='replace').decode('ascii')
+    print(f"{clean_lbl:<40} | ENet={r['pct_enet']:5.1f}% | XGB={r['pct_xgb']:5.1f}% | LSTM={r['pct_lstm']:5.1f}%")
+print("=============================\n")
+
 # ---------------------------------------------------------------------------
 # 6. Plot Faceted Bars a 3 modelli (Minimalista, pulito ed essenziale)
 # ---------------------------------------------------------------------------
@@ -293,10 +310,11 @@ ax1.set_yticks(y_pos)
 ax1.set_yticklabels(df_plot["label"], fontsize=9.2)
 ax1.tick_params(axis="y", length=0)
 
-# Legenda minimale senza cornice
+# Legenda minimale senza cornice nell'ordine DISPLAY_DOMAIN_ORDER
+domain_color_map = {d["domain"]: d["color"] for d in canonical_domains}
 legend_handles = [
-    Patch(facecolor=d["color"], edgecolor="none", label=d["domain"])
-    for d in domains
+    Patch(facecolor=domain_color_map[d_name], edgecolor="none", label=d_name)
+    for d_name in DISPLAY_DOMAIN_ORDER
 ]
 fig.legend(
     handles=legend_handles,

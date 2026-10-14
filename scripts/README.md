@@ -1,8 +1,8 @@
-# Master's Thesis Replication Scripts: Agrometeorological Soybean Yield Forecasting (1951–2025)
+# Replication Pipeline: Agrometeorological Soybean Yield Forecasting (1951–2025)
 
-This directory contains the standalone Python replication suite supporting the econometric and machine learning empirical analyses in the master's thesis.
+This directory contains the standalone Python replication suite supporting the econometric and machine learning empirical analyses.
 
-The scripts are organized sequentially (`01` through `09`) to allow full replication of the panel assembly, feature engineering, statistical detrending models, predictive pipelines, and thesis exhibits.
+The scripts are organized sequentially (`01` through `09`) to allow full replication of the panel assembly, feature engineering, statistical detrending models, predictive pipelines, and exhibits.
 
 ---
 
@@ -12,7 +12,7 @@ All scripts are self-contained and resolve paths relative to the repository root
 
 ```bash
 # Example: execute any script from the repository root
-python thesis_scripts/01_build_balanced_panel.py
+python scripts/01_build_balanced_panel.py
 ```
 
 | Script | Purpose / Methodology | Primary Artifacts Generated |
@@ -24,8 +24,8 @@ python thesis_scripts/01_build_balanced_panel.py
 | `05_train_tabular_models.py` | Chronological expanding-window out-of-sample evaluation (2011–2025) for Naive, ElasticNet, Random Forest, and XGBoost with train-only OLS detrending and scaling. | `output/data/processed/predictions.parquet`<br>`output/data/processed/evaluation_summary.csv` |
 | `06_train_lstm_model.py` | Deep learning pipeline: trains 2-layer LSTM with Bahdanau temporal attention on 10-day agrometeorological sequences across horizons $H=11 \dots 1$. | `output/data/processed/predictions_lstm.parquet` |
 | `07_evaluate_benchmarks.py` | Computes multi-horizon $R^2_{\text{OOS}}$ matrix, Diebold-Mariano inferential significance tests, and extreme weather shock diagnostics (2012 drought vs 2016 bumper). | Replicates **Table 5.1** and **Table 5.3** in thesis text. |
-| `08_generate_chapter3_figures.py` | Produces exploratory data figures: study area cartographic map, 75-year secular yield trajectory, and monthly climate-yield sensitivity correlations. | `fig_study_area_map.pdf` (Figure 3.1)<br>`fig_yield_trajectory.pdf` (Figure 3.2)<br>`fig_climate_yield_sensitivity.pdf` (Figure 3.8) |
-| `09_generate_chapter5_figures.py` | Produces empirical results figures: multi-horizon $R^2_{\text{OOS}}$ progression curves, extreme shock bias profiles, and county $R^2$ spatial choropleth map. | `fig_r2_horizon_progression.pdf` (Figure 5.1)<br>`fig_shock_bias_profiles.pdf` (Figure 5.2)<br>`fig_county_r2_map.pdf` (Figure 5.5) |
+| `08_generate_eda_figures.py` | Produces exploratory data figures: study area cartographic map, 75-year secular yield trajectory, and monthly climate-yield sensitivity correlations. | `fig_study_area_map.pdf` (Figure 3.1)<br>`fig_yield_trajectory.pdf` (Figure 3.2)<br>`fig_climate_yield_sensitivity.pdf` (Figure 3.8) |
+| `09_generate_results_figures.py` | Produces empirical results figures: multi-horizon $R^2_{\text{OOS}}$ progression curves, extreme shock bias profiles, and county $R^2$ spatial choropleth map. | `fig_r2_horizon_progression.pdf` (Figure 5.1)<br>`fig_shock_bias_profiles.pdf` (Figure 5.2)<br>`fig_county_r2_map.pdf` (Figure 5.5) |
 
 ---
 
@@ -80,8 +80,8 @@ data/raw/usda_nass/              data/raw/census_counties/
                           │
             ┌─────────────┴─────────────┐
             ▼                           ▼
-[08_generate_chapter3_figures.py] [09_generate_chapter5_figures.py]
+[08_generate_eda_figures.py]   [09_generate_results_figures.py]
             │                           │
             ▼                           ▼
-     Chapter 3 Figures           Chapter 5 Figures
+       EDA Figures               Results Figures
 ```

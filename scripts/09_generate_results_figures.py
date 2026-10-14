@@ -1,5 +1,5 @@
 """
-09_generate_chapter5_figures.py
+09_generate_results_figures.py
 
 Generates empirical results figures for Chapter 5 (Results):
 1. Figure 5.1: Multi-Horizon Progression Curves across Phenological Stages (fig_r2_horizon_progression.pdf).
@@ -180,10 +180,13 @@ def plot_figure_5_5(preds):
     if not SHAPEFILE.exists():
         return
 
-    # Evaluate best model (XGBoost) at peak horizon H=2
-    sub = preds[(preds["model"] == "XGBoost") & (preds["H"] == 2)]
+    # Evaluate champion model (LSTM (+Lag)) at harvest horizon H=1
+    sub = preds[(preds["model"] == "LSTM (+Lag)") & (preds["H"] == 1)]
     if sub.empty:
-        return
+        # Fallback to XGBoost if LSTM not present
+        sub = preds[(preds["model"] == "XGBoost") & (preds["H"] == 1)]
+        if sub.empty:
+            return
 
     county_r2 = []
     for fips, grp in sub.groupby("county_fips"):
@@ -202,15 +205,15 @@ def plot_figure_5_5(preds):
     gdf_mw.plot(ax=ax, color="#f2f2f2", edgecolor="#d9d9d9", linewidth=0.4)
     gdf_merged.dropna(subset=["r2_oos"]).plot(
         column="r2_oos", ax=ax, cmap="YlGnBu", legend=True,
-        vmin=-0.05, vmax=0.55,
+        vmin=-0.05, vmax=0.65,
         legend_kwds={
-            "label": r"Out-of-Sample Explained Variance ($R^2_{\mathrm{OOS}}$ at Peak Horizon $H=2$)",
+            "label": r"Out-of-Sample Explained Variance ($R^2_{\mathrm{OOS}}$ at Harvest Horizon $H=1$)",
             "orientation": "horizontal", "pad": 0.04, "shrink": 0.65, "aspect": 25
         },
         edgecolor="#333333", linewidth=0.5
     )
     gdf_mw.dissolve(by="STATE_NAME").plot(ax=ax, facecolor="none", edgecolor="#111111", linewidth=1.1)
-    ax.set_title(r"Spatial Heterogeneity of Out-of-Sample Predictive Skill ($R^2_{\mathrm{OOS}}$, $H=2$, 2011--2025)", fontsize=12, fontweight="bold", pad=12)
+    ax.set_title(r"Spatial Heterogeneity of Out-of-Sample Predictive Skill ($R^2_{\mathrm{OOS}}$, $H=1$, 2011--2025)", fontsize=12, fontweight="bold", pad=12)
     ax.axis("off")
 
     plt.tight_layout()
