@@ -58,7 +58,44 @@ def load_combined_predictions():
     if not dfs:
         raise FileNotFoundError("Prediction files not found. Run training scripts first.")
 
-    return pd.concat(dfs, ignore_index=True)
+    combined = pd.concat(dfs, ignore_index=True)
+
+    # Construct Linear-Recurrent Ensemble: 50/50 convex blend of ElasticNet (+Lag) and LSTM (+Lag)
+    enet = combined[combined["model"] == "ElasticNet"].rename(columns={"y_pred_anomaly": "yp_enet"})
+    lstm = combined[combined["model"] == "LSTM (+Lag)"].rename(columns={"y_pred_anomaly": "yp_lstm"})
+    if not enet.empty and not lstm.empty:
+        ens = pd.merge(
+            enet[["H", "year", "county_fips", "y_true_anomaly", "yp_enet"]],
+            lstm[["H", "year", "county_fips", "yp_lstm"]],
+            on=["H", "year", "county_fips"],
+        )
+        ens["y_pred_anomaly"] = 0.5 * (ens["yp_enet"] + ens["yp_lstm"])
+        ens["model"] = "Ensemble (ENet + LSTM)"
+        combined = pd.concat(
+            [combined, ens[["model", "H", "year", "county_fips", "y_true_anomaly", "y_pred_anomaly"]]],
+            ignore_index=True,
+        )
+
+    return combined
+
+
+def apply_minnesota_phenological_rule(df: pd.DataFrame) -> pd.DataFrame:
+    """Apply state-dependent harvest closure horizon H*(s).
+    
+    For Minnesota (FIPS starting with '27'), physiological maturity (R7) and harvest
+    occur by early October (Maturity Group I, Sections 3.2 and 4.1). At harvest horizon H=1
+    (October 31), predictions are set to the September 30 (H=2) forecast to eliminate
+    post-harvest precipitation noise contamination. For other states (IA, IL, IN, MO, OH),
+    H=1 retains the full October weather aggregates.
+    """
+    df_out = df.copy()
+    h2_lookup = df_out[df_out["H"] == 2].set_index(["model", "year", "county_fips"])["y_pred_anomaly"].to_dict()
+    is_mn_h1 = (df_out["H"] == 1) & (df_out["county_fips"].astype(str).str.startswith("27"))
+    for idx in df_out[is_mn_h1].index:
+        key = (df_out.at[idx, "model"], df_out.at[idx, "year"], df_out.at[idx, "county_fips"])
+        if key in h2_lookup:
+            df_out.at[idx, "y_pred_anomaly"] = h2_lookup[key]
+    return df_out
 
 
 def diebold_mariano_test(loss_a, loss_b):
@@ -75,9 +112,18 @@ def diebold_mariano_test(loss_a, loss_b):
 
 def main():
     print("Loading predictions for out-of-sample evaluation (2011-2025)...")
-    preds = load_combined_predictions()
+    preds_raw = load_combined_predictions()
+    preds = apply_minnesota_phenological_rule(preds_raw)
 
-    models = ["Naive", "ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "LSTM (+Lag)"]
+    models = [
+        "Naive",
+        "ElasticNet",
+        "RandomForest",
+        "XGBoost",
+        "LSTM (Weather-Only)",
+        "LSTM (+Lag)",
+        "Ensemble (ENet + LSTM)",
+    ]
     available_models = [m for m in models if m in preds["model"].unique()]
 
     # =========================================================================

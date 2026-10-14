@@ -25,5 +25,5 @@ $D_{10}$ (Bumper) & $[+8.83, +22.93]$ & $+11.01$ & 11.21 & \textbf{9.31} & 10.24
 \bottomrule
 \end{tabular*}
 \vspace{0.2em}
-{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations. Naive benchmark predicts $\hat{\epsilon} = 0$. Machine learning estimators include prior-year anomaly carryover (+Lag $\epsilon_{t-1}$). ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; LSTM: sequential LSTM with 10-day decad inputs and linear projection head.}}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations. Naive benchmark predicts $\hat{\epsilon} = 0$. Machine learning estimators include prior-year anomaly carryover (+Lag $\epsilon_{t-1}$). ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; LSTM: sequential LSTM with 10-day decad inputs and linear projection head. In accordance with Section~\ref{sec:meth_timeline_horizons}, harvest lead-time evaluations ($H=1$) for Minnesota counties incorporate the physiological closure cutoff $H^*(s)=2$ (September 30).}}
 \end{table}

@@ -35,7 +35,7 @@ OUT_PREDS_PARQUET = ROOT / "output" / "data" / "processed" / "predictions.parque
 OUT_SUMMARY_CSV = ROOT / "output" / "data" / "processed" / "evaluation_summary.csv"
 
 # Evaluation test window
-TEST_START = 1996
+TEST_START = 2011
 TEST_END = 2025
 
 

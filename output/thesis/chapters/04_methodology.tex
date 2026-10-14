@@ -80,6 +80,17 @@ This schedule structures information accumulation:
     \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather through Month $m$, expanding feature dimensionality from $P_{11} = 34$ to $P_1 = 194$ in October (or $P_1 = 195$ under integrated carryover).
 \end{itemize}
 
+To reflect state maturation timing (Section~\ref{sec:data_phenology}), we define harvest closure horizon $H^*(s)$:
+\begin{equation}
+    H^*(s) = 
+    \begin{cases}
+        2 \quad (\text{September 30}), & \text{for Minnesota} \\
+        1 \quad (\text{October 31}), & \text{for IA, IL, IN, MO, OH}
+    \end{cases}
+    \label{eq:harvest_closure_horizon}
+\end{equation}
+Freezing inputs at $H^*=2$ for Minnesota eliminates post-harvest precipitation noise.
+
 \subsection{Direct Horizon-Specific Modeling Paradigm}
 \label{sec:meth_direct_horizon}
 
@@ -245,6 +256,14 @@ To evaluate the contribution of historical yield persistence, we formulate two p
 
 As an architectural ablation during validation, we evaluated the Gated Recurrent Unit (GRU) \citep{Geron2022}. Although the GRU offers a 25\% parameter reduction, its single hidden state without a dedicated cell state $\mathbf{c}_t$ proved insufficient for retaining cumulative soil moisture deficits across 35 decad steps, yielding inferior validation RMSE ($>4.91\text{ bu/ac}$ vs $4.66\text{ bu/ac}$ for LSTM). Consequently, the GRU was excluded from the final out-of-sample test suite.
 
+\paragraph{Linear-Recurrent Ensemble.}
+We combine regularized linear shrinkage and sequential deep learning in an equal-weighted ensemble:
+\begin{equation}
+    \hat{\epsilon}_{c,Y}^{(H, \text{ens})} = 0.5 \, \hat{\epsilon}_{c,Y}^{(H, \text{ENet})} + 0.5 \, \hat{\epsilon}_{c,Y}^{(H, \text{LSTM})}
+    \label{eq:linear_recurrent_ensemble}
+\end{equation}
+This convex blend unites orthogonal inductive biases: low estimation variance from penalized linear shrinkage and recurrent attention for acute heat pulses. Combining estimators with weakly correlated errors contracts prediction variance below either component without fitting post-hoc weights \citep{James2023}.
+
 Network parameters are optimized via AdamW with initial learning rate $\eta = 3 \times 10^{-4}$ and weight decay $10^{-4}$ \citep{Geron2022}. Learning rates decay dynamically via a plateau scheduler ($\text{factor} = 0.5$, $\text{patience} = 3$), and training terminates via early stopping ($\text{patience} = 7$) on train-only folds. Table~\ref{tab:model_summary} summarizes the complete forecasting portfolio.
 
 \begin{table}[htbp]
@@ -265,6 +284,7 @@ Random Forest & Bagging Trees & Tabular 2D ($P_H$) & $p_{\text{split}}$, leaf si
 XGBoost & Gradient Boosting & Tabular 2D ($P_H$) & $\lambda_{\text{reg}}$, $\gamma_{\text{split}}$, shrinkage & $\eta$, $d_{\text{max}}$, colsample, $\lambda$, $\alpha_{\text{reg}}$ & Additive boosting; non-linear interaction. \\
 LSTM (Linear) & Recurrent Deep & Sequence 3D (10d) & Dropout, weight decay & $d_h, l, dr, bs$ & Decad sequential tracking; linear projection for integrated persistence. \\
 LSTM (PReLU) & Recurrent Deep & Sequence 3D (10d) & Dropout, weight decay & $d_h, l, dr, bs$ & Decad tracking + temporal attention; non-linear weather-only champion. \\
+Ensemble & Linear-Recurrent & Hybrid & Convex combination & Fixed $w=0.5$ & Orthogonal bias fusion; variance contraction. \\
 \bottomrule
 \end{tabularx}
 \vspace{0.2em}

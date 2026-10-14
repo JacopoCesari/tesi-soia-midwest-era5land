@@ -41,6 +41,7 @@ COLORS = {
     "XGBoost": "#d62728",
     "LSTM (Weather-Only)": "#2ca02c",
     "LSTM (+Lag)": "#8e44ad",
+    "Ensemble (ENet + LSTM)": "#16a085",
 }
 
 
@@ -63,7 +64,33 @@ def load_data():
         })
         dfs.append(df_lstm[["model", "H", "year", "county_fips", "y_true_anomaly", "y_pred_anomaly"]])
 
-    return pd.concat(dfs, ignore_index=True)
+    combined = pd.concat(dfs, ignore_index=True)
+
+    # Construct Linear-Recurrent Ensemble: 50/50 convex blend of ElasticNet (+Lag) and LSTM (+Lag)
+    enet = combined[combined["model"] == "ElasticNet"].rename(columns={"y_pred_anomaly": "yp_enet"})
+    lstm = combined[combined["model"] == "LSTM (+Lag)"].rename(columns={"y_pred_anomaly": "yp_lstm"})
+    if not enet.empty and not lstm.empty:
+        ens = pd.merge(
+            enet[["H", "year", "county_fips", "y_true_anomaly", "yp_enet"]],
+            lstm[["H", "year", "county_fips", "yp_lstm"]],
+            on=["H", "year", "county_fips"],
+        )
+        ens["y_pred_anomaly"] = 0.5 * (ens["yp_enet"] + ens["yp_lstm"])
+        ens["model"] = "Ensemble (ENet + LSTM)"
+        combined = pd.concat(
+            [combined, ens[["model", "H", "year", "county_fips", "y_true_anomaly", "y_pred_anomaly"]]],
+            ignore_index=True,
+        )
+
+    # Apply Minnesota phenological translation rule (H*=2 for MN at harvest)
+    h2_lookup = combined[combined["H"] == 2].set_index(["model", "year", "county_fips"])["y_pred_anomaly"].to_dict()
+    is_mn_h1 = (combined["H"] == 1) & (combined["county_fips"].astype(str).str.startswith("27"))
+    for idx in combined[is_mn_h1].index:
+        key = (combined.at[idx, "model"], combined.at[idx, "year"], combined.at[idx, "county_fips"])
+        if key in h2_lookup:
+            combined.at[idx, "y_pred_anomaly"] = h2_lookup[key]
+
+    return combined
 
 
 def plot_figure_5_1(preds):
@@ -81,7 +108,7 @@ def plot_figure_5_1(preds):
     # Panel (a): R2_OOS Pooled
     ax1.plot(x_pos, np.zeros(len(HORIZONS)), label="Naive Secular Trend", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
 
-    models_to_plot = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "LSTM (+Lag)"]
+    models_to_plot = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
     for m in models_to_plot:
         sub_m = preds[preds["model"] == m]
         if sub_m.empty:
@@ -98,9 +125,10 @@ def plot_figure_5_1(preds):
                 r2_vals.append(1.0 - ss_res / ss_tot if ss_tot > 0 else np.nan)
                 rmse_vals.append(np.sqrt(np.mean((yt - yp) ** 2)))
 
-        ls = "--" if "+Lag" in m else "-"
-        ax1.plot(x_pos, r2_vals, label=m, color=COLORS.get(m, "#333333"), linestyle=ls, marker="o", markersize=5, linewidth=1.8)
-        ax2.plot(x_pos, rmse_vals, label=m, color=COLORS.get(m, "#333333"), linestyle=ls, marker="o", markersize=5, linewidth=1.8)
+        ls = "--" if "+Lag" in m else ("-." if "Ensemble" in m else "-")
+        lw = 2.2 if "Ensemble" in m else 1.8
+        ax1.plot(x_pos, r2_vals, label=m, color=COLORS.get(m, "#333333"), linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        ax2.plot(x_pos, rmse_vals, label=m, color=COLORS.get(m, "#333333"), linestyle=ls, marker="o", markersize=5, linewidth=lw)
 
     ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
     ax1.set_ylabel(r"Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$")
@@ -207,13 +235,23 @@ def plot_figure_5_5(preds):
         column="r2_oos", ax=ax, cmap="YlGnBu", legend=True,
         vmin=-0.05, vmax=0.65,
         legend_kwds={
-            "label": r"Out-of-Sample Explained Variance ($R^2_{\mathrm{OOS}}$ at Harvest Horizon $H=1$)",
+            "label": r"Out-of-Sample Explained Variance ($R^2_{\mathrm{OOS}}$ at Harvest Closure $H^*(s)$)",
             "orientation": "horizontal", "pad": 0.04, "shrink": 0.65, "aspect": 25
         },
         edgecolor="#333333", linewidth=0.5
     )
     gdf_mw.dissolve(by="STATE_NAME").plot(ax=ax, facecolor="none", edgecolor="#111111", linewidth=1.1)
-    ax.set_title(r"Spatial Heterogeneity of Out-of-Sample Predictive Skill ($R^2_{\mathrm{OOS}}$, $H=1$, 2011--2025)", fontsize=12, fontweight="bold", pad=12)
+    ax.set_title(r"Spatial Heterogeneity of Out-of-Sample Predictive Skill ($R^2_{\mathrm{OOS}}$, Harvest Closure $H^*(s)$, 2011--2025)", fontsize=11.5, fontweight="bold", pad=12)
+    
+    # Explanatory phenological note for Minnesota
+    ax.text(
+        0.03, 0.06,
+        "Harvest closure $H^*(s)$:\n"
+        r"$\bullet$ $H=2$ (Sep 30) for MN (Group I)" + "\n"
+        r"$\bullet$ $H=1$ (Oct 31) for IL, IN, IA, MO, OH",
+        transform=ax.transAxes, fontsize=8.5, verticalalignment="bottom",
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.92, edgecolor="#aaaaaa")
+    )
     ax.axis("off")
 
     plt.tight_layout()

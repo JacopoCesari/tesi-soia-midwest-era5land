@@ -39,6 +39,7 @@ budget = {
     'Chap 3 (Data & Study Area)': {'path': 'output/thesis/chapters/03_data_and_study_area.tex', 'min': 16000, 'max': 20000},
     'Chap 4 (Methodology)': {'path': 'output/thesis/chapters/04_methodology.tex', 'min': 16000, 'max': 19000},
     'Chap 5 (Empirical Results)': {'path': 'output/thesis/chapters/05_empirical_results.tex', 'min': 10000, 'max': 16000},
+    'Chap 6 (Discussion & Conclusions)': {'path': 'output/thesis/chapters/06_discussion_and_conclusions.tex', 'min': 6000, 'max': 9000},
 }
 
 all_budget = {
@@ -47,8 +48,7 @@ all_budget = {
     'Chap 3 (Data & Study Area)': (16000, 20000),
     'Chap 4 (Methodology)': (16000, 23000),
     'Chap 5 (Empirical Results)': (18000, 25000),
-    'Chap 6 (Discussion)': (6000, 9000),
-    'Chap 7 (Conclusions)': (2500, 4000),
+    'Chap 6 (Discussion & Conclusions)': (6000, 10000),
 }
 
 
@@ -78,7 +78,7 @@ for name, info in budget.items():
 print("-" * 105)
 min_c14 = sum(info['min'] for info in budget.values())
 max_c14 = sum(info['max'] for info in budget.values())
-print(f"{'TOTALE ATTUALE (Cap 1-5)':<28} | {total_chars:<22} | {total_words:<8} | {min_c14:<10} | {max_c14:<10} | {'Nel target [OK]'}")
+print(f"{'TOTALE ATTUALE (Cap 1-6)':<28} | {total_chars:<22} | {total_words:<8} | {min_c14:<10} | {max_c14:<10} | {'Nel target [OK]'}")
 
 print("\n" + "=" * 90)
 print("DETTAGLIO SEZIONI CAPITOLO 3 (Data and Study Area)")
@@ -131,8 +131,38 @@ for i in range(1, len(parts), 2):
             print(f"{sub_title:<55} | {len(sub_content):>8} car. | {len(sub_content.split()):>6} parole")
 
 print("\n" + "=" * 90)
+print("DETTAGLIO SEZIONI CAPITOLO 6 (Discussion and Conclusions)")
+print("=" * 90)
+
+with open('output/thesis/chapters/06_discussion_and_conclusions.tex', 'r', encoding='utf-8') as f:
+    c6_raw = f.read()
+
+parts6 = re.split(r'(\\section\{[^}]+\})', c6_raw)
+print(f"Intro capitolo                                          | {len(clean_latex(parts6[0])):>8} car. | {len(clean_latex(parts6[0]).split()):>6} parole")
+
+for i in range(1, len(parts6), 2):
+    sec_match = re.search(r'\\section\{([^}]+)\}', parts6[i])
+    sec_title = sec_match.group(1) if sec_match else f"Sezione {i}"
+    sec_content = clean_latex(parts6[i] + parts6[i+1])
+    print(f"\n[SEC] {sec_title:<50} | {len(sec_content):>8} car. | {len(sec_content.split()):>6} parole")
+    
+    subparts = re.split(r'(\\subsection\{[^}]+\})', parts6[i+1])
+    if len(subparts) > 1:
+        for j in range(1, len(subparts), 2):
+            sub_match = re.search(r'\\subsection\{([^}]+)\}', subparts[j])
+            sub_title = "  |-- " + (sub_match.group(1) if sub_match else f"Sub {j}")
+            sub_content = clean_latex(subparts[j] + subparts[j+1])
+            print(f"{sub_title:<55} | {len(sub_content):>8} car. | {len(sub_content.split()):>6} parole")
+
+print("\n" + "=" * 90)
 print("QUADRO COMPLESSIVO RISPETTO AL VINCOLO ATENEO (MAX 100.000 CARATTERI)")
 print("=" * 90)
 print(f"Vincolo Ateneo: max 100.000 caratteri (spazi inclusi, escluse tabelle/figure/formule/note/bibliografia)")
-print(f"Caratteri attuali scritti (Cap 1-5): {total_chars:,} caratteri ({total_chars/100000*100:.1f}% del limite di 100.000)")
-print(f"Spazio residuo per Cap 6-7: {100000 - total_chars:,} caratteri")
+print(f"Buffer operativo Ateneo (+10%): max 110.000 caratteri")
+print(f"Caratteri totali dell'opera (Cap 1-6): {total_chars:,} caratteri ({total_chars/100000*100:.1f}% del limite di 100.000, {total_chars/110000*100:.1f}% del buffer 110.000)")
+if total_chars <= 100000:
+    print(f"Margine rispetto a 100.000: {100000 - total_chars:,} caratteri residui [PERFETTO NEL TARGET]")
+elif total_chars <= 110000:
+    print(f"Margine rispetto a 110.000 buffer: {110000 - total_chars:,} caratteri residui [NELLO SPAZIO BUFFER ATENEO +10%]")
+else:
+    print(f"Supero limite: {total_chars - 110000:,} caratteri oltre il buffer")
