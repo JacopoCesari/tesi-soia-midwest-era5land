@@ -209,7 +209,7 @@ def main():
         obs_max = sub_h.groupby("decile")["y_true_anomaly"].max()
         dec_df["Range"] = [f"[{mn:.2f}, {mx:.2f}]" for mn, mx in zip(obs_min, obs_max)]
 
-        show_cols = ["Range", "Obs_Mean", "Naive", "ElasticNet", "RandomForest", "XGBoost", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
+        show_cols = ["Range", "Obs_Mean", "ElasticNet", "RandomForest", "XGBoost", "LSTM (+Lag)"]
         print(dec_df[[c for c in show_cols if c in dec_df.columns]].round(2).to_string())
 
     # =========================================================================
