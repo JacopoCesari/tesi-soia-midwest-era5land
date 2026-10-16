@@ -29,13 +29,13 @@ A fundamental empirical challenge in agricultural forecasting is that raw county
 
 The central research question asks: \textit{At what lead times prior to harvest does observed surface weather add statistically significant and stable out-of-sample predictive skill for county-level soybean yield anomalies, and how does this skill vary across model families and temporal aggregations?}
 
-To address this question, we evaluate two complementary target formulations:
+To address this question, we structure our predictive framework around two complementary evaluation dimensions:
 \begin{itemize}
-    \item \textbf{Continuous Anomaly Forecasting (Regression):} We model continuous county-level yield anomalies obtained by removing the secular technological trend via transformations fitted strictly on historical training folds. We then reconstruct absolute yield levels by recombining predicted anomalies with the estimated trend.
-    \item \textbf{Categorical Regime Forecasting (Classification):} Complementing continuous regression, we test whether broad yield regimes (severe shortfall, normal, and bumper harvests) can be identified earlier or with greater reliability than continuous magnitudes.
+    \item \textbf{Continuous Anomaly Forecasting (Regression):} We predict continuous county-level yield anomalies obtained by isolating weather-induced deviations from secular technological trends fitted strictly on historical training folds. Absolute yield levels are subsequently reconstructed by recombining predicted anomalies with the estimated trend.
+    \item \textbf{Downside Tail-Risk Anticipation:} Beyond standard quadratic error metrics across the full distribution, we evaluate the capacity of empirical continuous models to anticipate acute downside tail shocks (specifically the bottom yield decile $D_1$) and correctly identify directional anomaly signs well before harvest.
 \end{itemize}
 
-We structure our investigation around four primary objectives: mapping the emergence and temporal stability of predictive skill across horizons ($H=12 \dots 1$); identifying the optimal model architecture and temporal aggregation (5-day, 10-day, or 30-day summaries); contrasting non-linear tree ensembles and sequential neural networks against regularized linear baselines; and exploring early regime classification. We derive formal hypotheses (H1--H5) addressing these objectives in Chapter~\ref{chap:literature_review}.
+We structure our investigation around four primary objectives: mapping the emergence and temporal stability of predictive skill across horizons ($H=12 \dots 1$); identifying the optimal model architecture and temporal aggregation (5-day, 10-day, or 30-day summaries); contrasting non-linear tree ensembles and sequential neural networks against regularized linear baselines; and evaluating the anticipation of severe downside tail risks. We derive formal hypotheses (H1--H5) addressing these objectives in Chapter~\ref{chap:literature_review}.
 
 \section{Methodological Contributions and Scope Boundaries}
 \label{sec:intro_contributions}

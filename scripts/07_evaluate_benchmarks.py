@@ -156,14 +156,14 @@ def main():
     print(df_table_5_1.to_string(index=False))
 
     # =========================================================================
-    # 2. TABLE 5.3: Extreme Weather Shock Diagnostics (2012 vs 2016)
+    # 2. TABLE 5.2: Extreme Weather Shock Diagnostics (2012 vs 2016)
     # =========================================================================
     print("\n" + "=" * 90)
-    print("TABLE 5.3: Extreme Shock Resolution (RMSE in bu/ac with Mean Bias in parentheses)")
+    print("TABLE 5.2: Extreme Shock Resolution (RMSE in bu/ac with Mean Bias in parentheses)")
     print("=" * 90)
 
     shock_years = {"Panel A: 2012 Flash Drought (Severe Stress)": 2012, "Panel B: 2016 Bumper Crop (Record Favorable)": 2016}
-    key_horizons = [7, 4, 2, 1]  # Pre-planting, Post-flowering, Maturity, Harvest
+    key_horizons = [5, 4, 3, 2, 1]
 
     for panel_title, sy in shock_years.items():
         print(f"\n{panel_title} (Year: {sy}):")
@@ -189,7 +189,31 @@ def main():
         print(df_shock.to_string(index=False))
 
     # =========================================================================
-    # 3. DIEBOLD-MARIANO INFERENTIAL TESTS AT HARVEST (H=1)
+    # 3. TABLE 5.3: Decile Point Calibration Across Horizons (H=5, 3, 1)
+    # =========================================================================
+    print("\n" + "=" * 90)
+    print("TABLE 5.3: Decile Mean Point Prediction (bu/ac) across Key Horizons (H=5, 3, 1)")
+    print("=" * 90)
+
+    obs_sample = preds[(preds["model"] == "ElasticNet") & (preds["H"] == 1)][["year", "county_fips", "y_true_anomaly"]].drop_duplicates()
+    obs_sample["decile"] = pd.qcut(obs_sample["y_true_anomaly"], 10, labels=False) + 1
+    decile_map = obs_sample.set_index(["year", "county_fips"])["decile"].to_dict()
+    preds["decile"] = preds.set_index(["year", "county_fips"]).index.map(decile_map)
+
+    for h_eval in [5, 3, 1]:
+        print(f"\n--- Horizon H={h_eval} ({MONTH_NAMES[h_eval]}) ---")
+        sub_h = preds[preds["H"] == h_eval]
+        dec_df = sub_h.groupby(["decile", "model"])["y_pred_anomaly"].mean().unstack()
+        dec_df["Obs_Mean"] = sub_h.groupby("decile")["y_true_anomaly"].mean()
+        obs_min = sub_h.groupby("decile")["y_true_anomaly"].min()
+        obs_max = sub_h.groupby("decile")["y_true_anomaly"].max()
+        dec_df["Range"] = [f"[{mn:.2f}, {mx:.2f}]" for mn, mx in zip(obs_min, obs_max)]
+
+        show_cols = ["Range", "Obs_Mean", "Naive", "ElasticNet", "RandomForest", "XGBoost", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
+        print(dec_df[[c for c in show_cols if c in dec_df.columns]].round(2).to_string())
+
+    # =========================================================================
+    # 4. DIEBOLD-MARIANO INFERENTIAL TESTS AT HARVEST (H=1)
     # =========================================================================
     print("\n" + "=" * 90)
     print("INFERENTIAL TESTS: Diebold-Mariano Loss Differential vs Naive Baseline (H=1)")
@@ -198,7 +222,6 @@ def main():
     sub_h1 = preds[preds["H"] == 1]
     sub_naive = sub_h1[sub_h1["model"] == "Naive"]
     if not sub_naive.empty:
-        # Group squared error by year
         se_naive = sub_naive.groupby("year").apply(lambda g: np.mean((g["y_true_anomaly"] - g["y_pred_anomaly"]) ** 2))
 
         for m in available_models:

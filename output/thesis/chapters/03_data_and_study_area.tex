@@ -30,6 +30,8 @@ This protocol isolates a balanced panel of \textbf{135 counties} over 75 years (
     \centering
     \includegraphics[width=0.92\textwidth]{figures/fig_study_area_map}
     \caption{Geographic distribution of the 135 balanced study counties across the six Midwestern states (1951--2025), illustrating balanced coverage across the primary agro-ecological subregions of the Corn and Soybean Belt.}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and US Census TIGER/Line data.}}
     \label{fig:study_area_map}
 \end{figure}
 
@@ -62,21 +64,13 @@ Our machine learning models in Chapter~4 are trained exclusively to predict the 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory}
-    \caption{Multidecadal county soybean yield trajectories, secular trend, and expanding spatial dispersion across 135 Midwestern counties (1951--2025). Light grey lines represent individual county histories; the solid blue line denotes the annual cross-sectional panel mean; the shaded blue ribbon traces the 90\% cross-county dispersion envelope (5th--95th percentile band), illustrating expanding spatial heteroskedasticity over time; the dashed orange line depicts the secular linear trend; and markers highlight major historical climatic shock anomalies.}
+    \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory_dual_petrol}
+    \caption{County soybean yield trajectories, linear trend, and expanding dispersion envelopes across 135 Midwestern counties (1950--2025). Shaded dual envelopes contrast the inner 90\% cross-county dispersion core (solid borders) against historical min--max record boundaries (dotted lines), separated into positive (emerald green) and deficit (terracotta) regions relative to the long-term linear trend (deep petrol dashed line). The solid petrol-grey line traces the annual cross-sectional panel mean. Vertical arrows highlight the multidecadal expansion of cross-county dispersion from 1951 ($\Delta = 14.4\text{ bu/ac}$) to 2024 ($\Delta = 28.2\text{ bu/ac}$, $+96\%$).}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}}
     \label{fig:yield_trajectory}
 \end{figure}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory_dual_petrol}
-    \caption{Alternative visualization: County soybean yield trajectories, linear trend, and expanding dispersion envelopes across 135 Midwestern counties (1950--2025). Shaded dual envelopes contrast the inner 90\% cross-county dispersion core (solid borders) against historical min--max record boundaries (dotted lines), separated into positive (emerald green) and deficit (terracotta) regions relative to the long-term linear trend (deep petrol dashed line). The solid petrol-grey line traces the annual cross-sectional panel mean. Vertical arrows highlight the multidecadal expansion of cross-county dispersion from 1951 ($\Delta = 14.4\text{ bu/ac}$) to 2024 ($\Delta = 28.2\text{ bu/ac}$, $+96\%$).}
-    \vspace{0.2em}
-    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}}
-    \label{fig:yield_trajectory_dual_petrol}
-\end{figure}
 
 The secular baseline $\tau_{c,t}$ captures technological progress, including advanced breeding, transgenic traits, mechanization, and precision farming inputs. Across the 75-year panel, regional average soybean yields expanded from $22.77\text{ bu/ac}$ in the 1950s to $57.31\text{ bu/ac}$ in the 2020s (+151.7\%, Table~\ref{tab:decadal_yields}). At the regional annual level ($N = 75$), an ordinary least squares (OLS) regression indicates an average gain of $+0.484\text{ bu/ac/year}$ ($R^2 = 0.9323$, Figure~\ref{fig:yield_trajectory}):
 \begin{equation}
@@ -206,8 +200,10 @@ As illustrated in Figure~\ref{fig:era5_spatial_structure}, this area-weighted po
     \centering
     \includegraphics[width=\textwidth]{figures/fig_era5_spatial_structure}
     \caption{Spatial architecture and area-weighted grid discretization of ERA5-Land weather data. Panel (a) shows the regional study domain across Illinois ($N = 28$ study counties), highlighting Tazewell County. Panel (b) details the micro-scale grid discretization over Tazewell County, illustrating the intersection between the regular $0.1^\circ \times 0.1^\circ$ ($\approx 9\text{ km}$) cardinal grid mesh and the irregular county boundary formed by the Illinois River. Grid cells are weighted strictly by their planar intersection area ($w_{c,g} = \text{Area}(c \cap g) / \text{Area}(c)$, summing to $100\%$), preserving total precipitation volume and heat fluxes across administrative boundaries without centroid sampling distortion.}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's elaboration on ECMWF ERA5-Land grid and US Census TIGER/Line county boundaries.}}
     \label{fig:era5_spatial_structure}
-    \end{figure}
+\end{figure}
 
 \subsection{Temporal Aggregation and Crop Campaign Structure}
 \label{sec:data_temporal_aggregation}
