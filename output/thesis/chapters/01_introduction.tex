@@ -11,7 +11,7 @@ Harvest surprises in this region carry severe, asymmetric economic costs. Region
 
 We focus specifically on county-level soybean yield anomalies, measured in bushels per acre. Aggregate production volumes and market prices fall outside our scope: production totals depend on acreage allocations across counties, while commercial prices reflect global carryover stocks and trade flows. These supply-chain repercussions establish the practical motivation for our research.
 
-In agricultural supply chains, a forecast's utility depends directly on its lead time. In operational trading, procurement, and hedging, an accurate yield estimate delivered immediately prior to harvest provides little managerial flexibility: physical purchasing, storage reservations, and forward pricing have largely concluded. The central intellectual and practical challenge consists in determining \textit{when} atmospheric observations transition from uninformative noise into a reliable forecasting signal. 
+In agricultural supply chains, a forecast's utility depends directly on its lead time. In operational trading, procurement, and hedging, an accurate yield estimate delivered immediately prior to harvest provides little managerial flexibility: physical purchasing, storage reservations, and forward pricing have largely concluded. The central practical question is determining when atmospheric observations begin to provide a reliable forecasting signal. 
 
 Operationally, an effective yield forecasting system must satisfy three criteria: accuracy across the yield distribution (especially for severe downside risks), lead-time earliness to maximize managerial reaction windows, and temporal stability to ensure that early gains persist across subsequent updates. The practical utility of these forecasts evolves dynamically across the production calendar:
 \begin{itemize}
@@ -46,14 +46,14 @@ However, existing empirical studies examine these dimensions in isolation, focus
 
 We address these gaps through two primary methodological contributions:
 \begin{enumerate}
-    \item \textbf{Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12, \dots, 1$):} We establish the empirical boundaries of weather-driven predictability across twelve standardized monthly origins, spanning from the preceding autumn through harvest eve. By relying strictly on cumulative surface reanalysis from ERA5-Land, we track precisely when observed atmospheric states begin to generate stable predictive skill, avoiding the confounding bias of numerical climate forecasts.
+    \item \textbf{Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12, \dots, 1$):} We establish the empirical boundaries of weather-driven predictability across twelve standardized monthly origins, spanning from the preceding autumn through harvest eve. By relying strictly on cumulative surface reanalysis from ERA5-Land without numerical forecast inputs, we track precisely when observed atmospheric states begin to generate stable predictive skill.
     \item \textbf{Identification of Optimal Model-Aggregation Configurations:} We systematically evaluate multiple model families—regularized linear baselines, tree ensembles (Random Forest, XGBoost), and recurrent architectures (LSTM)—across three temporal aggregations (5-day, 10-day, and 30-day summaries). This establishes whether high-frequency sub-monthly summaries provide superior predictive value over standard monthly averages under identical information constraints.
 \end{enumerate}
 
 \paragraph{Scope Boundaries and Methodological Discipline.}
-While our evaluation framework is transferable to other crops and regions, we deliberately focus on soybean across a balanced panel of 135 counties in six core Midwestern states (Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio) over 1951--2025 ($10{,}125$ county-year observations). This geographic and temporal delimitation provides an unbroken historical record that avoids artificial data imputation.
+We evaluate this framework on soybean across a balanced panel of 135 counties in six core Midwestern states (Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio) over 1951--2025 ($10{,}125$ county-year observations). This geographic and temporal delimitation provides an unbroken historical record that avoids artificial data imputation.
 
-We interpret feature importance strictly as empirical predictive association, without claiming structural causal identification. Furthermore, because we evaluate retrospective ERA5-Land reanalysis over a 75-year panel, our primary objective is to delineate the physical boundaries of weather-driven predictability across lead times.
+We interpret feature importance strictly as empirical predictive association, without claiming structural causal identification.
 
 \section{Structure of the Thesis}
 \label{sec:intro_structure}

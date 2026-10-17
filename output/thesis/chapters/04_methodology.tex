@@ -2,7 +2,7 @@
 \chapter{Methodology}
 \label{chap:methodology}
 
-This chapter formalizes the econometric and machine learning framework for multi-horizon soybean yield anomaly forecasting across the Midwestern Corn Belt. Building on the 75-year panel characterized in Chapter~\ref{chap:data_and_study_area}, we formalize the predictive framework without anticipating empirical findings. The framework pursues two objectives: determining the operational lead time where meteorological predictors yield significant skill over secular trend baselines, and evaluating whether non-linear algorithmic complexity improves performance under strict out-of-sample expanding-window validation.
+Building on the 75-year panel characterized in Chapter~\ref{chap:data_and_study_area}, this chapter formalizes the econometric and machine learning framework for multi-horizon soybean yield anomaly forecasting across the Midwestern Corn Belt. The predictive architecture pursues two objectives: determining the operational lead time where meteorological predictors yield significant skill over secular trend baselines, and evaluating whether non-linear algorithmic complexity improves performance under strict out-of-sample expanding-window validation.
 
 % ==============================================================================
 % SECTION 4.1: PROBLEM FORMULATION AND MULTI-HORIZON FORECAST SETUP
@@ -106,7 +106,7 @@ where $\mathbf{\Theta}_H$ denotes the parameter vector. Direct forecasting preve
 
 Models are estimated within a pooled cross-sectional panel framework across all $C = 135$ counties simultaneously. Separate county-by-county estimation with 45 to 74 historical observations causes parameter collapse ($P_H > T$) against feature vectors with up to 194 variables. Pooling expands sample size to $N_{\text{train}} = 135 \times |\mathcal{T}_{\text{train}}(Y)|$ observations. The baseline 1951--1995 partition provides $6{,}075$ county-years, expanding to $8{,}100$ observations at the final 2025 fold.
 
-While estimation parameters are pooled, predictions remain county-specific: for each county $c$ and year $Y$, the model generates an individual anomaly forecast $\hat{\epsilon}_{c,Y}^{(H)}$ by evaluating localized weather series and spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$. County yield forecasts are reconstructed using county-specific trends $\hat{\tau}_{c,Y}$. To avoid reporting 135 fragmented county-level evaluation tables, empirical skill is evaluated both at the pooled panel level and via annual regional averages (Section~\ref{sec:meth_evaluation}).
+While estimation parameters are pooled, predictions remain county-specific: for each county $c$ and year $Y$, the model generates an individual anomaly forecast $\hat{\epsilon}_{c,Y}^{(H)}$ by evaluating localized weather series and spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$. County yield forecasts are reconstructed using county-specific trends $\hat{\tau}_{c,Y}$. Empirical skill is evaluated both across the pooled panel and via annual regional averages (Section~\ref{sec:meth_evaluation}).
 
 % ==============================================================================
 % SECTION 4.2: SPATIAL COVARIATES AND INPUT REPRESENTATION
@@ -142,12 +142,12 @@ The meteorological predictor space builds upon the $K = 16$ daily environmental 
     \item \textbf{Flux Integrals ($\mathcal{K}_{\text{flux}}$, 7 variables):} Total precipitation ($P$), surface solar radiation downwards ($SSRD$), reference evapotranspiration ($ET_0$), climatic water balance ($P - ET_0$), growing degree days ($GDD$), moderate heat days ($HD_{30}$), and extreme heat days ($HD_{35}$). These indicators represent volumetric and energy accumulation, aggregated via cumulative summation over temporal windows (Eq.~\eqref{eq:monthly_aggregation_rule}).
     \item \textbf{Environmental State Variables ($\mathcal{K}_{\text{state}}$, 9 variables):} Daily mean, maximum, minimum, and dewpoint temperatures ($T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}$), volumetric soil water across three horizons ($SM_1, SM_2, SM_3$), vapor pressure deficit ($VPD$), and root-zone soil moisture ($SM_{\text{root}}$). These indicators reflect continuous background ambient stress, aggregated via arithmetic time-averaging (Eq.~\eqref{eq:monthly_aggregation_rule}).
 \end{enumerate}
-This functional grouping maps daily physical reanalysis directly into structured feature matrices without narrative duplication across chapters.
+This functional grouping maps daily physical reanalysis directly into structured feature matrices.
 
 \subsection{Methodological Trade-offs in Temporal Aggregation Granularity}
 \label{sec:meth_aggregation_tradeoffs}
 
-\citet{Xie2025} and \citet{Yinetal2026} establish that sub-monthly pentad (5-day) and decad (10-day) aggregations capture short-duration heat waves and heavy precipitation events that are smoothed within monthly means. In tabular modeling architectures where temporal blocks are concatenated horizontally across columns (Eq.~\eqref{eq:tabular_feature_vector}), sub-monthly partitions induce rapid feature explosion. A 73-pentad schedule yields $1{,}170$ features, inducing severe multicollinearity and variance inflation on historical sample sizes \citep{Sharmaetal2025}. In contrast, monthly aggregation preserves dimensional stability ($P_H \le 194$) while aligning features with broader crop developmental phases \citep{Hoffman2020}. To evaluate high-frequency sequential dynamics without expanding column dimensions, we deploy sequential deep architectures within the candidate portfolio.
+\citet{Xie2025} and \citet{Yinetal2026} establish that sub-monthly pentad (5-day) and decad (10-day) aggregations capture short-duration heat waves and heavy precipitation events that are smoothed within monthly means. Concatenating sub-monthly temporal blocks into tabular matrices rapidly multiplies features (e.g., 73 pentads yield $1{,}170$ columns), inducing severe multicollinearity on historical samples \citep{Sharmaetal2025}. In contrast, monthly aggregation preserves dimensional stability ($P_H \le 194$) while aligning features with broader crop developmental phases \citep{Hoffman2020}. To evaluate high-frequency sequential dynamics without expanding column dimensions, we deploy sequential deep architectures within the candidate portfolio.
 
 % ==============================================================================
 % SECTION 4.3: CANDIDATE FORECASTING MODELS AND COMPLEXITY LADDER
@@ -253,8 +253,6 @@ We evaluate two projection head architectures mapping context vector $\mathbf{c}
 \end{enumerate}
 
 To evaluate the contribution of historical yield persistence, we formulate two parallel information tiers: \textit{Category B (Weather-Only)}, where inputs are strictly meteorological; and \textit{Category C (Integrated)}, where the historical detrended yield anomaly $\epsilon_{c, Y-1}$ (or $\epsilon_{c, Y-2}$ at early horizons $H \ge 8$, adhering to USDA NASS release timing) is concatenated directly to the dense projection layer $[\mathbf{c}_{\text{ctx}}^T, \tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c, \epsilon_{c, \text{lag}}]^T$. We evaluate both head configurations on the out-of-sample test panel to contrast pure meteorological and integrated information regimes.
-
-As an architectural ablation during validation, we evaluated the Gated Recurrent Unit (GRU) \citep{Geron2022}. Although the GRU offers a 25\% parameter reduction, its single hidden state without a dedicated cell state $\mathbf{c}_t$ proved insufficient for retaining cumulative soil moisture deficits across 35 decad steps, yielding inferior validation RMSE ($>4.91\text{ bu/ac}$ vs $4.66\text{ bu/ac}$ for LSTM). Consequently, the GRU was excluded from the final out-of-sample test suite.
 
 \paragraph{Linear-Recurrent Ensemble.}
 We combine regularized linear shrinkage and sequential deep learning in an equal-weighted ensemble:
@@ -422,7 +420,7 @@ Predictions are generated for each individual county $c$ and year $Y$. To synthe
     R^2_{\text{OOS}}(H) &= 1 - \frac{\sum_{Y=2011}^{2025} \sum_{c=1}^C \left( \epsilon_{c,Y} - \hat{\epsilon}_{c,Y}^{(H)} \right)^2}{\sum_{Y=2011}^{2025} \sum_{c=1}^C \epsilon_{c,Y}^2} \label{eq:r2_oos} \\[1ex]
     \text{Skill}_{\text{RMSE}}(H) &= 1 - \frac{\text{RMSE}_{\text{model}}(H)}{\text{RMSE}_{\text{naive}}} \label{eq:skill_score}
 \end{align}
-We designate $\text{RMSE}_{\text{OOS}}$ as the primary loss metric because quadratic penalization corresponds directly to the operational risk structure of grain supply chains. Severe yield shortfalls trigger asymmetric procurement costs, logistical bottlenecks, and contract defaults, whereas minor deviations remain manageable through operational inventory adjustments. $\text{MAE}_{\text{OOS}}$ captures linear error magnitude, while $R^2_{\text{OOS}}$ measures explained climatic variance beyond the naive secular baseline. Skill score $\text{Skill}_{\text{RMSE}}$ tracks percentage error reduction relative to trend extrapolation.
+We designate $\text{RMSE}_{\text{OOS}}$ as the primary loss metric because quadratic penalization aligns directly with the operational risk structure of grain supply chains, where severe shortfalls trigger asymmetric procurement costs and contract defaults while minor deviations remain manageable through inventory adjustments.
 
 To assess regional stability without presenting 135 separate county tables, we compute cross-sectional annual averages:
 \begin{equation}
@@ -435,9 +433,7 @@ tracking how predictive accuracy and directional bias evolve during extreme shor
 \subsection{Metric Prioritization}
 \label{sec:meth_metric_prioritization}
 
-In agricultural machine learning, studies frequently report binary directional hit rates ($H_{\text{dir}} = \frac{1}{M} \sum \mathbb{I}(\text{sgn}(\hat{\epsilon}) = \text{sgn}(\epsilon))$). We formally de-emphasize this metric as uninformative for supply-chain risk management. In commercial crop production, historical yield anomalies cluster heavily around the origin: across the 75-year panel, over 68\% of county-years fall within $\pm 3.0\text{ bu/ac}$ of the secular trend. Predicting a fractional positive deviation ($\hat{\epsilon} = +0.2\text{ bu/ac}$) when realized anomaly is marginally positive ($\epsilon = +0.5\text{ bu/ac}$) registers a nominal directional ``success'', yet provides negligible economic utility.
-
-Operationally, supply chains require accurate estimation of \textit{error magnitude}. The primary objective is determining how many bushels per acre production deviates during acute biophysical stress, and whether models can differentiate between a localized dry spell ($-3\text{ bu/ac}$) and a catastrophic multi-state flash drought ($-15\text{ bu/ac}$). We therefore prioritize continuous magnitude metrics ($\text{RMSE}_{\text{OOS}}$, $\text{MAE}_{\text{OOS}}$), benchmarking forecast errors directly against the unconditional standard deviation of historical anomalies ($\sigma_{\epsilon} \approx 5.94\text{ bu/ac}$).
+We omit binary directional hit rates ($H_{\text{dir}}$). In commercial crop production, historical yield anomalies cluster heavily around the origin, with over 68\% of county-years falling within $\pm 3.0\text{ bu/ac}$ of trend. Correctly guessing the sign of a fractional anomaly provides negligible commercial utility. Supply chains require accurate estimation of \textit{error magnitude} to differentiate between localized dry spells ($-3\text{ bu/ac}$) and catastrophic regional droughts ($-15\text{ bu/ac}$). We therefore prioritize continuous magnitude metrics ($\text{RMSE}_{\text{OOS}}$, $\text{MAE}_{\text{OOS}}$).
 
 \subsection{Out-of-Sample Tail-Risk Stress Testing}
 \label{sec:meth_tail_risk}

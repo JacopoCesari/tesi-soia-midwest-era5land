@@ -7,13 +7,7 @@
 
 Predicting crop yields prior to harvest is a foundational challenge in agricultural economics and applied machine learning. Over decades of empirical work, researchers have investigated how weather variability governs county-level crop production across the United States Corn Belt. Classical econometric models \citep{Schlenker2009, Hoffman2020} established essential insights: raw yields are dominated by secular technological progress, heat damage exhibits sharp non-linear breakpoints, and reproductive stages suffer disproportionate sensitivity to moisture deficits. Recently, high-resolution reanalyses and flexible predictive algorithms have shifted attention toward intra-seasonal, multi-horizon forecasting frameworks \citep{ChenZhang2026, Vijverberg2023, Yinetal2026, Khaki2020}.
 
-To establish the theoretical and empirical foundation for our research, we organize this review into six sections:
-(i) technological trends, weather variability, and soybean agronomic sensitivity;
-(ii) empirical design dimensions across lead times, target formulations, and reference baselines;
-(iii) candidate statistical, machine learning, and sequential architectures;
-(iv) methodological treatments of unobserved future weather at intermediate forecast origins;
-(v) a comparative review of primary benchmark studies; and
-(vi) a synthesis of the identified empirical opportunity, culminating in the formal derivation of research hypotheses (H1--H5).
+This review synthesizes the agronomic foundations of soybean weather sensitivity, evaluates key design dimensions in empirical crop forecasting, surveys candidate statistical and machine learning architectures, and reviews primary benchmark studies to derive five formal research hypotheses (H1--H5).
 
 \section{Technological Trends, Weather Variability, and Soybean Agronomic Sensitivity}
 \label{sec:lit_yield_trend_weather}
@@ -35,7 +29,7 @@ The relationship between ambient temperature and crop development is non-linear.
 \subsection{Non-Linear Temperature Breakpoints and Thermal Damage}
 When temperatures exceed critical thresholds, thermal damage accelerates rapidly. In a seminal econometric analysis, \citet{Schlenker2009} demonstrated sharp non-linear breakpoints: while temperatures up to $29^\circ\text{C}$ or $30^\circ\text{C}$ are beneficial, temperatures exceeding this threshold inflict severe yield penalties via floral abscission, pollen sterility, stomatal closure, and impaired photosynthesis.
 
-To capture these damage mechanisms, researchers construct Extreme Degree Days (EDD), accumulating thermal exposure strictly above physiological damage thresholds ($>30^\circ\text{C}$). Coarse monthly temperature averages inevitably smooth out these excursions, masking destructive heatwaves lasting only a few consecutive days. Both \citet{Hoffman2020} and \citet{ChenZhang2026} identify indicators of extreme summer heat as among the most decisive predictors of interannual yield variance.
+To capture these damage mechanisms, researchers construct Extreme Degree Days (EDD), accumulating thermal exposure strictly above physiological damage thresholds ($>30^\circ\text{C}$). Coarse monthly temperature averages smooth out these excursions, masking heatwaves lasting only a few consecutive days. Both \citet{Hoffman2020} and \citet{ChenZhang2026} identify indicators of extreme summer heat as among the most decisive predictors of interannual yield variance.
 
 \subsection{Atmospheric Moisture Demand and Soil Water Balance}
 While rainfall replenishes soil moisture, crop water stress is governed by the joint interaction between soil water availability and atmospheric evaporative demand, characterized by Vapor Pressure Deficit (VPD). \citet{Hoffman2020} identify elevated VPD as a critical driver of yield reduction during reproductive growth: high VPD forces stomatal closure to prevent desiccation, halting transpirational cooling and carbon fixation even when soil moisture is present.
@@ -43,7 +37,7 @@ While rainfall replenishes soil moisture, crop water stress is governed by the j
 Regarding the surface water budget, empirical studies emphasize compounding interactions between precipitation, root-zone soil moisture, and atmospheric demand \citep{ChenZhang2026, Hoffman2020, Vijverberg2023}. We parameterize the surface climatic water balance via the difference between accumulated precipitation and reference evapotranspiration ($P - \text{ET}_0$), calculated following standard FAO-56 Penman-Monteith formulations.
 
 \subsection{Phenological Vulnerability Windows}
-The biological impact of meteorological shocks depends decisively on crop phenology. Soybeans exhibit substantial compensatory plasticity during early vegetative growth (V1--V$n$); moderate moisture deficits or temperature anomalies can often be overcome if favorable weather resumes before flowering \citep{Hoffman2020}.
+The biological impact of meteorological shocks depends on crop phenology. Soybeans exhibit substantial compensatory plasticity during early vegetative growth (V1--V$n$); moderate moisture deficits or temperature anomalies can often be overcome if favorable weather resumes before flowering \citep{Hoffman2020}.
 
 Conversely, mid-season reproductive phases---specifically pod development (R3--R4) and seed filling (R5--R6), occurring between mid-July and late August in the U.S. Corn Belt---represent the critical yield-determining window \citep{Hoffman2020, Yinetal2026}. Severe moisture deficits or heatwaves during pod filling directly reduce pod counts, seed numbers, and seed weight, causing irreversible yield losses. Meteorological conditions proximate to harvest (September and October) primarily govern field machinery trafficability and grain dry-down, with negligible influence on biological seed mass.
 
@@ -58,7 +52,7 @@ Recent forecasting literature has recognized that predictive utility depends dir
 \subsection{Target Formulations: Continuous Yields and Downside Risk Anticipation}
 The predominant paradigm in crop modeling focuses on continuous regression of yield levels or anomalies, evaluated via standard quadratic metrics such as Root Mean Squared Error (RMSE) and $R^2$ \citep{ChenZhang2026}. Continuous point forecasts provide granular estimates essential for regional supply balancing and commercial volume planning.
 
-In operational risk management, however, decision-makers face asymmetric exposure to acute supply shortfalls. For grain elevator operators, processors, and insurers, the primary challenge consists in anticipating extreme adverse yield shocks rather than tracking minor fluctuations around the mean \citep{Vijverberg2023, Iizumietal2021}. Evaluating continuous regression models specifically on tail-risk diagnostics—such as error contraction on the bottom yield decile ($D_1$) and directional sign accuracy—bridges point forecasting with practical tail-risk anticipation without imposing arbitrary discretization boundaries.
+In operational risk management, however, decision-makers face asymmetric exposure to acute supply shortfalls. For grain elevator operators, processors, and insurers, anticipating extreme adverse yield shocks is the primary operational objective \citep{Vijverberg2023, Iizumietal2021}. Evaluating continuous regression models specifically on tail-risk diagnostics—such as error contraction on the bottom yield decile ($D_1$) and directional sign accuracy—bridges point forecasting with practical tail-risk anticipation without imposing arbitrary discretization boundaries.
 
 \subsection{Reference Baselines and Benchmark Anchoring}
 In empirical forecasting, evaluating a model's true capability requires benchmarking against parsimonious reference baselines: historical county climatology, deterministic linear trends, or lagged past yields ($Y-1$). 
@@ -121,16 +115,14 @@ In a related benchmark, \citet{Khaki2020} evaluate hybrid CNN-RNN architectures 
 \subsection{Literature Consensus and the Identified Opportunity}
 The empirical literature converges on several foundational principles: crop yield responses to weather are non-linear, with acute penalties above $30^\circ\text{C}$ and elevated vapor pressure deficits; reproductive stages in July and August represent the primary yield-determining window in the U.S. Corn Belt; and machine learning architectures can effectively capture high-dimensional agro-climatic interactions.
 
-However, existing empirical benchmarks have largely examined these dimensions in isolation. Previous studies have tended to specialize in specific aspects: presowing teleconnections at regional aggregations \citep{Vijverberg2023}, monthly in-season deep learning on raw yields \citep{ChenZhang2026}, sub-monthly temporal aggregation over shorter modern intervals \citep{Yinetal2026}, or weekly deep architectures \citep{Khaki2020}. 
-
-We identify a clear research opportunity to synthesize these empirical strands within a unified benchmarking framework. Specifically, we investigate three open questions: how predictive skill emerges across a twelve-month lead-time progression ($H=12, \dots, 1$); how temporal aggregations (5-day, 10-day, 30-day) interact with model complexity; and whether continuous empirical models effectively anticipate severe downside tail shocks before harvest.
+However, these empirical dimensions have largely been investigated in isolation, spanning isolated phenological windows, restricted historical intervals, or specific model classes. We synthesize these empirical strands into a unified benchmarking framework across 75 years and twelve monthly horizons ($H=12, \dots, 1$), evaluating how lead time, temporal aggregation (5-day, 10-day, 30-day), and model complexity govern out-of-sample skill and tail-risk anticipation.
 
 \subsection{Derivation of Research Hypotheses}
 \label{sec:lit_hypotheses}
 To address these questions, we formulate five testable research hypotheses:
 \begin{itemize}
     \item \textbf{Hypothesis 1 (Incremental Weather Skill):} Adding observed high-resolution weather reanalysis features to reference historical baselines produces a statistically significant reduction in out-of-sample prediction error for county-level soybean yield anomalies.
-    \item \textbf{Hypothesis 2 (Lead-Time Dependence and Persistence):} Incremental forecasting skill increases monotonically as the forecast origin approaches harvest ($H \to 1$). Furthermore, early predictive gains must persist stably across subsequent monthly cutoffs without reverting to noise to constitute actionable forecasting skill.
+    \item \textbf{Hypothesis 2 (Lead-Time Dependence and Persistence):} Incremental forecasting skill increases monotonically as the forecast origin approaches harvest ($H \to 1$). Early predictive gains must persist across subsequent monthly cutoffs without reverting to noise.
     \item \textbf{Hypothesis 3 (Temporal Aggregation Granularity across Model Families):} High-frequency temporal summaries (5-day and 10-day intervals) and non-linear derived stress indices capture yield-limiting weather shocks more effectively than coarse 30-day monthly aggregations. This finer granularity primarily improves predictive accuracy for flexible architectures (tree ensembles and sequential neural networks) capable of exploiting intra-monthly shock dynamics, whereas linear specifications may suffer from parameter expansion.
     \item \textbf{Hypothesis 4 (Model Complexity under Strict Validation):} Highly parameterized sequential deep learning models (such as LSTMs) do not systematically outperform transparent regularized linear models or tree ensembles (Random Forests, Gradient Boosting) when evaluated on interannual growing-season anomalies under strict temporal validation.
     \item \textbf{Hypothesis 5 (Tail-Risk and Downside Shock Anticipation):} Continuous empirical weather models anticipate severe negative yield shocks and downside tail risks (specifically the bottom decile $D_1$) prior to harvest, mitigating conditional shrinkage toward the historical mean and correctly resolving directional shortfall regimes.
