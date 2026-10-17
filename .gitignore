@@ -51,6 +51,14 @@ reports/tables/generated/
 *.pth
 *.joblib
 *.log
+*.aux
+*.out
+*.toc
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
 
 # Preserve only the supplied small preflight fixtures; other NetCDF stays ignored.
 !data/raw/era5_land/supplied_preflight/raw_daily_stats/era5_land_1950_daily_mean.nc

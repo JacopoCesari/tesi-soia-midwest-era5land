@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\centering
+\singlespacing
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.10}
+\caption{Conditional out-of-sample forecast error (RMSE, bu/ac) and mean forecast bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$ in parentheses) during historical extreme shock cohorts across active horizons ($H = 5 \dots 1$). Contrasting \textbf{Baseline Expanding Trend} vs \textbf{Full-Sample Trend}.}
+\label{tab:comp_tail_risk_performance}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} c l cc cc cc cc @{}}
+\toprule
+& & \multicolumn{2}{c}{\textbf{Naive Trend}} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM (+Lag)}} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
+\textbf{H} & \textbf{Cutoff} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\
+\midrule
+\multicolumn{10}{l}{\textbf{Panel A: 2012 Flash Drought (Severe Stress)}} \\
+$H=5$ & Jun & 7.20 (+4.1) & 8.38 (+5.8) & 6.01 (+1.1) & 5.99 (+1.8) & 6.08 (-0.2) & 5.82 (-0.0) & 7.06 (+2.7) & 7.68 (+4.4) \\
+$H=4$ & Jul & 7.20 (+4.1) & 8.38 (+5.8) & 5.80 (-0.6) & 5.46 (+0.1) & 6.03 (-0.2) & 5.75 (+1.1) & 6.44 (-0.8) & 7.03 (+2.5) \\
+$H=3$ & Aug & 7.20 (+4.1) & 8.38 (+5.8) & 5.72 (+1.0) & 5.78 (+1.7) & 5.81 (+0.9) & 6.03 (+2.1) & 5.75 (-0.2) & 6.80 (+3.4) \\
+$H=2$ & Sep & 7.20 (+4.1) & 8.38 (+5.8) & 5.79 (+0.2) & 5.85 (+0.7) & 5.90 (+1.3) & 6.54 (+3.3) & 5.74 (+0.7) & 7.11 (+2.3) \\
+$H=1$ & Oct & 7.20 (+4.1) & 8.38 (+5.8) & 5.84 (+0.3) & 5.86 (+0.6) & 5.83 (+1.1) & 6.20 (+2.6) & 5.68 (-0.9) & 6.81 (+0.2) \\
+\midrule
+\multicolumn{10}{l}{\textbf{Panel B: 2016 Bumper Season (Favorable Macro)}} \\
+$H=5$ & Jun & 7.87 (-7.3) & 6.10 (-5.5) & 8.19 (-7.5) & 7.16 (-6.6) & 8.39 (-7.8) & 7.08 (-6.6) & 7.83 (-7.0) & 7.44 (-6.5) \\
+$H=4$ & Jul & 7.87 (-7.3) & 6.10 (-5.5) & 6.58 (-5.9) & 5.51 (-4.8) & 6.61 (-6.0) & 5.60 (-5.0) & 7.20 (-6.6) & 5.58 (-4.7) \\
+$H=3$ & Aug & 7.87 (-7.3) & 6.10 (-5.5) & 5.13 (-4.3) & 4.39 (-3.4) & 5.59 (-4.9) & 4.93 (-4.3) & 5.46 (-4.6) & 5.27 (-4.4) \\
+$H=2$ & Sep & 7.87 (-7.3) & 6.10 (-5.5) & 4.22 (-3.1) & 3.81 (-2.6) & 6.15 (-5.5) & 4.67 (-4.0) & 5.31 (-4.5) & 4.40 (-3.5) \\
+$H=1$ & Oct & 7.87 (-7.3) & 6.10 (-5.5) & 4.32 (-3.3) & 3.75 (-2.5) & 5.17 (-4.5) & 4.33 (-3.6) & 5.41 (-4.7) & 4.72 (-4.0) \\
+\bottomrule
+\end{tabular*}
+\vspace{0.2em}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data. Base: expanding-window trend; Full: whole-sample in-sample OLS trend (1951--2025). Values report RMSE with signed bias in parentheses.}}
+\end{table}

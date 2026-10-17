@@ -1,0 +1,54 @@
+\begin{table}[htbp]
+\centering
+\singlespacing
+\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.08}
+\caption{Decile mean point prediction ($\bar{\hat{\epsilon}}$, bu/ac) across realized yield anomaly deciles ($D_1 \dots D_{10}$) for key horizons ($H = 5, 3, 1^*$). Direct comparison between \textbf{Baseline} (Expanding Detrending) and \textbf{Full-Sample} (Oracle Trend).}
+\label{tab:comp_decile_error_performance}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc cc cc cc @{}}
+\toprule
+& \multicolumn{2}{c}{\textbf{Mean Observed}} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{Random Forest}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM (+Lag)}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}
+\textbf{Decile} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\
+\midrule
+\multicolumn{11}{l}{\textbf{Panel A: Early Vegetative Horizon ($H=5$, June 30)}} \\
+$D_{1}$ (Shortfall) & -8.82 & -9.81 & -1.69 & -2.54 & -1.78 & -2.48 & -2.08 & -3.15 & -0.98 & -0.86 \\
+$D_{2}$ & -3.43 & -4.48 & -0.67 & -1.13 & -0.99 & -1.57 & -1.14 & -1.62 & -0.55 & -0.60 \\
+$D_{3}$ & -0.93 & -1.87 & -0.26 & -0.75 & -0.57 & -1.13 & -0.46 & -1.08 & -0.17 & -0.28 \\
+$D_{4}$ & +0.92 & -0.17 & +0.13 & -0.28 & -0.23 & -0.84 & +0.03 & -0.68 & +0.17 & +0.33 \\
+$D_{5}$ & +2.48 & +1.29 & +0.26 & -0.11 & -0.14 & -0.35 & +0.04 & -0.31 & +0.36 & +0.11 \\
+$D_{6}$ & +3.80 & +2.64 & +0.55 & +0.25 & +0.20 & -0.15 & +0.54 & -0.06 & +0.69 & +0.52 \\
+$D_{7}$ & +5.02 & +3.83 & +0.67 & +0.19 & +0.32 & -0.09 & +0.72 & -0.01 & +0.58 & +0.79 \\
+$D_{8}$ & +6.29 & +4.97 & +0.59 & +0.30 & +0.32 & +0.09 & +0.60 & +0.13 & +0.80 & +0.93 \\
+$D_{9}$ & +7.77 & +6.37 & +1.01 & +0.23 & +0.60 & +0.07 & +0.84 & +0.06 & +1.19 & +0.67 \\
+$D_{10}$ (Peak) & +11.01 & +9.23 & +0.77 & +0.58 & +0.18 & -0.06 & +0.37 & +0.07 & +0.79 & +0.15 \\
+\midrule
+\multicolumn{11}{l}{\textbf{Panel B: Pod-Filling Horizon ($H=3$, August 31)}} \\
+$D_{1}$ (Shortfall) & -8.82 & -9.81 & -2.19 & -3.09 & -1.37 & -1.70 & -1.77 & -2.29 & -2.96 & -2.02 \\
+$D_{2}$ & -3.43 & -4.48 & -0.84 & -1.33 & -0.59 & -1.00 & -0.59 & -1.14 & -1.26 & -0.90 \\
+$D_{3}$ & -0.93 & -1.87 & -0.14 & -0.69 & -0.12 & -0.53 & -0.15 & -0.49 & -0.46 & -0.04 \\
+$D_{4}$ & +0.92 & -0.17 & +0.56 & +0.20 & +0.34 & -0.04 & +0.73 & +0.18 & +0.43 & +0.45 \\
+$D_{5}$ & +2.48 & +1.29 & +0.71 & +0.38 & +0.39 & +0.13 & +0.73 & +0.38 & +0.66 & +0.62 \\
+$D_{6}$ & +3.80 & +2.64 & +1.11 & +0.86 & +0.68 & +0.48 & +1.23 & +0.81 & +1.18 & +1.36 \\
+$D_{7}$ & +5.02 & +3.83 & +1.46 & +0.93 & +0.97 & +0.44 & +1.66 & +0.89 & +1.52 & +1.45 \\
+$D_{8}$ & +6.29 & +4.97 & +1.56 & +1.32 & +1.01 & +0.90 & +1.72 & +1.40 & +1.56 & +1.64 \\
+$D_{9}$ & +7.77 & +6.37 & +1.78 & +1.39 & +1.23 & +1.00 & +1.84 & +1.36 & +1.90 & +1.60 \\
+$D_{10}$ (Peak) & +11.01 & +9.23 & +2.33 & +1.91 & +1.29 & +1.02 & +2.11 & +1.63 & +1.99 & +1.54 \\
+\midrule
+\multicolumn{11}{l}{\textbf{Panel C: Harvest Closure Horizon ($H=1^*$, October 31 / Sept 30 MN)}} \\
+$D_{1}$ (Shortfall) & -8.82 & -9.81 & -2.13 & -3.17 & -1.49 & -1.94 & -1.59 & -2.26 & -3.08 & -2.93 \\
+$D_{2}$ & -3.43 & -4.48 & -0.83 & -1.37 & -0.54 & -1.07 & -0.43 & -1.10 & -1.33 & -1.68 \\
+$D_{3}$ & -0.93 & -1.87 & -0.24 & -0.80 & -0.18 & -0.57 & -0.19 & -0.51 & -0.39 & -0.94 \\
+$D_{4}$ & +0.92 & -0.17 & +0.70 & +0.18 & +0.43 & -0.05 & +0.60 & +0.15 & +0.55 & -0.05 \\
+$D_{5}$ & +2.48 & +1.29 & +1.05 & +0.50 & +0.51 & +0.13 & +0.84 & +0.33 & +0.67 & +0.20 \\
+$D_{6}$ & +3.80 & +2.64 & +1.50 & +1.09 & +0.69 & +0.39 & +1.29 & +0.82 & +1.20 & +0.81 \\
+$D_{7}$ & +5.02 & +3.83 & +1.84 & +1.20 & +1.14 & +0.50 & +1.86 & +1.00 & +1.50 & +0.80 \\
+$D_{8}$ & +6.29 & +4.97 & +1.98 & +1.62 & +1.27 & +0.96 & +1.79 & +1.46 & +1.67 & +1.18 \\
+$D_{9}$ & +7.77 & +6.37 & +2.21 & +1.67 & +1.36 & +0.92 & +2.01 & +1.52 & +2.05 & +1.22 \\
+$D_{10}$ (Peak) & +11.01 & +9.23 & +2.86 & +2.25 & +1.61 & +1.12 & +2.33 & +1.82 & +2.24 & +1.09 \\
+\bottomrule
+\end{tabular*}
+\vspace{0.2em}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations ($2{,}025$ evaluations per horizon). Base: expanding-window trend; Full: whole-sample in-sample trend (1951--2025).}}
+\end{table}
