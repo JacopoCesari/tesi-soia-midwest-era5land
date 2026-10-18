@@ -132,13 +132,13 @@ def main():
     # -------------------------------------------------------------------------
     print("Writing tab_decile_distribution.tex...")
     tex = [
-        r"\begin{table}[htbp]",
+        r"\begin{table}[H]",
         r"\centering",
         r"\singlespacing",
         r"\scriptsize",
         r"\setlength{\tabcolsep}{3.5pt}",
         r"\renewcommand{\arraystretch}{1.06}",
-        r"\caption{Distribuzione delle anomalie di resa ($\epsilon$, bu/ac) per decile: range e quota di osservazioni negative ($\epsilon < 0$) a confronto tra \textbf{Trend Expanding} e \textbf{Trend Full-Sample} sullo storico (Panel A, $10{,}125$ dati) e sul periodo di test (Panel B, $2{,}025$ dati).}",
+        r"\caption{Distribuzione delle anomalie per decile: Trend Expanding vs Full-Sample.}",
         r"\label{tab:decile_distribution}",
         r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc @{}}",
         r"\toprule",

@@ -2,7 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage[margin=1.25cm]{geometry}
+\usepackage[margin=1.2cm]{geometry}
 \usepackage{booktabs}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
@@ -11,14 +11,15 @@
 \usepackage{subcaption}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{float}
 
-\renewcommand{\topfraction}{0.95}
-\renewcommand{\bottomfraction}{0.95}
-\renewcommand{\textfraction}{0.05}
-\renewcommand{\floatpagefraction}{0.85}
-\setlength{\floatsep}{5pt plus 2pt minus 2pt}
-\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
-\setlength{\intextsep}{5pt plus 2pt minus 2pt}
+\setlength{\parskip}{2pt}
+\setlength{\itemsep}{0pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+
+\captionsetup{skip=3pt}
 
 \hypersetup{
     colorlinks=true,
@@ -28,144 +29,133 @@
 }
 
 \definecolor{headerblue}{RGB}{20, 40, 70}
-\definecolor{boxbg}{RGB}{246, 248, 251}
-\definecolor{borderblue}{RGB}{185, 205, 225}
-
-\newcommand{\commentbox}[2]{%
-\vspace{0.25em}
-\noindent\fcolorbox{borderblue}{boxbg}{%
-\begin{minipage}{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}
-\vspace{0.12em}
-\textbf{\color{headerblue}#1}\par\vspace{0.12em}
-{\small #2\par}
-\vspace{0.12em}
-\end{minipage}%
-}%
-\vspace{0.25em}
-}
 
 \begin{document}
 
 % =============================================================================
-% MINIMAL HEADER (SENZA AUTORE, TITOLO TESI O DATE INUTILI)
+% PAGINA 1: RATIONALE TESI, TEST DI CHOW E INTRODUZIONE STRESS TEST ORACOLO
 % =============================================================================
-\noindent {\LARGE \textbf{\color{headerblue}Analisi Comparativa del Detrending: Baseline Expanding vs Full-Sample OLS}}\\[0.25em]
-\noindent {\normalsize \textit{Verifica metodologica dell'errore di previsione sui decili di resa e sugli shock climatici}}
-\vspace{0.4em}
-\hrule height 1.0pt
-\vspace{0.6em}
+\noindent {\LARGE \textbf{\color{headerblue}Analisi Comparativa del Detrending: Baseline Expanding vs Full-Sample OLS}}\\[0.2em]
+\noindent {\normalsize \textit{Appunti di confronto empirico tra trend causale e trend totale sui dati del test set}}
+\vspace{0.25em}
+\hrule height 0.8pt
+\vspace{0.45em}
 
-% =============================================================================
-% 1. IL QUESITO METODOLOGICO
-% =============================================================================
-\noindent \textbf{\large 1. Il Quesito Metodologico e l'Ipotesi Testata}
+% -----------------------------------------------------------------------------
+% 1. LA SCELTA DEL DETRENDING NELLA TESI
+% -----------------------------------------------------------------------------
+\noindent \textbf{\large 1. La scelta del detrending nella tesi}
+\vspace{0.15em}
+
+\noindent Per rimuovere il trend tecnologico ho scelto un \textbf{trend lineare OLS per ciascuna contea stimato in expanding window} (finestra iniziale 1951--1980 e aggiornamento causale anno per anno $t < Y$). Tra i modelli testati (Tabella~\ref{tab:thesis_detrending_comp}), il trend lineare è quello che dà il minor errore fuori campione ($5.89$\,bu/ac su $6{,}075$ stime OOS), è preferito dal BIC nel $65.9\%$ delle contee ed evita le oscillazioni ai bordi tipiche dei polinomi. Ho provato anche a stimare il trend con una \textbf{media mobile dell'incremento annuo} ($\hat{\tau}_{c,t} = y_{c,t-1} + \frac{1}{k}\sum_{i=1}^k \Delta y_{c,t-i}$), testando finestre da $3$ a $40$ anni: l'orizzonte che funziona meglio su tutto lo storico è risultato molto lungo ($27$ anni), perché finestre più corte scambiano i cluster di siccità (come il 1983 e il 1988) per crolli del trend, creando forti errori. Valutando su tutto lo storico, vince quindi sempre la massima inerzia.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.06}
+\caption{Confronto delle specificazioni di detrending candidate (analisi della tesi, 1951--2025).}
+\label{tab:thesis_detrending_comp}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c ccc ccc @{}}
+\toprule
+& & \multicolumn{3}{c}{\textbf{Aggregato Regionale ($N=75$)}} & \multicolumn{3}{c}{\textbf{Livello di Contea ($6{,}075$ previsioni OOS)}} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+\textbf{Specificazione} & \textbf{Parametri ($k$)} & \textbf{$R^2$} & \textbf{RSE (bu/ac)} & \textbf{RMSE OOS} & \textbf{$R^2$} & \textbf{RMSE OOS (bu/ac)} & \textbf{\% BIC Favorito} \\
+\midrule
+\textbf{Lineare OLS (Tesi)} & 2 & 0.932 & 2.87 & 3.47 & 0.812 & \textbf{5.89} & \textbf{65.9\%} \\
+Quadratico & 3 & 0.940 & 2.72 & 3.43 & 0.825 & 6.03 & 24.4\% \\
+Cubico & 4 & 0.943 & 2.67 & 3.62 & 0.831 & 6.39 & 9.7\% \\
+Cubic Spline (df=3) & 4 & 0.940 & 2.73 & --- & --- & --- & --- \\
+Hodrick-Prescott ($\lambda=6.25$) & --- & 0.959 & 2.21 & --- & --- & --- & --- \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
 \vspace{0.2em}
+% -----------------------------------------------------------------------------
+% 2. IL DUBBIO SUGLI ANNI RECENTI, TEST DI CHOW E CONFRONTO ORACOLO
+% -----------------------------------------------------------------------------
+\noindent \textbf{\large 2. Il dubbio sugli anni recenti, il test di Chow e il confronto col trend totale}
+\vspace{0.15em}
 
-\noindent Nel capitolo 5 della tesi, i modelli empirici mostrano una sistematica sovrastima durante le annate di forte contrazione della resa: nel decile più sfavorevole ($D_1$), le anomalie reali hanno una media di $-8.8$\,bu/ac, mentre i modelli prevedono tra $-1.7$ e $-3.1$\,bu/ac (un errore positivo di $+6 \dots +7$\,bu/ac).
+\noindent Il dubbio di cui abbiamo parlato riguarda il fatto che negli anni recenti di test (2011--2025) il trend possa aver avuto una dinamica diversa, e che quindi l'expanding window tenda a sottostimare il livello tecnologico portandosi dietro la crescita più lenta dei primi decenni.
 
-\commentbox{Ipotesi di Lavoro ed Esperimento Empirico}{%
-\textbf{Ipotesi:} Questo errore è un artefatto del detrending lineare a finestra mobile (expanding window, stimato solo sui dati passati $t < Y$)? Poiché la crescita storica 1950--1980 è stata più lenta di quella moderna, un trend sottostimato potrebbe alterare artificialmente le anomalie del test set?\\
-\textbf{Test Empirico Eseguito:} Abbiamo ricalcolato l'intera pipeline di stima e predizione out-of-sample (2011--2025, $2{,}025$ osservazioni) per tutti i modelli (ElasticNet, Random Forest, XGBoost, LSTM sequenziale ed Ensemble) detrendizzando con un \textbf{trend lineare OLS calcolato sull'intero campione 1951--2025 (in-sample / oracle)}, che incorpora già la pendenza e il livello tecnologico futuro.
-}
+\noindent Per verificare se negli ultimi anni ci sia stato effettivamente un cambio di regime, ho applicato il \textbf{test di Chow sui break strutturali} su tutto il campione (1951--2025), testando sia un salto di livello (intercetta), sia un cambio di pendenza, sia entrambi (Figura~\ref{fig:chow_break}). Il test individua in modo netto un punto di rottura nel \textbf{2014}: la statistica $F$ tocca il picco a $F = 21.96$ per il salto di livello ($p < 0.0001$, con un salto verso l'alto di $\boldsymbol{+4.83}$\,bu/ac e $\Delta\text{BIC} = -15.64$). Il cambio di pendenza dopo il 2014 invece non risulta significativo ($p = 0.74$): quindi dopo la siccità del 2012 le rese si sono semplicemente alzate di circa $4.8$\,bu/ac rispetto al trend storico.
+
+\noindent Per capire se questo salto spieghi la sovrastima dei modelli nelle annate peggiori ($D_1$), ho ricalcolato tutte le previsioni del test set usando un \textbf{trend lineare OLS calcolato su tutto il periodo 1951--2025 (trend oracolo/totale)}. Ovviamente questo trend non si può usare nella tesi perché sfrutta dati futuri, ma serve come termine di confronto privo di ritardo per isolare l'effetto del detrending rispetto alle previsioni meteorologiche.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_chow_structural_break.pdf}
+    \caption{Test di Chow per break strutturale (1951--2025). (a) Profilo della statistica $F$ lungo gli anni candidati per rottura di livello, trend e combinata. (b) Confronto tra trend lineare unico e modello con salto di livello al 2014 ($+4.83$\,bu/ac).}
+    \label{fig:chow_break}
+\end{figure}
+
+\clearpage
 
 % =============================================================================
-% 2. DISTRIBUZIONE DELLE RESE E DELLE ANOMALIE (10.000 DATI vs TEST)
+% PAGINA 2: DISTRIBUZIONE ANOMALIE
 % =============================================================================
-\vspace{0.5em}
-\noindent \textbf{\large 2. Distribuzione delle Rese e delle Anomalie: Storico Completo vs Periodo di Test}
-\vspace{0.2em}
+\noindent \textbf{\large 3. Come cambia la distribuzione delle anomalie}
+\vspace{0.15em}
 
-\noindent La Tabella~\ref{tab:decile_distribution} e la Figura~\ref{fig:decile_dist} confrontano la distribuzione delle anomalie tra Trend Expanding e Trend Full-Sample sia sull'intero storico di $10{,}125$ dati (Panel A) sia sul periodo di test out-of-sample di $2{,}025$ osservazioni (Panel B).
+\noindent Sull'intero storico (1951--2025) la forma della distribuzione è praticamente identica tra i due metodi, con la classica asimmetria negativa delle rese agricole ($41.6\%$ vs $43.6\%$ di anomalie negative). Negli anni di test (2011--2025), il trend in expanding sposta la media delle anomalie a $+2.41$\,bu/ac rispetto a $+1.20$\,bu/ac del trend totale, proprio a causa del ritardo nell'inseguire il livello recente (Tabella~\ref{tab:decile_distribution} e Figura~\ref{fig:decile_dist}). La conformazione della coda negativa però resta coincidente.
 
 \input{tables/tab_decile_distribution.tex}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.88\textwidth]{figures/fig_decile_distribution_comparison.pdf}
-    \caption{Distribuzione delle anomalie di resa ($\epsilon$, bu/ac): confronto tra Trend Expanding e Trend Full-Sample sull'intero storico (1951--2025, sinistra) e sul periodo di test out-of-sample (2011--2025, destra). (a, b) Densità empirica con indicazione delle medie. (c, d) Valore medio dell'anomalia per decile ($D_1 \dots D_{10}$).}
+    \caption{Distribuzione delle anomalie ($\epsilon$, bu/ac): confronto tra Trend Expanding e Full-Sample sullo storico (1951--2025, sinistra) e sul test set (2011--2025, destra). (a, b) Densità empirica. (c, d) Media per decile ($D_1 \dots D_{10}$).}
     \label{fig:decile_dist}
 \end{figure}
 
-\commentbox{Evidenze Empiriche sulla Distribuzione delle Anomalie}{%
-\begin{enumerate}
-    \item \textbf{Stabilità nello Storico vs Shift nel Test Set:} Sull'intero storico di $10{,}125$ osservazioni (Panel A), la differenza tra Trend Expanding e Full-Sample è contenuta: la quota di anomalie negative varia solo dal 41.6\% al 43.6\%, e la media passa da $+0.45$ a $-0.00$\,bu/ac. Al contrario, nel periodo di test 2011--2025 (Panel B), l'assenza di dati futuri nel Baseline fa scendere la quota negativa al 29.8\% (ben 7 decili su 10 contengono solo anomalie positive), mentre nel Full-Sample risale al 36.1\%.
-    \item \textbf{Cause Strutturali dell'Asimmetria:}
-    \begin{itemize}
-        \item \textit{Asimmetria Biofisica Naturale (Negative Skewness):} L'anomalia reale presenta una marcata asimmetria negativa strutturale (skewness $-0.88$ nel Full-Sample, $-0.66$ nell'Expanding). Gli shock climatici estremi (siccità) generano crolli rari ma devastanti (fino a $-25$\,bu/ac), mentre le annate favorevoli distribuiscono guadagni frequenti ma moderati ($+3 \dots +8$\,bu/ac).
-        \item \textit{Ritardo Dinamico del Trend Expanding nel Test Set:} Il trend calcolato solo sul passato sconta la crescita pre-1980 più lenta, sottostimando il potenziale genetico moderno di circa $+1.2$\,bu/ac e traslando la media del test set a $+2.41$\,bu/ac (rispetto a $+1.20$\,bu/ac del Full-Sample).
-    \end{itemize}
-    \item \textbf{Concentrazione Temporale di $D_1$:} Il decile delle perdite estreme ($D_1$) è fortemente concentrato: le sole annate 2011, 2012 e 2013 costituiscono oltre il 56\% di tutte le osservazioni di $D_1$ delle 135 contee (con la siccità del 2012 che pesa per il 28\% da sola).
-\end{enumerate}
-}
+\clearpage
 
 % =============================================================================
-% 3. CALIBRAZIONE PER DECILI ED ERRORE MEDIO
+% PAGINA 3: CALIBRAZIONE DECILI ED ERRORE DI PREVISIONE (SHRINKAGE L2)
 % =============================================================================
-\vspace{0.5em}
-\noindent \textbf{\large 3. Calibrazione per Decili ed Errore Medio di Previsione ($\bar{\hat{\epsilon}} - \bar{\epsilon}$)}
-\vspace{0.2em}
+\noindent \textbf{\large 4. Errori di previsione e calibrazione sui decili}
+\vspace{0.15em}
 
-\noindent La Tabella~\ref{tab:comp_decile_error_performance_short} riporta l'errore contabile con segno ($\bar{e} = \bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/ac) per ciascun decile a chiusura raccolto ($H=1^*$). La Figura~\ref{fig:decile_calibration_comp} confronta graficamente le curve di calibrazione e il profilo dell'errore.
+\noindent Il risultato principale è che anche usando il trend oracolo totale la sovrastima nel decile peggiore ($D_1$) rimane praticamente uguale ($+6.96$ con l'oracolo contro $+6.46$\,bu/ac col trend della tesi, Tabella~\ref{tab:comp_decile_error_performance_short} e Figura~\ref{fig:decile_calibration_comp}). 
+
+\noindent Questo dimostra che la sovrastima nelle annate peggiori non è un errore di detrending, ma deriva dalle proprietà statistiche della stima: poiché le variabili meteo a livello di contea spiegano circa un terzo della varianza ($R^2 \approx 0.32$), qualsiasi modello ottimizzato con perdita quadratica contrae fisiologicamente la previsione verso la media ($\hat{\epsilon} \approx 0.32 \times (-10) \approx -3.2$\,bu/ac). La parte restante riflette rumore locale non meteorologico.
 
 \input{tables/tab_decile_error_performance_comparison.tex}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.82\textwidth]{figures/fig_decile_calibration_and_residuals_comparison.pdf}
-    \caption{Confronto diretto Baseline vs Full-Sample a chiusura raccolto $H^*(s)$ (2011--2025). (a) Curva di calibrazione: anomalia osservata vs anomalia prevista sui 10 decili (la linea tratteggiata a 45° indica la calibrazione perfetta). (b) Errore medio di previsione con segno ($\bar{\hat{\epsilon}} - \bar{\epsilon}$) decile per decile.}
+    \includegraphics[width=0.84\textwidth]{figures/fig_decile_calibration_and_residuals_comparison.pdf}
+    \caption{Calibrazione e residui a chiusura raccolto $H=1^*$ (2011--2025): Baseline vs Full-Sample. (a) Anomalia osservata vs prevista sui decili. (b) Errore medio con segno ($\bar{\hat{\epsilon}} - \bar{\epsilon}$).}
     \label{fig:decile_calibration_comp}
 \end{figure}
 
-\commentbox{Interpretazione Econometrica della Sovrastima sulle Code ($L_2$ Shrinkage)}{%
-\begin{enumerate}
-    \item \textbf{Persistenza della Sovrastima in $D_1$:} In $D_1$, l'anomalia reale è $-9.81$\,bu/ac nel Full-Sample (vs $-8.82$\,bu/ac nel Base). Le previsioni rimangono attorno a $-2.3 \dots -3.2$\,bu/ac. Di conseguenza, l'errore in $D_1$ rimane pari a $+6.6 \dots +7.5$\,bu/ac. Sui decili negativi ($D_1 \dots D_3$), il Baseline presenta errori uguali o inferiori rispetto al Full-Sample (evidenziati in grassetto nella Tabella~\ref{tab:comp_decile_error_performance_short}).
-    \item \textbf{Meccanismo Teorico dello Shrinkage $L_2$:}
-    Sotto funzione di perdita quadratica (MSE), la previsione ottima è l'aspettativa condizionata $\mathbb{E}[y \mid X]$. Poiché le variabili meteo a livello di singola contea spiegano circa il 32\% della varianza ($R^2 \approx 0.32$), la regressione tra predizione e valore reale ha pendenza $\approx 0.32$:
-    \begin{equation*}
-        \hat{\epsilon} \approx R^2 \cdot \epsilon_{\text{obs}} \approx 0.32 \times (-10) \approx -3.2\text{ bu/ac}
-    \end{equation*}
-    \item \textbf{Natura Probabilistica della Risposta Ottima:} Un modello $L_2$ che forzasse la stima a $-10$\,bu/ac sulla base del meteo verrebbe pesantemente penalizzato al quadrato nel 68\% di varianza non meteorologica (grandine locale, drenaggi, semine tardive). La prudenza del modello è la risposta probabilistica ottima al rumore residuo, non un difetto del detrending.
-\end{enumerate}
-}
+\clearpage
 
 % =============================================================================
-% 4. RISOLUZIONE MACRO-REGIONALE: I 15 ANNI ORDINATI
+% PAGINA 4: RISOLUZIONE MACRO-REGIONALE E PROGRESSIONE MULTI-ORIZZONTE
 % =============================================================================
-\vspace{0.5em}
-\noindent \textbf{\large 4. Risoluzione Macro-Regionale: I 15 Anni di Test Ordinati per Livello di Resa}
-\vspace{0.2em}
+\noindent \textbf{\large 5. Previsioni aggregate a livello regionale (15 anni di test)}
+\vspace{0.15em}
 
-\noindent La Tabella~\ref{tab:yearly_raw_yields} valuta le previsioni aggregate di resa fisica ($\bar{\hat{y}} = \bar{\tau} + \bar{\hat{\epsilon}}$, bu/ac) facendo il pooling su tutte le 135 contee per ciascun anno, ordinando dal raccolto peggiore (2012) al migliore (2021).
+\noindent Quando aggreghiamo le previsioni sulle 135 contee, gli errori locali si compensano (Tabella~\ref{tab:yearly_raw_yields}). Nello shock del 2012 la media dei modelli con il trend della tesi prevede $43.59$\,bu/ac contro $43.55$\,bu/ac reale, catturando quasi perfettamente il crollo e facendo persino meglio del trend totale sia in errore medio (MAE $2.00$ vs $1.81$\,bu/ac) sia in correlazione interannuale ($r = 0.943$ vs $0.928$).
 
 \input{tables/tab_yearly_raw_yields.tex}
 
-\commentbox{Aggregazione Spaziale e Risoluzione degli Shock Sistemici}{%
-\begin{enumerate}
-    \item \textbf{Cancellazione del Rumore Idiosincratico:} Mentre i decili a livello di singola contea isolano la varianza microclimatica non spiegabile, aggregando su tutte le 135 contee il rumore locale si cancella per la legge dei grandi numeri ($1/\sqrt{N}$).
-    \item \textbf{Previsione dello Shock da Siccità del 2012:}
-    Nel 2012 (resa reale regionale $43.55$\,bu/ac, con trend secolare a $47.62$\,bu/ac Base e $49.34$\,bu/ac Full):
-    \begin{itemize}
-        \item \textit{Baseline Expanding:} ElasticNet prevede \textbf{43.80}\,bu/ac (errore $+0.25$\,bu/ac), LSTM prevede \textbf{42.63}\,bu/ac, Ensemble prevede \textbf{43.22}\,bu/ac (errore $-0.33$\,bu/ac). La Media dei Modelli prevede \textbf{43.59}\,bu/ac (errore $+0.04$\,bu/ac).
-        \item \textit{Full-Sample Detrending:} ElasticNet prevede 44.14\,bu/ac, LSTM prevede \textbf{43.78}\,bu/ac, Ensemble prevede 43.96\,bu/ac. La Media dei Modelli prevede 44.50\,bu/ac (errore $+0.95$\,bu/ac).
-    \end{itemize}
-    Su 3 modelli su 4, \textbf{il Baseline Expanding batte il Full-Sample} (in grassetto). A livello macro-regionale, i modelli catturano oltre il \textbf{95\% dello shock climatico avverso}, con un errore medio inferiore a \textbf{0.4\,bu/ac} ($< 1\%$).
-    \item \textbf{Implicazioni per l'Accuratezza di Filiera:} L'apparente sottostima nei decili è un effetto statistico dell'ordinamento per singola contea; a livello di mercato aggregato, il sistema individua i crolli produttivi con elevata accuratezza.
-\end{enumerate}
-}
+\vspace{0.35em}
+% -----------------------------------------------------------------------------
+% 6. PROGRESSIONE MULTI-ORIZZONTE
+% -----------------------------------------------------------------------------
+\noindent \textbf{\large 6. Andamento lungo i 12 orizzonti previsivi}
+\vspace{0.15em}
 
-% =============================================================================
-% 5. PROGRESSIONE MULTI-ORIZZONTE
-% =============================================================================
-\vspace{0.5em}
-\noindent \textbf{\large 5. Progressione Multi-Orizzonte ($H=11 \dots 1$) e Gerarchia dei Modelli}
-\vspace{0.2em}
+\noindent Anche guardando l'evoluzione mese per mese durante la stagione (Figura~\ref{fig:r2_progression_comp}), il comportamento e la gerarchia dei modelli non cambiano tra i due trend: il segnale meteo compare ad agosto ($H=3$) e i modelli migliori restano stabilmente l'Ensemble e l'LSTM.
 
-\noindent La Figura~\ref{fig:r2_progression_comp} illustra la progressione temporale di $R^2_{\text{OOS}}$ e RMSE lungo i dodici orizzonti di previsione.
-
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.82\textwidth]{figures/fig_r2_horizon_progression_comparison.pdf}
-    \caption{Progressione multi-orizzonte dell'accuratezza out-of-sample ($R^2_{\text{OOS}}$ e RMSE) a confronto tra Baseline Expanding (linee tratteggiate) e Full-Sample Detrending (linee continue) per lead time decrescenti ($H = 11 \dots 1$, 2011--2025).}
+    \caption{Progressione multi-orizzonte di $R^2_{\text{OOS}}$ e RMSE: Baseline Expanding (tratteggio) vs Full-Sample (linea continua) per lead time decrescenti ($H=11 \dots 1$, 2011--2025).}
     \label{fig:r2_progression_comp}
 \end{figure}
 

@@ -119,3 +119,27 @@ I modelli data-driven identificano correlazioni spurie pre-stagionali o rifletto
 ### Verdetto Super Partes: ACCETTATA & FORMALIZZATA
 - L'allineamento tra pesi dell'attenzione algoritmica e la biologia vegetale classica è perfetto ed esclude l'apprendimento di artefatti spuri.
 - **Esito operativo**: Promossa in [`consolidated_memory.md`](./consolidated_memory.md) e integrata nel Capitolo 5 (Sezione Feature Importance) e Capitolo 6 (Spiegabilità biologica).
+
+---
+
+## 6. Ipotesi 6: Break Strutturale Tecnologico Recente (2014) vs. Look-Ahead Bias
+
+### Riflessione Iniziale
+Il bias negativo osservato nelle annate avverse recenti ($D_1$ nel test set 2011–2025) e la tendenza a sovrastimare le rese nei minimi storici derivano da un'inadeguatezza del machine learning meteorologico o da un cambio di regime tecnologico nel trend che l'expanding window OLS sconta con fisiologico ritardo causale?
+
+### Verifica Oggettiva con i Numeri
+- **Test Econometrico di Chow (1951–2025)**:
+  - Serie trend-stazionaria $I(0)$ verificata tramite Dickey-Fuller Aumentato ($p < 0.001$).
+  - Il test di Chow sequenziale individua un picco univoco di rottura di livello nel **2014** ($F = 21.96$ vs critico $3.97$, $p < 0.0001$, $\Delta\text{BIC} = -15.64$), con un salto istantaneo di $\boldsymbol{+4.83}$\,bu/ac. Il cambio di pendenza post-2014 è statisticamente non significativo ($p = 0.74$).
+- **Stress-Test Oracolo (Full-Sample OLS 1951–2025)**:
+  - Eliminando il ritardo di stima tramite il trend totale calcolato ex-post su 75 anni, il bias predittivo sul decile $D_1$ si dimezza (da $-7.26$ a $-3.65$\,bu/ac).
+  - La quota residua di attenuazione (circa $3.5$\,bu/ac) è spiegata dal teorico shrinkage condizionale $L_2$ ($R^2 \approx 0.32$), che contrae le stime verso la media per minimizzare l'errore quadratico in presenza di rumore non osservato.
+
+### Riscontro della Letteratura Econometrica ed Agronomica
+- **Chow (1960); Stock & Watson (1996)**: Nei processi di forecasting out-of-sample in espansione temporale, una rottura strutturale non può essere stimata in tempo reale negli anni immediatamente successivi ($t = T^*+1, T^*+2$) senza incorrere in look-ahead bias o overfitting estremo su un campione post-rottura microscopico ($N \le 2$).
+- **Diffusione Tecnologica USDA**: Il periodo 2013–2015 coincide con l'adozione su larga scala di sementi di soia di seconda generazione (Intacta / Roundup Ready 2 Yield) e pratiche avanzate di drenaggio di precisione, che hanno innalzato il plateau di resa media del Midwest.
+
+### Verdetto Super Partes: ACCETTATA & FORMALIZZATA
+- L'esistenza della rottura strutturale nel 2014 è provata oggettivamente e spiega la componente non meteorologica del ritardo predittivo recente. Tuttavia, la correzione ex-ante è metodologicamente illegittima in un contesto operativo. L'expanding window OLS rimane confermato come unico protocollo ermetico e replicabile.
+- **Esito operativo**: Promossa in [`consolidated_memory.md`](./consolidated_memory.md) (Sezione 2.4), documentata nel report per il relatore e inserita come punto cardine della discussione econometrica nei Capitoli 3, 4 e 6.
+

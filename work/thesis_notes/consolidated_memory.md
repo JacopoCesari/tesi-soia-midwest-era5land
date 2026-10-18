@@ -57,6 +57,20 @@ $$y_{c,Y} = \tau_{c,Y} + \epsilon_{c,Y}$$
 - *Meccanismo di Errore*: L'ingresso e l'uscita di shock storici severi (es. siccità 1988, alluvione 1993) dalla finestra mobile fa ruotare artificiosamente la pendenza $\hat{\beta}$ anno su anno. Questo inietta nel target un rumore stocastico non meteorologico che trae in inganno i modelli ad alta capacità (con Rolling OLS, XGBoost perde il 12% di $R^2$ e LSTM crolla a valori negativi).
 - *Decisione*: L'**Expanding Linear OLS train-only** è confermato come lo standard metodologico insostituibile.
 
+### 2.4 Analisi Econometrica del Break Strutturale (Test di Chow 1951–2025)
+A fronte del dubbio metodologico circa la dinamica tecnologica nell'ultimo decennio (2011–2025) e la tendenza del trend causale expanding a ritardare sui livelli assoluti recenti, è stato condotto un test econometrico formale di rottura strutturale (Chow Test) sull'intero campione storico:
+- **Verifica Preliminare di Stazionarietà**: Il test di Dickey-Fuller Aumentato (ADF) applicato con specifica con costante e trend deterministico ($y_t = \mu + \beta t + \phi y_{t-1} + \dots$) rigetta categoricamente l'ipotesi nulla di radice unitaria ($p < 0.001$). La serie della resa aggregata è dunque un processo trend-stazionario $I(0)$, validando l'applicazione delle distribuzioni $F$ standard del test di Chow senza incorrere in distorsioni spurie da non-stazionarietà stocastica.
+- **Specificazione del Modello con Break a Data Incognita ($T^*$)**:
+  $$y_t = \alpha + \beta t + \delta D_t(T^*) + \gamma (t - T^*) D_t(T^*) + \varepsilon_t \quad \text{con } D_t(T^*) = \mathbb{I}(t \ge T^*)$$
+  Testato sequenzialmente su tutti i possibili punti di rottura $T^* \in [1966, 2021]$ (trimming $\ge 15$ anni di campionamento iniziale):
+  1. *Level Break Puro ($\delta \ne 0, \gamma = 0$, 1 df)*: La statistica $F$ tocca il massimo assoluto in corrispondenza del **2014**, con $F = 21.96$ a fronte di una soglia critica al 5\% di $F_{1, 71} = 3.97$ ($p < 0.0001$). Il modello stima un salto istantaneo verso l'alto dell'intercetta di $\boldsymbol{+4.83}$\,bu/ac ($t = 4.69$, $p < 0.001$) e una riduzione di informazione $\Delta\text{BIC} = -15.64$.
+  2. *Trend Break Puro ($\delta = 0, \gamma \ne 0$, 1 df)*: Il picco si registra nel 2013 ($F = 16.71, p < 0.0001$).
+  3. *Break Combinato ($\delta \ne 0, \gamma \ne 0$, 2 df)*: Il picco si colloca nel 2013 ($F = 11.23$, soglia critica $F_{2, 70} = 3.13, p < 0.0001$).
+  4. *Invarianza della Pendenza*: Condizionato al salto di livello nel 2014, il coefficiente di cambio di pendenza post-2014 non è statisticamente significativo ($p = 0.74$). La rottura strutturale rappresenta dunque uno **shift parallelo del potenziale biologico-tecnologico** (+4.8 bu/ac dopo il 2012) e non un'accelerazione del tasso di crescita marginale annuo.
+- **Verdetto Epistemologico e Validazione della Baseline Expanding**:
+  - *Ex-post vs Ex-ante*: L'esistenza del break strutturale nel 2014 è statisticamente acclarata a posteriori su tutto il campione 1951–2025. Tuttavia, in uno scenario previsionale rigorosamente causale (come il nostro test set 2011–2025), un previsore nel 2014 o 2015 dispone di 0–1 osservazioni post-break: è impossibile calibrare o identificare un cambio di regime in tempo reale senza massiccio look-ahead leakage.
+  - *Ruolo nell'Architettura*: Il test di Chow dimostra rigorosamente l'origine della lieve sottostima del trend expanding OLS negli anni 2014–2025, legittimando lo stress-test con trend totale (oracolo) per disaccoppiare l'errore di trend dall'accuratezza meteorologica dei modelli, pur confermando che l'expanding OLS rimane l'unica procedura scientificamente corretta per un framework previsionale operativo.
+
 ---
 
 ## 3. Spazio delle Feature, Ingegnerizzazione Bioclimatica e Setup Multi-Orizzonte

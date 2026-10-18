@@ -51,4 +51,6 @@ work/thesis_notes/
 | :--- | :--- |
 | [`university_thesis_guide.pdf`](./university_thesis_guide.pdf) | **Vademecum Ufficiale del Docente Relatore:** Linee guida formali di Ateneo (limite nominale 100.000 caratteri, struttura OneDrive, regole per tabelle e figure con `\textit{Source: ...}`). |
 | [`count_thesis_characters.py`](./count_thesis_characters.py) | **Script di Conteggio Ufficiale:** Script Python che calcola i caratteri effettivi del testo LaTeX escludendo tabelle, figure, equazioni e bibliografia secondo il Vademecum (*il budget è un vincolo amministrativo da verificare a consuntivo, non una guida alla stesura dei contenuti*). |
+| [`run_chow_test.py`](./run_chow_test.py) | **Test Econometrico di Chow:** Script standalone per la stima del test di rottura strutturale (Chow Test 1951–2025), verifica stazionarietà ADF e generazione del grafico a due pannelli [`fig_chow_structural_break.pdf`](./fig_chow_structural_break.pdf). |
+
 

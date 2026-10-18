@@ -120,13 +120,13 @@ def generate_table_2():
         }
         
     tex = [
-        r"\begin{table}[htbp]",
+        r"\begin{table}[H]",
         r"\centering",
         r"\singlespacing",
         r"\scriptsize",
         r"\setlength{\tabcolsep}{2.2pt}",
         r"\renewcommand{\arraystretch}{1.08}",
-        r"\caption{Errore medio di previsione per decile ($\bar{e} = \bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/ac) a chiusura raccolto $H = 1^*$. Confronto tra \textbf{Baseline (Expanding)} e \textbf{Full-Sample}. Nelle righe riassuntive: Bias Medio, MAE, RMSE e Pearson $r$ sui decili. In \textbf{grassetto} la specificazione più performante.}",
+        r"\caption{Errore medio per decile ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/ac) a chiusura raccolto $H = 1^*$. In grassetto la specificazione con errore minore.}",
         r"\label{tab:comp_decile_error_performance_short}",
         r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc cc cc cc cc @{}}",
         r"\toprule",
@@ -303,13 +303,13 @@ def generate_table_3():
         }
         
     tex = [
-        r"\begin{table}[htbp]",
+        r"\begin{table}[H]",
         r"\centering",
         r"\singlespacing",
         r"\scriptsize",
         r"\setlength{\tabcolsep}{2.0pt}",
         r"\renewcommand{\arraystretch}{1.06}",
-        r"\caption{Previsioni aggregate regionali di resa fisica ($\bar{\hat{y}} = \bar{\tau} + \bar{\hat{\epsilon}}$, bu/ac) a chiusura raccolto $H^*(s)$ sui 15 anni di test. Confronto tra \textbf{Baseline (Expanding)} e \textbf{Full-Sample}. Nelle righe finali: Media, MAE, RMSE e Pearson $r$ sui 15 anni. In \textbf{grassetto} la specificazione più vicina al reale.}",
+        r"\caption{Previsioni regionali aggregate di resa ($\bar{\hat{y}}$, bu/ac) sui 15 anni di test. In grassetto il valore più vicino al dato reale.}",
         r"\label{tab:yearly_raw_yields}",
         r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} c c cc cc cc cc cc cc @{}}",
         r"\toprule",
@@ -342,16 +342,6 @@ def generate_table_3():
         tex.append(f"{y} & {y_obs:.2f} & {tau_b_s} & {tau_f_s} & {en_b_s} & {en_f_s} & {xgb_b_s} & {xgb_f_s} & {ls_b_s} & {ls_f_s} & {ens_b_s} & {ens_f_s} & {ml_b_s} & {ml_f_s} \\\\")
         
     tex.append(r"\midrule")
-    
-    # 1. Media
-    mean_obs = obs.mean()
-    m_strs = []
-    for tag in ["tau", "en", "xgb", "ls", "ens", "ml"]:
-        vb = metrics[tag]["mean_b"]
-        vf = metrics[tag]["mean_f"]
-        s_b, s_f = fmt_pred(vb, vf, mean_obs)
-        m_strs.extend([s_b, s_f])
-    tex.append(f"\\textbf{{Media}} & {mean_obs:.2f} & " + " & ".join(m_strs) + r" \\")
     
     # 2. MAE
     mae_strs = []
