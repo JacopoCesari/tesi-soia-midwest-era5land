@@ -2,51 +2,51 @@
 \centering
 \singlespacing
 \footnotesize
-\setlength{\tabcolsep}{3.2pt}
+\setlength{\tabcolsep}{3.0pt}
 \renewcommand{\arraystretch}{1.08}
-\caption{Out-of-sample mean point prediction ($\bar{\hat{\epsilon}}$, bu/ac) by realized yield anomaly decile across key phenological horizons ($H = 5, 3, 1^*$, 2011--2025, $2{,}025$ evaluations per horizon). All machine learning estimators evaluate the integrated specification (+Lag $\epsilon_{t-1}$). Bold indicates prediction closest to mean observed anomaly.}
+\caption{Out-of-sample mean point prediction ($\bar{\hat{\epsilon}}$, bu/ac) by realized yield anomaly decile across key phenological horizons ($H = 5, 3, 1^*$, 2011--2025, $2{,}025$ evaluations per horizon). All machine learning estimators evaluate the integrated specification (+Lag $\epsilon_{t-1}$). Ens: 50/50 convex blend of ElasticNet (+Lag) and LSTM (+Lag). Bold indicates prediction closest to mean observed anomaly.}
 \label{tab:decile_error_performance}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c c c c c c @{}}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l c c c c c c c @{}}
 \toprule
-\textbf{Decile} & \textbf{Range (bu/ac)} & \textbf{Mean Obs.} & \textbf{ENet} & \textbf{RF} & \textbf{XGB} & \textbf{LSTM} \\
+\textbf{Decile} & \textbf{Range (bu/ac)} & \textbf{Mean Obs.} & \textbf{ENet} & \textbf{RF} & \textbf{XGB} & \textbf{LSTM} & \textbf{Ens} \\
 \midrule
-\multicolumn{7}{l}{\textbf{Panel A: Early Vegetative Horizon} ($H=5$, June 30)} \\
-$D_1$ (Severe Shortfall) & $[-22.85, -5.22]$ & $-8.82$ & $-1.74$ & $-1.66$ & \textbf{-2.15} & $-0.98$ \\
-$D_2$                    & $[-5.15, -1.95]$  & $-3.43$ & $-0.79$ & $-0.99$ & \textbf{-1.16} & $-0.55$ \\
-$D_3$                    & $[-1.92, +0.02]$  & $-0.93$ & $-0.38$ & \textbf{-0.63} & $-0.59$ & $-0.17$ \\
-$D_4$                    & $[+0.02, +1.71]$  & $+0.92$ & $-0.04$ & $-0.23$ & $-0.16$ & \textbf{+0.17} \\
-$D_5$                    & $[+1.72, +3.15]$  & $+2.48$ & $+0.10$ & $-0.11$ & $-0.18$ & \textbf{+0.36} \\
-$D_6$                    & $[+3.16, +4.40]$  & $+3.80$ & $+0.36$ & $+0.13$ & $+0.32$ & \textbf{+0.69} \\
-$D_7$                    & $[+4.42, +5.59]$  & $+5.02$ & $+0.52$ & $+0.27$ & $+0.56$ & \textbf{+0.58} \\
-$D_8$                    & $[+5.60, +6.83]$  & $+6.29$ & $+0.39$ & $+0.23$ & $+0.39$ & \textbf{+0.80} \\
-$D_9$                    & $[+6.84, +8.83]$  & $+7.77$ & $+0.80$ & $+0.50$ & $+0.67$ & \textbf{+1.19} \\
-$D_{10}$ (Peak Yield)    & $[+8.83, +22.93]$ & $+11.01$ & $+0.52$ & $+0.07$ & $+0.06$ & \textbf{+0.79} \\
+\multicolumn{8}{l}{\textbf{Panel A: Early Vegetative Horizon} ($H=5$, June 30)} \\
+$D_1$ (Severe Shortfall) & $[-22.85, -5.22]$ & $-8.82$ & $-1.74$ & $-1.66$ & \textbf{-2.15} & $-0.98$ & $-1.36$ \\
+$D_2$                    & $[-5.15, -1.95]$  & $-3.43$ & $-0.79$ & $-0.99$ & \textbf{-1.16} & $-0.55$ & $-0.67$ \\
+$D_3$                    & $[-1.92, +0.02]$  & $-0.93$ & $-0.38$ & \textbf{-0.63} & $-0.59$ & $-0.17$ & $-0.27$ \\
+$D_4$                    & $[+0.02, +1.71]$  & $+0.92$ & $-0.04$ & $-0.23$ & $-0.16$ & \textbf{+0.17} & $+0.07$ \\
+$D_5$                    & $[+1.72, +3.15]$  & $+2.48$ & $+0.10$ & $-0.11$ & $-0.18$ & \textbf{+0.36} & $+0.23$ \\
+$D_6$                    & $[+3.16, +4.40]$  & $+3.80$ & $+0.36$ & $+0.13$ & $+0.32$ & \textbf{+0.69} & $+0.52$ \\
+$D_7$                    & $[+4.42, +5.59]$  & $+5.02$ & $+0.52$ & $+0.27$ & $+0.56$ & \textbf{+0.58} & $+0.55$ \\
+$D_8$                    & $[+5.60, +6.83]$  & $+6.29$ & $+0.39$ & $+0.23$ & $+0.39$ & \textbf{+0.80} & $+0.60$ \\
+$D_9$                    & $[+6.84, +8.83]$  & $+7.77$ & $+0.80$ & $+0.50$ & $+0.67$ & \textbf{+1.19} & $+0.99$ \\
+$D_{10}$ (Peak Yield)    & $[+8.83, +22.93]$ & $+11.01$ & $+0.52$ & $+0.07$ & $+0.06$ & \textbf{+0.79} & $+0.66$ \\
 \midrule
-\multicolumn{7}{l}{\textbf{Panel B: Pod-Filling Horizon} ($H=3$, August 31)} \\
-$D_1$ (Severe Shortfall) & $[-22.85, -5.22]$ & $-8.82$ & $-2.22$ & $-1.65$ & $-1.67$ & \textbf{-2.96} \\
-$D_2$                    & $[-5.15, -1.95]$  & $-3.43$ & $-0.91$ & $-0.67$ & $-0.67$ & \textbf{-1.26} \\
-$D_3$                    & $[-1.92, +0.02]$  & $-0.93$ & $-0.21$ & $-0.30$ & $-0.25$ & \textbf{-0.46} \\
-$D_4$                    & $[+0.02, +1.71]$  & $+0.92$ & $+0.45$ & $+0.32$ & \textbf{+0.60} & $+0.43$ \\
-$D_5$                    & $[+1.72, +3.15]$  & $+2.48$ & $+0.60$ & $+0.37$ & \textbf{+0.66} & \textbf{+0.66} \\
-$D_6$                    & $[+3.16, +4.40]$  & $+3.80$ & $+0.96$ & $+0.60$ & $+1.08$ & \textbf{+1.18} \\
-$D_7$                    & $[+4.42, +5.59]$  & $+5.02$ & $+1.35$ & $+0.97$ & \textbf{+1.61} & $+1.52$ \\
-$D_8$                    & $[+5.60, +6.83]$  & $+6.29$ & $+1.43$ & $+1.05$ & $+1.49$ & \textbf{+1.56} \\
-$D_9$                    & $[+6.84, +8.83]$  & $+7.77$ & $+1.64$ & $+1.23$ & $+1.59$ & \textbf{+1.90} \\
-$D_{10}$ (Peak Yield)    & $[+8.83, +22.93]$ & $+11.01$ & \textbf{+2.16} & $+1.23$ & $+1.78$ & $+1.99$ \\
+\multicolumn{8}{l}{\textbf{Panel B: Pod-Filling Horizon} ($H=3$, August 31)} \\
+$D_1$ (Severe Shortfall) & $[-22.85, -5.22]$ & $-8.82$ & $-2.22$ & $-1.65$ & $-1.67$ & \textbf{-2.96} & $-2.59$ \\
+$D_2$                    & $[-5.15, -1.95]$  & $-3.43$ & $-0.91$ & $-0.67$ & $-0.67$ & \textbf{-1.26} & $-1.09$ \\
+$D_3$                    & $[-1.92, +0.02]$  & $-0.93$ & $-0.21$ & $-0.30$ & $-0.25$ & \textbf{-0.46} & $-0.34$ \\
+$D_4$                    & $[+0.02, +1.71]$  & $+0.92$ & $+0.45$ & $+0.32$ & \textbf{+0.60} & $+0.43$ & $+0.44$ \\
+$D_5$                    & $[+1.72, +3.15]$  & $+2.48$ & $+0.60$ & $+0.37$ & \textbf{+0.66} & \textbf{+0.66} & $+0.63$ \\
+$D_6$                    & $[+3.16, +4.40]$  & $+3.80$ & $+0.96$ & $+0.60$ & $+1.08$ & \textbf{+1.18} & $+1.07$ \\
+$D_7$                    & $[+4.42, +5.59]$  & $+5.02$ & $+1.35$ & $+0.97$ & \textbf{+1.61} & $+1.52$ & $+1.44$ \\
+$D_8$                    & $[+5.60, +6.83]$  & $+6.29$ & $+1.43$ & $+1.05$ & $+1.49$ & \textbf{+1.56} & $+1.50$ \\
+$D_9$                    & $[+6.84, +8.83]$  & $+7.77$ & $+1.64$ & $+1.23$ & $+1.59$ & \textbf{+1.90} & $+1.77$ \\
+$D_{10}$ (Peak Yield)    & $[+8.83, +22.93]$ & $+11.01$ & \textbf{+2.16} & $+1.23$ & $+1.78$ & $+1.99$ & $+2.07$ \\
 \midrule
-\multicolumn{7}{l}{\textbf{Panel C: Harvest Closure Horizon} ($H=1^*$, October 31$^\dagger$)} \\
-$D_1$ (Severe Shortfall) & $[-22.85, -5.22]$ & $-8.82$ & $-2.15$ & $-1.30$ & $-1.70$ & \textbf{-3.08} \\
-$D_2$                    & $[-5.15, -1.95]$  & $-3.43$ & $-0.92$ & $-0.52$ & $-0.55$ & \textbf{-1.33} \\
-$D_3$                    & $[-1.92, +0.02]$  & $-0.93$ & $-0.33$ & $-0.10$ & $-0.24$ & \textbf{-0.39} \\
-$D_4$                    & $[+0.02, +1.71]$  & $+0.92$ & \textbf{+0.57} & $+0.33$ & $+0.52$ & $+0.55$ \\
-$D_5$                    & $[+1.72, +3.15]$  & $+2.48$ & \textbf{+0.90} & $+0.44$ & $+0.73$ & $+0.67$ \\
-$D_6$                    & $[+3.16, +4.40]$  & $+3.80$ & \textbf{+1.32} & $+0.62$ & $+1.12$ & $+1.20$ \\
-$D_7$                    & $[+4.42, +5.59]$  & $+5.02$ & \textbf{+1.70} & $+1.01$ & \textbf{+1.70} & $+1.50$ \\
-$D_8$                    & $[+5.60, +6.83]$  & $+6.29$ & \textbf{+1.80} & $+1.03$ & $+1.68$ & $+1.67$ \\
-$D_9$                    & $[+6.84, +8.83]$  & $+7.77$ & $+2.01$ & $+1.20$ & $+1.89$ & \textbf{+2.05} \\
-$D_{10}$ (Peak Yield)    & $[+8.83, +22.93]$ & $+11.01$ & \textbf{+2.63} & $+1.39$ & $+2.09$ & $+2.24$ \\
+\multicolumn{8}{l}{\textbf{Panel C: Harvest Closure Horizon} ($H=1^*$, October 31$^\dagger$)} \\
+$D_1$ (Severe Shortfall) & $[-22.85, -5.22]$ & $-8.82$ & $-2.15$ & $-1.30$ & $-1.70$ & \textbf{-3.08} & $-2.62$ \\
+$D_2$                    & $[-5.15, -1.95]$  & $-3.43$ & $-0.92$ & $-0.52$ & $-0.55$ & \textbf{-1.33} & $-1.13$ \\
+$D_3$                    & $[-1.92, +0.02]$  & $-0.93$ & $-0.33$ & $-0.10$ & $-0.24$ & \textbf{-0.39} & $-0.36$ \\
+$D_4$                    & $[+0.02, +1.71]$  & $+0.92$ & \textbf{+0.57} & $+0.33$ & $+0.52$ & $+0.55$ & $+0.56$ \\
+$D_5$                    & $[+1.72, +3.15]$  & $+2.48$ & \textbf{+0.90} & $+0.44$ & $+0.73$ & $+0.67$ & $+0.78$ \\
+$D_6$                    & $[+3.16, +4.40]$  & $+3.80$ & \textbf{+1.32} & $+0.62$ & $+1.12$ & $+1.20$ & $+1.26$ \\
+$D_7$                    & $[+4.42, +5.59]$  & $+5.02$ & \textbf{+1.70} & $+1.01$ & \textbf{+1.70} & $+1.50$ & $+1.60$ \\
+$D_8$                    & $[+5.60, +6.83]$  & $+6.29$ & \textbf{+1.80} & $+1.03$ & $+1.68$ & $+1.67$ & $+1.73$ \\
+$D_9$                    & $[+6.84, +8.83]$  & $+7.77$ & $+2.01$ & $+1.20$ & $+1.89$ & \textbf{+2.05} & $+2.03$ \\
+$D_{10}$ (Peak Yield)    & $[+8.83, +22.93]$ & $+11.01$ & \textbf{+2.63} & $+1.39$ & $+2.09$ & $+2.24$ & $+2.43$ \\
 \bottomrule
 \end{tabular*}
 \vspace{0.2em}
-{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations ($2{,}025$ evaluations per horizon). Metric: mean point prediction ($\bar{\hat{\epsilon}}$, bu/ac) within each realized yield anomaly decile. ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; LSTM: sequential LSTM with 10-day decad inputs. $^\dagger$At harvest lead time ($H=1^*$), evaluations for Minnesota implement the physiological closure cutoff $H^*(s)=2$ (September 30) defined in Eq.~\eqref{eq:harvest_closure_horizon}.}}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations ($2{,}025$ evaluations per horizon). Metric: mean point prediction ($\bar{\hat{\epsilon}}$, bu/ac) within each realized yield anomaly decile. ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; LSTM: sequential LSTM with 10-day decad inputs; Ens: 50/50 convex blend of ElasticNet (+Lag) and LSTM (+Lag). $^\dagger$At harvest lead time ($H=1^*$), evaluations for Minnesota implement the physiological closure cutoff $H^*(s)=2$ (September 30) defined in Eq.~\eqref{eq:harvest_closure_horizon}.}}
 \end{table}
