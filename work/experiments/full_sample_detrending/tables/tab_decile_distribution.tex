@@ -1,0 +1,46 @@
+\begin{table}[htbp]
+\centering
+\singlespacing
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.06}
+\caption{Distribuzione delle anomalie di resa ($\epsilon$, bu/ac) per decile: range e quota di osservazioni negative ($\epsilon < 0$) a confronto tra \textbf{Trend Expanding} e \textbf{Trend Full-Sample} sullo storico (Panel A, $10{,}125$ dati) e sul periodo di test (Panel B, $2{,}025$ dati).}
+\label{tab:decile_distribution}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc @{}}
+\toprule
+& \multicolumn{2}{c}{\textbf{Trend Expanding (Train-Only / OOS)}} & \multicolumn{2}{c}{\textbf{Trend Full-Sample (In-Sample / Oracle)}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+\textbf{Decile} & \textbf{Range} & \textbf{\% } $\epsilon < 0$ & \textbf{Range} & \textbf{\% } $\epsilon < 0$ \\
+\midrule
+\multicolumn{5}{l}{\textbf{Panel A: Intero Storico 1951--2025 ($N = 10{,}125$ osservazioni)}} \\
+\midrule
+$D_{1}$ (Crollo) & $[-25.5, -5.8]$ & 100\% & $[-25.2, -6.3]$ & 100\% \\
+$D_{2}$ & $[-5.8, -3.2]$ & 100\% & $[-6.3, -3.5]$ & 100\% \\
+$D_{3}$ & $[-3.2, -1.5]$ & 100\% & $[-3.5, -1.7]$ & 100\% \\
+$D_{4}$ & $[-1.4, -0.2]$ & 100\% & $[-1.7, -0.4]$ & 100\% \\
+$D_{5}$ & $[-0.2, +0.9]$ & 16\% & $[-0.4, +0.7]$ & 36\% \\
+$D_{6}$ & $[+0.9, +1.9]$ & 0\% & $[+0.7, +1.7]$ & 0\% \\
+$D_{7}$ & $[+1.9, +3.0]$ & 0\% & $[+1.7, +2.7]$ & 0\% \\
+$D_{8}$ & $[+3.0, +4.3]$ & 0\% & $[+2.7, +3.8]$ & 0\% \\
+$D_{9}$ & $[+4.3, +6.3]$ & 0\% & $[+3.8, +5.4]$ & 0\% \\
+$D_{10}$ (Picco) & $[+6.3, +22.9]$ & 0\% & $[+5.4, +20.1]$ & 0\% \\
+\midrule
+\textbf{Totale} & $[-25.5, +22.9]$ & \textbf{41.6\%} & $[-25.2, +20.1]$ & \textbf{43.6\%} \\
+\midrule[\heavyrulewidth]
+\multicolumn{5}{l}{\textbf{Panel B: Periodo di Test Out-of-Sample 2011--2025 ($N = 2{,}025$ osservazioni)}} \\
+\midrule
+$D_{1}$ (Crollo) & $[-22.9, -5.2]$ & 100\% & $[-25.2, -6.1]$ & 100\% \\
+$D_{2}$ & $[-5.2, -2.0]$ & 100\% & $[-6.1, -3.0]$ & 100\% \\
+$D_{3}$ & $[-1.9, +0.0]$ & 98\% & $[-3.0, -0.9]$ & 100\% \\
+$D_{4}$ & $[+0.0, +1.7]$ & 0\% & $[-0.9, +0.5]$ & 61\% \\
+$D_{5}$ & $[+1.7, +3.1]$ & 0\% & $[+0.5, +2.0]$ & 0\% \\
+$D_{6}$ & $[+3.2, +4.4]$ & 0\% & $[+2.0, +3.2]$ & 0\% \\
+$D_{7}$ & $[+4.4, +5.6]$ & 0\% & $[+3.3, +4.4]$ & 0\% \\
+$D_{8}$ & $[+5.6, +6.8]$ & 0\% & $[+4.4, +5.6]$ & 0\% \\
+$D_{9}$ & $[+6.8, +8.8]$ & 0\% & $[+5.6, +7.4]$ & 0\% \\
+$D_{10}$ (Picco) & $[+8.8, +22.9]$ & 0\% & $[+7.4, +20.1]$ & 0\% \\
+\midrule
+\textbf{Totale} & $[-22.9, +22.9]$ & \textbf{29.8\%} & $[-25.2, +20.1]$ & \textbf{36.1\%} \\
+\bottomrule
+\end{tabular*}
+\end{table}
