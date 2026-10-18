@@ -4,33 +4,34 @@
 \footnotesize
 \setlength{\tabcolsep}{3.2pt}
 \renewcommand{\arraystretch}{1.10}
-\caption{Macro-regional out-of-sample physical yield level forecasts ($\bar{\hat{y}} = \bar{\tau} + \bar{\hat{\epsilon}}$, bu/ac) at harvest closure $H^*(s)$ pooled across all 135 Midwestern study counties for the 15 test campaigns (2011--2025), ordered from lowest to highest realized regional yield. All machine learning estimators evaluate the integrated specification (+Lag $\epsilon_{t-1}$). Bold indicates the point forecast closest to realized regional yield.}
+\caption{Macro-regional out-of-sample yield anomaly forecasts ($\bar{\hat{\epsilon}}$, bu/ac) and realized regional anomalies at harvest closure $H^*(s)$ (2011--2025, 135 study counties).}
 \label{tab:yearly_macro_yields}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} c c c c c c c c @{}}
 \toprule
-\textbf{Year} & \textbf{Observed} & \textbf{Naive} & \textbf{ENet} & \textbf{RF} & \textbf{XGB} & \textbf{LSTM} & \textbf{Ens} \\
+\textbf{Year} & \textbf{Realized} & \textbf{Naive} & \textbf{ENet} & \textbf{RF} & \textbf{XGB} & \textbf{LSTM} & \textbf{Ens} \\
 \midrule
-2012 & 43.55 & 47.62 & \textbf{43.80} & 44.86 & 44.69 & 42.63 & 43.22 \\
-2011 & 46.47 & 47.23 & \textbf{46.34} & 46.07 & 45.69 & 45.32 & 45.83 \\
-2013 & 46.99 & 47.79 & 45.33 & \textbf{46.46} & 45.58 & 45.36 & 45.34 \\
-2019 & 50.66 & 51.75 & 52.74 & 51.54 & \textbf{51.50} & 51.52 & 52.13 \\
-2014 & 51.06 & 48.18 & 47.62 & 49.35 & \textbf{49.83} & 48.88 & 48.25 \\
-2015 & 52.74 & 48.79 & 50.64 & 50.19 & \textbf{50.77} & 50.11 & 50.37 \\
-2017 & 53.41 & 50.35 & \textbf{53.57} & 51.30 & 52.36 & 51.61 & 52.59 \\
-2020 & 55.75 & 52.15 & 52.99 & 52.01 & 52.99 & \textbf{53.92} & 53.45 \\
-2024 & 55.89 & 54.98 & 57.85 & 56.60 & 57.31 & \textbf{55.86} & 56.85 \\
-2018 & 56.23 & 50.99 & \textbf{53.75} & 52.56 & 53.54 & 53.58 & 53.67 \\
-2016 & 56.81 & 49.47 & \textbf{53.56} & 51.16 & 52.35 & 52.16 & 52.86 \\
-2022 & 57.14 & 53.66 & 53.85 & 54.46 & 54.94 & \textbf{55.78} & 54.82 \\
-2023 & 57.57 & 54.33 & \textbf{55.97} & 55.37 & 55.93 & 54.92 & 55.45 \\
-2025 & 58.00 & 55.51 & 55.36 & \textbf{56.99} & 56.13 & 56.66 & 56.01 \\
-2021 & 59.50 & 52.82 & \textbf{55.67} & 53.88 & 54.74 & 54.89 & 55.28 \\
+2012 & -4.07 & 0.00 & \textbf{-3.81} & -2.76 & -2.92 & -4.99 & -4.40 \\
+2019 & -1.09 & 0.00 & +0.99 & -0.21 & \textbf{-0.25} & -0.23 & +0.38 \\
+2013 & -0.80 & 0.00 & -2.46 & \textbf{-1.33} & -2.21 & -2.44 & -2.45 \\
+2011 & -0.76 & 0.00 & \textbf{-0.89} & -1.16 & -1.54 & -1.90 & -1.40 \\
+2024 & +0.91 & 0.00 & +2.86 & +1.62 & +2.33 & \textbf{+0.88} & +1.87 \\
+2025 & +2.49 & 0.00 & -0.15 & \textbf{+1.48} & +0.62 & +1.15 & +0.50 \\
+2014 & +2.89 & 0.00 & -0.56 & +1.18 & \textbf{+1.65} & +0.70 & +0.07 \\
+2017 & +3.05 & 0.00 & \textbf{+3.22} & +0.95 & +2.01 & +1.26 & +2.24 \\
+2023 & +3.25 & 0.00 & \textbf{+1.64} & +1.04 & +1.60 & +0.59 & +1.12 \\
+2022 & +3.48 & 0.00 & +0.19 & +0.80 & +1.28 & \textbf{+2.12} & +1.16 \\
+2020 & +3.60 & 0.00 & +0.83 & -0.14 & +0.84 & \textbf{+1.76} & +1.30 \\
+2015 & +3.95 & 0.00 & +1.85 & +1.40 & \textbf{+1.98} & +1.32 & +1.58 \\
+2018 & +5.25 & 0.00 & \textbf{+2.76} & +1.57 & +2.55 & +2.59 & +2.68 \\
+2021 & +6.68 & 0.00 & \textbf{+2.85} & +1.06 & +1.92 & +2.07 & +2.46 \\
+2016 & +7.34 & 0.00 & \textbf{+4.09} & +1.69 & +2.88 & +2.69 & +3.39 \\
 \midrule
 \textbf{RMSE (bu/ac)} & --- & 3.84 & 2.40 & 2.84 & 2.33 & 2.37 & \textbf{2.31} \\
 \textbf{MAE (bu/ac)}  & --- & 3.31 & 2.11 & 2.32 & 2.02 & 2.02 & \textbf{2.04} \\
-\textbf{Pearson $r$}   & --- & 0.789 & 0.915 & 0.901 & 0.933 & \textbf{0.953} & 0.944 \\
+\textbf{Bias (bu/ac)} & --- & -2.41 & \textbf{-1.52} & -1.93 & -1.56 & -1.91 & -1.71 \\
+\textbf{Pearson $r$}   & --- & ---  & 0.783 & 0.810 & 0.862 & \textbf{0.909} & 0.881 \\
 \bottomrule
 \end{tabular*}
 \vspace{0.2em}
-{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations ($135$ county evaluations per year). Values represent regional arithmetic mean physical yield across the 135 study counties. Naive: deterministic technological trend baseline $\bar{\tau}$; ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; LSTM: sequential LSTM with 10-day decad inputs; Ens: 50/50 convex blend of ElasticNet (+Lag) and LSTM (+Lag). At harvest closure $H^*(s)$, evaluations for Minnesota implement the September 30 cutoff ($H=2$) in accordance with Section~\ref{sec:meth_timeline_horizons}. Bottom block summarizes macro-level accuracy metrics against realized regional production.}}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations ($135$ county evaluations per year). Values represent regional arithmetic mean yield anomaly ($\bar{\epsilon} = \frac{1}{N}\sum_i \epsilon_{it}$, bu/ac) across the 135 study counties, ordered by realized anomaly. All machine learning models evaluate the integrated specification (+Lag $\epsilon_{t-1}$). Bold indicates the point forecast closest to realized regional yield anomaly. Naive: deterministic zero-anomaly baseline ($\hat{\epsilon} = 0$, predicting normal weather); ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; LSTM: sequential LSTM with 10-day decad inputs; Ens: 50/50 convex blend of ElasticNet (+Lag) and LSTM (+Lag). At harvest closure $H^*(s)$, evaluations for Minnesota implement the September 30 cutoff ($H=2$) in accordance with Section~\ref{sec:meth_timeline_horizons}. Bottom block summarizes macro-level accuracy metrics against realized regional yield anomalies ($\text{Bias} = \bar{\hat{\epsilon}} - \bar{\epsilon}$).}}
 \end{table}

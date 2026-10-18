@@ -46,7 +46,7 @@ To preserve phenological timing while restricting dimensionality, daily weather 
     \end{cases}
     \label{eq:monthly_aggregation_rule}
 \end{equation}
-where $\mathcal{K}_{\text{flux}} = \{P, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35}\}$ denotes flux integrals, $\mathcal{K}_{\text{state}} = \{T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}, SM_1, SM_2, SM_3, VPD, SM_{\text{root}}\}$ designates environmental states, and $\mathcal{D}_j$ denotes calendar days in campaign month $j \in \{1, \dots, 12\}$. For each elapsed month $j$, this defines a 16-dimensional meteorological summary vector $\mathbf{w}_{c,Y,j} \in \mathbb{R}^{16}$.
+where $\mathcal{K}_{\text{flux}} = \{P, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35}\}$ denotes flux integrals, $\mathcal{K}_{\text{state}} = \{T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}, SM_1, SM_2, SM_3, VPD, SM_{\text{root}}\}$ designates environmental states, and $\mathcal{D}_j$ denotes calendar days in campaign month $j \in \{1, \dots, 12\}$. For each elapsed month $j$, this defines a 16-dimensional meteorological summary vector $\mathbf{w}_{c,Y,j} \in \mathbb{R}^{16}$. Monthly aggregation preserves dimensional stability ($P_H \le 194$) while aligning features with broader crop developmental phases \citep{Hoffman2020}. Sub-monthly tabular concatenation would induce severe multicollinearity on historical samples \citep{Sharmaetal2025}; high-frequency decad dynamics are evaluated separately through sequential deep architectures (Section~\ref{sec:meth_lstm}).
 
 \subsection{Crop Campaign Timeline and Multi-Horizon Feature Expansion}
 \label{sec:meth_timeline_horizons}
@@ -89,7 +89,7 @@ To reflect state maturation timing (Section~\ref{sec:data_phenology}), we define
     \end{cases}
     \label{eq:harvest_closure_horizon}
 \end{equation}
-Freezing inputs at $H^*=2$ for Minnesota eliminates post-harvest precipitation noise.
+Freezing inputs at $H^*(s)=2$ for Minnesota reflects early physiological maturity and harvest completion in northern latitudes.
 
 \subsection{Direct Horizon-Specific Modeling Paradigm}
 \label{sec:meth_direct_horizon}
@@ -143,11 +143,6 @@ The meteorological predictor space builds upon the $K = 16$ daily environmental 
     \item \textbf{Environmental State Variables ($\mathcal{K}_{\text{state}}$, 9 variables):} Daily mean, maximum, minimum, and dewpoint temperatures ($T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}$), volumetric soil water across three horizons ($SM_1, SM_2, SM_3$), vapor pressure deficit ($VPD$), and root-zone soil moisture ($SM_{\text{root}}$). These indicators reflect continuous background ambient stress, aggregated via arithmetic time-averaging (Eq.~\eqref{eq:monthly_aggregation_rule}).
 \end{enumerate}
 This functional grouping maps daily physical reanalysis directly into structured feature matrices.
-
-\subsection{Methodological Trade-offs in Temporal Aggregation Granularity}
-\label{sec:meth_aggregation_tradeoffs}
-
-\citet{Xie2025} and \citet{Yinetal2026} establish that sub-monthly pentad (5-day) and decad (10-day) aggregations capture short-duration heat waves and heavy precipitation events that are smoothed within monthly means. Concatenating sub-monthly temporal blocks into tabular matrices rapidly multiplies features (e.g., 73 pentads yield $1{,}170$ columns), inducing severe multicollinearity on historical samples \citep{Sharmaetal2025}. In contrast, monthly aggregation preserves dimensional stability ($P_H \le 194$) while aligning features with broader crop developmental phases \citep{Hoffman2020}. To evaluate high-frequency sequential dynamics without expanding column dimensions, we deploy sequential deep architectures within the candidate portfolio.
 
 % ==============================================================================
 % SECTION 4.3: CANDIDATE FORECASTING MODELS AND COMPLEXITY LADDER
@@ -429,11 +424,6 @@ To assess regional stability without presenting 135 separate county tables, we c
     \label{eq:annual_regional_metrics}
 \end{equation}
 tracking how predictive accuracy and directional bias evolve during extreme shortfall and bumper seasons.
-
-\subsection{Metric Prioritization}
-\label{sec:meth_metric_prioritization}
-
-We omit binary directional hit rates ($H_{\text{dir}}$). In commercial crop production, historical yield anomalies cluster heavily around the origin, with over 68\% of county-years falling within $\pm 3.0\text{ bu/ac}$ of trend. Correctly guessing the sign of a fractional anomaly provides negligible commercial utility. Supply chains require accurate estimation of \textit{error magnitude} to differentiate between localized dry spells ($-3\text{ bu/ac}$) and catastrophic regional droughts ($-15\text{ bu/ac}$). We therefore prioritize continuous magnitude metrics ($\text{RMSE}_{\text{OOS}}$, $\text{MAE}_{\text{OOS}}$).
 
 \subsection{Out-of-Sample Tail-Risk Stress Testing}
 \label{sec:meth_tail_risk}

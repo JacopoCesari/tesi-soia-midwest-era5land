@@ -2,7 +2,7 @@
 \chapter{Data and Study Area}
 \label{chap:data_and_study_area}
 
-The empirical analysis in this thesis rests on two primary data streams spanning the United States Midwest from 1951 to 2025: county-level soybean yields from the USDA National Agricultural Statistics Service (NASS), and high-resolution gridded surface weather from the ECMWF ERA5-Land reanalysis.
+The empirical analysis rests on two primary data streams spanning the United States Midwest from 1951 to 2025: county-level soybean yields from the USDA National Agricultural Statistics Service (NASS), and high-resolution gridded surface weather from the ECMWF ERA5-Land reanalysis.
 
 % ==============================================================================
 % PART 1: REGIONAL AGRONOMY AND HISTORICAL YIELD PANEL
@@ -65,7 +65,7 @@ Our machine learning models in Chapter~4 are trained exclusively to predict the 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory_dual_petrol}
-    \caption{County soybean yield trajectories, linear trend, and expanding dispersion envelopes across 135 Midwestern counties (1950--2025). Shaded dual envelopes contrast the inner 90\% cross-county dispersion core (solid borders) against historical min--max record boundaries (dotted lines), separated into positive (emerald green) and deficit (terracotta) regions relative to the long-term linear trend (deep petrol dashed line). The solid petrol-grey line traces the annual cross-sectional panel mean. Vertical arrows highlight the multidecadal expansion of cross-county dispersion from 1951 ($\Delta = 14.4\text{ bu/ac}$) to 2024 ($\Delta = 28.2\text{ bu/ac}$, $+96\%$).}
+    \caption{County soybean yield trajectories, secular linear trend, and cross-county dispersion envelopes across 135 Midwestern counties (1950--2025). Shaded envelopes delineate the inner 90\% cross-county dispersion core and historical min--max record boundaries relative to the long-term trend; the solid line traces the annual cross-sectional panel mean.}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}}
     \label{fig:yield_trajectory}
@@ -84,7 +84,7 @@ Furthermore, our modeling framework in Chapter~4 explicitly operates on geograph
 
 Localized variance is non-stationary and expands over time (Figure~\ref{fig:yield_trajectory} and Table~\ref{tab:decadal_yields}). While the relative coefficient of variation contracted as baseline yields tripled, absolute physical dispersion widened substantially: the annual cross-county spread expanded by over 70\%, and the 90\% dispersion envelope widened by more than 50\%. A 13\% yield deficit on a modern $60\text{ bu/ac}$ crop represents nearly $8\text{ bu/ac}$ in missing physical grain, compared to $5\text{ bu/ac}$ on a 1950s crop.
 
-Consequently, isolating and forecasting the stochastic, weather-induced anomaly $\epsilon_{c,t}$ at the local scale represents the core scientific objective of this thesis, rendering simple linear trend extrapolation structurally inadequate for agricultural supply management.
+Consequently, isolating and forecasting the stochastic, weather-induced anomaly $\epsilon_{c,t}$ at the local scale represents the primary empirical objective of this study, rendering simple linear trend extrapolation structurally inadequate for agricultural supply management.
 
 \input{tables/tab_decadal_yields}
 
@@ -199,7 +199,7 @@ As illustrated in Figure~\ref{fig:era5_spatial_structure}, this area-weighted po
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{figures/fig_era5_spatial_structure}
-    \caption{Spatial architecture and area-weighted grid discretization of ERA5-Land weather data. Panel (a) shows the regional study domain across Illinois ($N = 28$ study counties), highlighting Tazewell County. Panel (b) details the micro-scale grid discretization over Tazewell County, illustrating the intersection between the regular $0.1^\circ \times 0.1^\circ$ ($\approx 9\text{ km}$) cardinal grid mesh and the irregular county boundary formed by the Illinois River. Grid cells are weighted strictly by their planar intersection area ($w_{c,g} = \text{Area}(c \cap g) / \text{Area}(c)$, summing to $100\%$), preserving total precipitation volume and heat fluxes across administrative boundaries without centroid sampling distortion.}
+    \caption{Spatial grid architecture and area-weighted discretization of ERA5-Land weather data: (a) regional study domain across Illinois ($N = 28$ counties); (b) overlay of regular $0.1^\circ \times 0.1^\circ$ ($\approx 9\text{ km}$) grid cells and area-weighted planar intersection for Tazewell County.}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's elaboration on ECMWF ERA5-Land grid and US Census TIGER/Line county boundaries.}}
     \label{fig:era5_spatial_structure}
@@ -272,7 +272,7 @@ To quantify how the statistical dependence between atmospheric forcing and final
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.96\textwidth]{figures/fig_climate_yield_sensitivity}
-    \caption{Phenological sensitivity of county soybean yields to monthly atmospheric anomalies across the crop cycle (April--October). Bars depict cross-sectional Pearson correlation coefficients ($r$) between detrended yield anomalies ($\epsilon_{c,t}$) and monthly anomalies of maximum temperature ($T_{\text{max}}$), vapor pressure deficit ($VPD$), precipitation ($P$), and root-zone soil moisture ($SM_{\text{root}}$). Sensitivity is minimal during pre-sowing and emergence (April--May), shifts in June, peaks during pod filling (August), and decays rapidly upon physiological maturity in autumn.}
+    \caption{Cross-sectional Pearson correlation coefficients ($r$) between detrended county soybean yield anomalies ($\epsilon_{c,t}$) and monthly agro-climatic anomalies ($T_{\text{max}}$, $VPD$, $P$, $SM_{\text{root}}$) across the crop cycle (April--October, 1951--2025).}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}}
     \label{fig:climate_yield_sensitivity}
