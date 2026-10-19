@@ -144,7 +144,8 @@ def main():
     table_lines = [
         r"\begin{table}[htbp]",
         r"\centering",
-        r"\small",
+        r"\footnotesize",
+        r"\setlength{\tabcolsep}{2.5pt}",
         r"\caption{Econometric and diagnostic comparison of detrending models across the 75-year panel (1951--2025).}",
         r"\label{tab:detrending_comparison}",
         r"\begin{tabularx}{\textwidth}{l c c c c c c c c}",

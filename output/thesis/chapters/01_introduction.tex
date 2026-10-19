@@ -5,22 +5,17 @@
 \section{Problem, Practical Value, and Motivation}
 \label{sec:intro_problem}
 
-Agricultural yield becomes definitively observable only at harvest, long after key operational, commercial, and financial commitments have been finalized. In modern agrifood systems, reliable yield forecasts well in advance are essential for systematic risk management. In the United States, soybean is a foundational commodity underpinning domestic livestock feed and global trade flows, with the Midwestern Corn Belt driving national production \citep{Schlenker2009}.
+{\color{red}
+Agricultural yield becomes observable at harvest, after many operational and commercial commitments have been made. Earlier forecasts can support risk management in agrifood supply chains. Soybean supplies domestic livestock feed and international trade, with the Midwestern Corn Belt driving U.S. production \citep{Schlenker2009}.
+}
 
 Harvest surprises in this region carry severe, asymmetric economic costs. Regional crop shortfalls, typically driven by summer heatwaves or moisture deficits, generate procurement bottlenecks and sharp price spikes for grain crushers, feed millers, and export terminals. Empirically, across the 1960--2025 record, each 10\% negative departure from secular yield trend is associated with an average 7.5\% increase in annual farm-gate prices ($p = 0.014$), with intra-seasonal futures rallies on the Chicago Board of Trade (CBOT) frequently exceeding 30--60\% during acute summer droughts. Conversely, unexpectedly bumper harvests compress local storage capacity, create barge and rail bottlenecks along the Mississippi corridor, and exert downward pressure on regional cash basis levels.
 
 We focus specifically on county-level soybean yield anomalies, measured in bushels per acre. Aggregate production volumes and market prices fall outside our scope: production totals depend on acreage allocations across counties, while commercial prices reflect global carryover stocks and trade flows. These supply-chain repercussions establish the practical motivation for our research.
 
-In agricultural supply chains, a forecast's utility depends directly on its lead time. In operational trading, procurement, and hedging, an accurate yield estimate delivered immediately prior to harvest provides little managerial flexibility: physical purchasing, storage reservations, and forward pricing have largely concluded. The central practical question is determining when atmospheric observations begin to provide a reliable forecasting signal. 
-
-Operationally, an effective yield forecasting system must satisfy three criteria: accuracy across the yield distribution (especially for severe downside risks), lead-time earliness to maximize managerial reaction windows, and temporal stability to ensure that early gains persist across subsequent updates. The practical utility of these forecasts evolves dynamically across the production calendar:
-\begin{itemize}
-    \item \textbf{Pre-sowing signals ($H \ge 8$):} inform seed variety selection, maturity group allocation, acreage switching, input distribution, and commercial forward contracting.
-    \item \textbf{Vegetative updates ($H \approx 7 \text{ to } 4$):} direct in-season farm interventions (replanting, fertilizer split applications, crop protection) alongside producer price hedging and origination.
-    \item \textbf{Reproductive pod-filling updates ($H \approx 3 \text{ to } 2$):} allow producers to pace forward sales and prepare on-farm storage, while processors and exporters adjust crush schedules, freight bookings, and secondary sourcing.
-    \item \textbf{Near-harvest updates ($H=1$):} optimize harvest sequencing, drying logistics, and terminal intake schedules.
-\end{itemize}
-To evaluate this progression systematically, we anchor the crop campaign to an October harvest reference and track predictive skill across twelve standardized monthly forecast origins ($H=12, \dots, 1$).
+{\color{red}
+Forecast value depends on lead time. Earlier estimates can support procurement and storage planning, while in-season updates inform sourcing and freight commitments. We assess three criteria: accuracy across the yield distribution, the timing of predictive gains, and their persistence across subsequent updates. Twelve monthly forecast origins, anchored to an October harvest reference, trace this progression ($H=12,\dots,1$).
+}
 
 \section{Research Question and Target Formulations}
 \label{sec:intro_research_question}
@@ -47,7 +42,7 @@ However, existing empirical studies examine these dimensions in isolation, focus
 We address these gaps through two primary methodological contributions:
 \begin{enumerate}
     \item \textbf{Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12, \dots, 1$):} We establish the empirical boundaries of weather-driven predictability across twelve standardized monthly origins, spanning from the preceding autumn through harvest eve. By relying strictly on cumulative surface reanalysis from ERA5-Land without numerical forecast inputs, we track precisely when observed atmospheric states begin to generate stable predictive skill.
-    \item \textbf{Identification of Optimal Model-Aggregation Configurations:} We systematically evaluate multiple model families—regularized linear baselines, tree ensembles (Random Forest, XGBoost), and recurrent architectures (LSTM)—across three temporal aggregations (5-day, 10-day, and 30-day summaries). This establishes whether high-frequency sub-monthly summaries provide superior predictive value over standard monthly averages under identical information constraints.
+    {\color{red}\item \textbf{Comparison of Forecasting Specifications:} We compare regularized linear models, tree ensembles (Random Forest, XGBoost), and recurrent architectures (LSTM) on the selected county panel. The final benchmark evaluates monthly tabular models and a 10-day LSTM. The recurrent frequency and head-specific parameters are fixed before the final test evaluation.}
 \end{enumerate}
 
 \paragraph{Scope Boundaries and Methodological Discipline.}
@@ -55,14 +50,13 @@ We evaluate this framework on soybean across a balanced panel of 135 counties in
 
 We interpret feature importance strictly as empirical predictive association, without claiming structural causal identification.
 
+{\color{red}
+Weather-only models provide the initial benchmark. We then test the incremental contribution of lagged yield anomalies and retain integrated specifications supported by that comparison. Reported scores distinguish the two information sets; lagged anomalies are detrended on training data and included only when available at the forecast origin.
+}
+
 \section{Structure of the Study}
 \label{sec:intro_structure}
 
-We structure the remainder of this study as follows:
-\begin{itemize}
-    \item \textbf{Chapter 2 (Literature Review)} reviews soybean weather sensitivity, examines empirical yield forecasting approaches, and formalizes hypotheses H1--H5.
-    \item \textbf{Chapter 3 (Data and Study Area)} describes the 135-county balanced panel (1951--2025) from USDA NASS, documents ERA5-Land processing, and presents exploratory climate-yield analyses.
-    \item \textbf{Chapter 4 (Methodology)} formalizes the twelve forecast cutoffs, feature engineering workflows, baseline and machine learning specifications, and the expanding-window validation protocol.
-    \item \textbf{Chapter 5 (Empirical Results)} reports out-of-sample performance across all twelve horizons, comparing baselines, tree ensembles, and sequential models.
-    \item \textbf{Chapter 6 (Discussion and Conclusions)} synthesizes key findings, confronts results against the literature, evaluates research hypotheses H1--H5, examines operational risk-management implications, addresses methodological boundaries, and outlines future research priorities.
-\end{itemize}
+{\color{red}
+Chapter~\ref{chap:literature_review} reviews the literature and derives H1--H5. Chapter~\ref{chap:data_and_study_area} describes the data and exploratory analysis. Chapter~\ref{chap:methodology} presents the methodology. Chapters~\ref{chap:empirical_results} and~\ref{chap:discussion_conclusions} report and discuss the results.
+}

@@ -10,7 +10,7 @@ recorded on 2026-09-15. The date records receipt, not an invented earlier approv
   technological trend through transformations fitted exclusively on training data.
   Observed raw yield (`yield_bu_per_acre`) is preserved as the ground-truth series;
   yield levels can be reconstructed post-hoc by summing predicted trend and anomaly.
-  Discrete yield regimes are modeled in parallel using training-only quantile thresholds.
+  Deciles are retrospective diagnostics, not classification targets.
   No acreage predictor or weighting.
 - **Primary sample:** Illinois, Indiana, Iowa, Minnesota, Missouri and Ohio; 135
   counties; 1951–2025 inclusive; 75 years; 10,125 complete county-year measurements.
@@ -18,16 +18,17 @@ recorded on 2026-09-15. The date records receipt, not an invented earlier approv
 - **Source preservation:** The full 479-county exports remain unchanged and separate.
   Their 1950–2025 coverage is incomplete. No automatic imputation. Weather production
   targets weather years 1950–2025 to support target years 1951–2025.
-- **Information set:** Weather only, observed on or before each origin. No satellite,
+- **Information set:** Observed weather is the starting benchmark. Integrated
+  specifications additionally use lagged, training-only detrended yield anomalies,
+  subject to their availability at the forecast origin (author clarification,
+  2026-10-18). No satellite,
   market, seasonal forecast or future observed/climatological/previous-year completion.
-- **Horizons:** 12 through 1 calendar months before an explicitly configured harvest
-  reference ($H \in \{12, \dots, 1\}$). With $H=1$, the origin is one month prior to harvest,
-  ensuring all forecasts strictly precede harvest. October is author-confirmed; the exact
-  day remains **open**. Each horizon has separate cutoff-specific features and a separate
-  model instance.
-- **Validation:** Expanding-window, rolling-origin validation with indivisible crop
-  years across all counties. Initial training length remains open; no fixed 60/40
-  split or implicit 40-year default. Test years expand through 2025 once configured.
+- **Horizons:** H=12 is the October 31 Y-1 trend-only reference. Fitted horizons
+  H=11 through H=1 end in December Y-1 through October Y, with separate cutoff-specific
+  model instances. Harvest closure uses September for Minnesota and October elsewhere.
+- **Validation:** Complete-year expanding windows: 1951--1984 base, 1985--1995
+  hyperparameter selection, and 2011--2025 final test. Years 1996--2010 enter expanding
+  training. Frequency and head-specific hyperparameters remain fixed for the test refresh.
 - **Training-only operations:** Detrending, scaling, selection, tuning and any later
   classification thresholds. No random county-year cross-validation.
 - **Evaluation hierarchy:** 1. Accuracy relative to historical baselines; 2. Lead-time
@@ -48,21 +49,33 @@ The following previously open decisions are now consolidated by author approval:
   through October 31 (Y); H=1 ingests weather through end of October.
 - **Feature lookback:** Current campaign only. Each horizon H ingests exactly the
   months elapsed in the current campaign (November Y-1 onward). No previous-campaign
-  weather lookback. H=12 (forecast at end of November Y-1) receives zero weather
+  weather lookback. H=12 (forecast at end of October Y-1) receives zero weather
   features and predicts ε̂=0 (naive secular trend baseline).
-- **Lagged yield:** Strictly excluded. All models are pure weather-driven anomaly
-  estimators with no autoregressive yield predictor at any horizon.
+- **Lagged yield:** The exclusion recorded on 2026-09-29 is superseded by the
+  author's 2026-10-18 clarification. Weather-only models establish the initial
+  benchmark; lagged-yield ablations assess incremental information, and the
+  integrated specifications are retained where supported by the recorded results.
+  Keep weather-only and integrated performance explicitly distinguished.
 - **Metric aggregation:** Pooled R²_OOS is the primary evaluation metric (all 2,025
   residuals in a single denominator over the blind test window 2011–2025). Year-averaged R²_OOS (mean of 15 annual values)
   is a secondary diagnostic metric for per-season tracking and stress-cohort analysis.
 - **Expanding-window partition:** 1951–1984 base training / 1985–1995 validation (11 yrs) /
   2011–2025 blind OOS test (15 yrs, 2,025 observations per horizon), with 1996–2010 incorporated into the expanding training pool. First blind OOS test year is 2011. Definitive; no further changes.
 
-The author explicitly excludes the 1950 yield target: its October 1949–October
-1950 campaign lacks October–December 1949 weather. The first retained campaign is
-October 1950–October 1951. Keep 1950 weather while excluding 1950 yield. Do not
+The author explicitly excludes the 1950 yield target: its November 1949--October
+1950 campaign lacks November--December 1949 weather. The first retained campaign is
+November 1950--October 1951. Keep 1950 weather while excluding 1950 yield. Do not
 impute missing pre-1950 weather.
 
 Acres-harvested continuity is verified for the selected sample. The author reports
 an earlier acreage exclusion, but its threshold and reference period are unrecovered. See
 [data and target](data_and_target.md) and the [decision log](decisions.md).
+
+## Recurrent test refresh approved on 2026-10-18
+
+Use consecutive day blocks anchored on November 1, crossing calendar months and
+retaining every available day through each cutoff, including leap days and the
+last partial block. Exclude tensor padding from scaling and attention. Retain the
+selected 10-day frequency, hyperparameters and original validation records. Refresh
+only the expanding 2011--2025 test forecasts and dependent ensemble/evaluation outputs.
+Do not infer an isolated frequency effect from the final cross-model benchmark.

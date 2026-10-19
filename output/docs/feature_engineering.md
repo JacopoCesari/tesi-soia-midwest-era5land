@@ -1,43 +1,46 @@
-# Planned feature engineering and implemented cutoff utilities
+# Model features and forecast cutoffs
 
-Only `features/forecast_horizons.py` is implemented. It constructs twelve origins,
-returns separate labelled weather subsets, and rejects dates beyond the inclusive
-daily UTC cutoff. It does not generate agronomic features or model datasets.
+The maintained replication implementation is `scripts/03_build_feature_matrices.py`
+for calendar-month tabular inputs and `scripts/06_train_lstm_model.py` for recurrent
+windows. The generic cutoff utility under `src/` is separate from these fitted datasets.
 
-`configs/features.yaml` records October as the harvest month; the exact day and
-feature lookback remain unset. Call `configured_forecast_horizons` only after supplying
-the explicit day. Target years start in 1951, supported by weather from 1950.
-Each month's origin is computed from the harvest reference independently, with
-month-end clamping when needed. `target_year` identifies the crop year; weather and
-`forecast_origin` may be in its previous calendar year. The weather date is a daily
-UTC label, not an assertion about the hour at which a reanalysis file became available.
+## Predictor dictionary
 
-## Planned daily features
+The models use 17 weather indicators: eight summed exposures (`P`, `SSRD`, `ET0`,
+`P_minus_ET0`, `GDD`, `HD30`, `HD35`, `EDD30`) and nine averaged states (`T_mean`,
+`T_max`, `T_min`, `T_dew`, `SM1`, `SM2`, `SM3`, `VPD`, `SM_root`).
+`HD30` and `HD35` are binary daily indicators at inclusive maximum-temperature
+thresholds of 30 and 35 degrees C. `EDD30 = max(T_max - 30, 0)` measures excess
+heat intensity in degree-days. Root-zone moisture is `0.07*SM1 + 0.21*SM2 + 0.72*SM3`.
+The daily acquisition schema contains auxiliary fields beyond this model subset.
 
-These formulas are inherited methodological specifications, not existing outputs:
+Two normalized coordinates supplement the weather inputs. Recurrent sequences have
+19 channels per step. The lagged detrended yield enters the integrated prediction
+head separately. Attribution uses 19 groups: 17 weather indicators, one lagged-yield
+group, and one jointly permuted coordinate group.
 
-- GDD: `max(0, (min(T_max, 30) + max(T_min, 10)) / 2 - 10)`, in °C days.
-  Validate the agronomic clipping convention before implementing extreme cases.
-- Daily VPD proxy: `max(0, e_s(T_mean) - e_s(T_dewpoint))`, with
-  `e_s(T) = 0.61078 * exp(17.27*T / (T + 237.3))`, in kPa.
-  This is a proxy from daily temperatures, not the average of hourly VPD.
-- Heat days: indicators for maximum temperature >=30 °C and >=35 °C.
-- Diurnal temperature range: maximum minus minimum air temperature.
-- Rolling precipitation over the preceding 7, 14, 30, 60 and 90 days.
-- Rolling water balance: precipitation minus a consistently signed evaporative
-  demand measure. ERA5 evaporation retains its original sign in the pipeline;
-  the demand/sign convention must be settled before implementing this feature.
+## Campaign and windows
 
-## Planned temporal representations
+A crop-year campaign runs from November 1 of Y-1 to October 31 of Y, retaining all
+365 or 366 dates. H=12 is the October 31 Y-1 zero-anomaly reference; fitted horizons
+H=11 through H=1 end in December Y-1 through October Y. The number of elapsed
+calendar months is `13-H`; the earliest fitted horizon includes November and December.
+Calendar-month matrices therefore have `2 + 17*(13-H)` predictors, plus one lag in
+the integrated specification: 206 weather/spatial predictors at H=1, or 207 with lag.
 
-Compare 5-day and 10-day windows, with 30-day windows as a lower-resolution benchmark.
-A fixed 30-day window is not identical to a calendar month. Window anchors, lookback
-start, partial-window treatment and early-year coverage remain explicit decisions.
-Use means for appropriate state variables and totals/counts for accumulations and
-event indicators, after specifying each variable's aggregation rule.
+Recurrent windows are consecutive 5-, 10- or 30-day blocks anchored on November 1.
+They cross month boundaries and retain an incomplete last block at every cutoff.
+Only available dates enter that last block. Leap days are retained. A complete
+10-day campaign has 37 steps, with five or six days in its final step. Horizon
+arrays are constructed separately: slicing a full-season block cannot implement an
+earlier partial-window cutoff. Any trailing tensor padding is excluded from
+training scaling and attention and does not represent imputed weather.
 
-For every horizon, filter observations before any aggregation or learned processing.
-All feature windows must end no later than that origin. Do not complete the future
-season using observed weather, climatology or previous-year weather. Standardization
-and selection must use training observations only. The twelve final feature datasets
-are still to be built under `data/processed/model_datasets/`.
+The author retains the selected 10-day frequency and head-specific hyperparameters.
+The current refresh fits only 2011--2025 test folds; the 1985--1995 selection records
+are read-only. Each test fold retains the existing three-year inner early-stopping
+split. Missing or duplicate daily county records stop sequence construction.
+
+Regional harvest closure uses September forecasts for Minnesota and October for
+other states. No aggregation uses weather beyond its forecast cutoff. Detrending
+and standardization use historical training data only.

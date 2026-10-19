@@ -19,6 +19,7 @@ Outputs:
 """
 
 import json
+import importlib.util
 from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
@@ -34,13 +35,12 @@ from sklearn.linear_model import ElasticNet
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 
+plt.rcParams.update({"font.size": 12})
+
 ROOT = Path(__file__).resolve().parent.parent
 PROCESSED_DIR = ROOT / "output" / "data" / "processed"
-PREDS_ML_PARQUET = PROCESSED_DIR / "predictions.parquet"
-PREDS_LSTM_PARQUET = PROCESSED_DIR / "predictions_lstm.parquet"
 FEATURES_H01_PATH = PROCESSED_DIR / "model_datasets" / "features_H01.parquet"
 HPARAMS_PATH = PROCESSED_DIR / "hyperparameters_optimal_integrated.json"
-LSTM_PREDS_PATH = ROOT / "work" / "reports" / "experiments" / "lstm" / "preds_10d_H01_linear_lag.parquet"
 TARGET_CSV = ROOT / "data" / "target" / "soybean_yield_1951_2025.csv"
 SHAPEFILE = ROOT / "data" / "raw" / "census_counties" / "cb_2020_us_county_500k.shp"
 FIGURES_DIR = ROOT / "output" / "thesis" / "figures"
@@ -65,114 +65,58 @@ COLORS = {
     "Ensemble (ENet + LSTM)": "#16a085",
 }
 
+DOMAIN_LABELS = {
+    "Atmospheric Demand & Heat": "Demand / heat",
+    "Hydrological Supply": "Water supply",
+    "Soil Moisture Dynamics": "Soil moisture",
+    "Thermal & Radiation Regimes": "Temperature / radiation",
+    "Memory & Spatial Baseline": "Lag / location",
+}
+
 
 def load_data():
-    """Load and unify out-of-sample predictions for test years 2011-2025."""
-    dfs = []
-    if PREDS_ML_PARQUET.exists():
-        df_ml = pd.read_parquet(PREDS_ML_PARQUET)
-        df_ml = df_ml[df_ml["year"].isin(TEST_YEARS)]
-        dfs.append(df_ml)
-
-    if PREDS_LSTM_PARQUET.exists():
-        df_lstm = pd.read_parquet(PREDS_LSTM_PARQUET)
-        df_lstm = df_lstm[df_lstm["year"].isin(TEST_YEARS)]
-        df_lstm["model"] = np.where(df_lstm["include_lag"], "LSTM (+Lag)", "LSTM (Weather-Only)")
-        df_lstm = df_lstm.rename(columns={
-            "actual_anomaly": "y_true_anomaly",
-            "pred_anomaly": "y_pred_anomaly",
-            "horizon": "H",
-        })
-        dfs.append(df_lstm[["model", "H", "year", "county_fips", "y_true_anomaly", "y_pred_anomaly"]])
-
-    combined = pd.concat(dfs, ignore_index=True)
-
-    # Linear-Recurrent Ensemble: 50/50 convex combination
-    enet = combined[combined["model"] == "ElasticNet"].rename(columns={"y_pred_anomaly": "yp_enet"})
-    lstm = combined[combined["model"] == "LSTM (+Lag)"].rename(columns={"y_pred_anomaly": "yp_lstm"})
-    if not enet.empty and not lstm.empty:
-        ens = pd.merge(
-            enet[["H", "year", "county_fips", "y_true_anomaly", "yp_enet"]],
-            lstm[["H", "year", "county_fips", "yp_lstm"]],
-            on=["H", "year", "county_fips"],
-        )
-        ens["y_pred_anomaly"] = 0.5 * (ens["yp_enet"] + ens["yp_lstm"])
-        ens["model"] = "Ensemble (ENet + LSTM)"
-        combined = pd.concat(
-            [combined, ens[["model", "H", "year", "county_fips", "y_true_anomaly", "y_pred_anomaly"]]],
-            ignore_index=True,
-        )
-
-    # Minnesota phenological rule (H*=2 for MN at harvest)
-    h2_lookup = combined[combined["H"] == 2].set_index(["model", "year", "county_fips"])["y_pred_anomaly"].to_dict()
-    is_mn_h1 = (combined["H"] == 1) & (combined["county_fips"].astype(str).str.startswith("27"))
-    for idx in combined[is_mn_h1].index:
-        key = (combined.at[idx, "model"], combined.at[idx, "year"], combined.at[idx, "county_fips"])
-        if key in h2_lookup:
-            combined.at[idx, "y_pred_anomaly"] = h2_lookup[key]
-
-    return combined
+    """Use the same identified forecasts and H* rule as the evidence tables."""
+    spec = importlib.util.spec_from_file_location("benchmark_evaluation", Path(__file__).with_name("07_evaluate_benchmarks.py"))
+    evaluation = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(evaluation)
+    return evaluation.apply_minnesota_phenological_rule(evaluation.load_combined_predictions())
 
 
 # ==============================================================================
 # FIGURE 5.1: Multi-Horizon Progression Curves
 # ==============================================================================
 def plot_figure_5_1(preds):
-    print("Generating Figure 5.1: R2 and RMSE progression across horizons...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.0, 5.4), sharex=True)
-    x_pos = np.arange(len(HORIZONS))
-
-    for ax in (ax1, ax2):
-        ax.axvspan(-0.5, 5.5, color="#f2f4f8", alpha=0.75)
-        ax.axvspan(5.5, 10.5, color="#fdfbf2", alpha=0.85)
-        ax.axvline(5.5, color="#c0392b", linestyle=":", linewidth=1.5, alpha=0.85)
-
-    ax1.plot(x_pos, np.zeros(len(HORIZONS)), label="Naive Secular Trend", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
-
-    models_to_plot = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
-    for m in models_to_plot:
-        sub_m = preds[preds["model"] == m]
-        if sub_m.empty:
-            continue
-        r2_vals, rmse_vals = [], []
-        for h in HORIZONS:
-            sh = sub_m[sub_m["H"] == h]
-            if sh.empty:
-                r2_vals.append(np.nan)
-                rmse_vals.append(np.nan)
-            else:
-                yt, yp = sh["y_true_anomaly"].values, sh["y_pred_anomaly"].values
-                ss_res, ss_tot = np.sum((yt - yp) ** 2), np.sum(yt ** 2)
-                r2_vals.append(1.0 - ss_res / ss_tot if ss_tot > 0 else np.nan)
-                rmse_vals.append(np.sqrt(np.mean((yt - yp) ** 2)))
-
-        ls = "--" if "+Lag" in m else ("-." if "Ensemble" in m else "-")
-        lw = 2.2 if "Ensemble" in m else 1.8
-        ax1.plot(x_pos, r2_vals, label=m, color=COLORS.get(m, "#333333"), linestyle=ls, marker="o", markersize=5, linewidth=lw)
-        ax2.plot(x_pos, rmse_vals, label=m, color=COLORS.get(m, "#333333"), linestyle=ls, marker="o", markersize=5, linewidth=lw)
-
-    ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
-    ax1.set_ylabel(r"Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$")
-    ax1.set_title(r"(a) Multi-Horizon Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)", loc="left", fontweight="bold", fontsize=11)
-    ax1.set_ylim(-0.35, 0.42)
-    ax1.legend(loc="lower left", frameon=True, fontsize=8.0, ncol=2)
-
-    naive_rmse = 5.944
-    ax2.plot(x_pos, np.full(len(HORIZONS), naive_rmse), label="Naive Baseline (5.94 bu/ac)", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
-    ax2.set_ylabel("Out-of-Sample RMSE (bu/acre)")
-    ax2.set_title("(b) Forecast Error Magnitude (RMSE)", loc="left", fontweight="bold", fontsize=11)
-    ax2.set_ylim(4.80, 7.20)
-    ax2.legend(loc="upper right", frameon=True, fontsize=8.0, ncol=2)
-
-    for ax in (ax1, ax2):
-        ax.set_xticks(x_pos)
-        ax.set_xticklabels([MONTH_LABELS[h] for h in HORIZONS])
-        ax.set_xlabel("Forecast Horizon & Campaign Month")
-        ax.grid(True, linestyle="--", alpha=0.4)
-
-    plt.tight_layout()
-    fig.savefig(FIGURES_DIR / "fig_r2_horizon_progression.pdf")
-    fig.savefig(FIGURES_DIR / "fig_r2_horizon_progression.png")
+    """Compare information sets and matched-family lag increments."""
+    fig,(left,right)=plt.subplots(1,2,figsize=(10,5),sharex=True)
+    x=np.arange(len(HORIZONS))
+    scores={}
+    for (model,horizon),group in preds.groupby(["model","H"]):
+        scores[(model,horizon)]=1-np.sum((group.y_pred_anomaly-group.y_true_anomaly)**2)/np.sum(group.y_true_anomaly**2)
+    pairs=[("ElasticNet","ElasticNet (+Lag)","ENet",COLORS["ElasticNet"]),
+           ("RandomForest","RandomForest (+Lag)","RF",COLORS["RandomForest"]),
+           ("XGBoost","XGBoost (+Lag)","XGB",COLORS["XGBoost"]),
+           ("LSTM (Weather-Only)","LSTM (+Lag)","LSTM",COLORS["LSTM (+Lag)"])]
+    for weather,integrated,label,color in pairs:
+        left.plot(x,[scores[(weather,h)] for h in HORIZONS],color=color,ls="-",label=f"{label} weather",lw=1.5)
+        left.plot(x,[scores[(integrated,h)] for h in HORIZONS],color=color,ls="--",label=f"{label} +Lag",lw=1.5)
+        matched="LSTM (Linear Weather-Only)" if label=="LSTM" else weather
+        right.plot(x,[scores[(integrated,h)]-scores[(matched,h)] for h in HORIZONS],color=color,label=label,marker="o",markersize=3,lw=1.5)
+    left.plot(x,[scores[("Ensemble (ENet + LSTM)",h)] for h in HORIZONS],color=COLORS["Ensemble (ENet + LSTM)"],ls="-.",label="Ensemble +Lag",lw=2)
+    for ax in (left,right):
+        ax.axhline(0,color="black",lw=.8,ls=":")
+        ax.set_xticks(x)
+        ax.set_xticklabels([r"$H^*(s)$" if h == 1 else str(h) for h in HORIZONS])
+        ax.set_xlabel(r"Forecast horizon $H$")
+        ax.grid(alpha=.3)
+    left.set_ylabel(r"Pooled $R^2_{\mathrm{OOS}}$")
+    left.set_title("(a) Weather-only and integrated forecasts",loc="left",fontsize=14)
+    left.legend(fontsize=11,ncol=2,loc="lower left")
+    right.set_ylabel(r"$\Delta R^2$: integrated minus weather-only")
+    right.set_title("(b) Lag increment within model families",loc="left",fontsize=14)
+    right.legend(fontsize=11)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR/"fig_r2_horizon_progression.pdf")
+    fig.savefig(FIGURES_DIR/"fig_r2_horizon_progression.png",dpi=300)
     plt.close(fig)
 
 
@@ -182,14 +126,14 @@ def plot_figure_5_1(preds):
 # ==============================================================================
 def plot_figure_5_2(preds):
     print("Generating Figure 5.2: Shock bias profiles and scatter resolution...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.8, 5.2))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,5))
     active_h = [5, 4, 3, 2, 1]
     x_pos = np.arange(len(active_h))
 
     # Panel (a): Lead-Time Bias Trajectories including Ensemble
     models_panel_a = [
-        ("ElasticNet", "ElasticNet", COLORS["ElasticNet"]),
-        ("XGBoost", "XGBoost", COLORS["XGBoost"]),
+        ("ElasticNet (+Lag)", "ElasticNet (+Lag)", COLORS["ElasticNet"]),
+        ("XGBoost (+Lag)", "XGBoost (+Lag)", COLORS["XGBoost"]),
         ("LSTM (+Lag)", "LSTM", COLORS["LSTM (+Lag)"]),
         ("Ensemble (ENet + LSTM)", "Ensemble", COLORS["Ensemble (ENet + LSTM)"]),
     ]
@@ -205,11 +149,11 @@ def plot_figure_5_2(preds):
 
     ax1.axhline(0, color="black", linestyle=":", linewidth=1.2, label="Zero Bias")
     ax1.set_ylabel(r"Mean Anomaly Bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/acre)")
-    ax1.set_title(r"(a) Lead-Time Shock Bias Trajectory Across Active Horizons", loc="left", fontweight="bold", fontsize=11)
+    ax1.set_title("(a) Regional forecast bias", loc="left", fontweight="bold", fontsize=14)
     ax1.set_xticks(x_pos)
-    ax1.set_xticklabels([f"H={h}" for h in active_h])
+    ax1.set_xticklabels([r"$H^*(s)$" if h == 1 else f"H={h}" for h in active_h])
     ax1.set_xlabel("Forecast Horizon")
-    ax1.legend(loc="lower left", frameon=True, fontsize=7.8, ncol=2)
+    ax1.legend(loc="lower left", frameon=True, fontsize=10, ncol=2)
     ax1.grid(True, linestyle="--", alpha=0.4)
 
     # Panel (b): Scatter of Predicted vs Observed 2012 Drought Anomalies with OLS Trendlines
@@ -230,12 +174,12 @@ def plot_figure_5_2(preds):
             # OLS regression line
             x_line = np.linspace(xt.min(), xt.max(), 50)
             ax2.plot(x_line, slope * x_line + intercept, color=colors_h[h], linewidth=1.8,
-                     label=f"H={h} (slope: {slope:.2f})", zorder=4)
+                     label=(r"$H^*(s)$" if h == 1 else f"H={h}")+f" (slope: {slope:.2f})", zorder=4)
 
     ax2.set_xlabel("Observed 2012 County Anomaly (bu/acre)")
     ax2.set_ylabel("Predicted Anomaly (bu/acre)")
-    ax2.set_title(r"(b) 2012 Flash Drought: Trajectory from Blind to Resolved (LSTM)", loc="left", fontweight="bold", fontsize=11)
-    ax2.legend(loc="upper left", frameon=True, fontsize=8.0)
+    ax2.set_title("(b) 2012 drought forecasts (LSTM)", loc="left", fontweight="bold", fontsize=14)
+    ax2.legend(loc="upper left", frameon=True, fontsize=11)
     ax2.grid(True, linestyle="--", alpha=0.4)
 
     plt.tight_layout()
@@ -256,15 +200,15 @@ def plot_figure_5_3(preds):
     # Clean selection of candidate models
     eval_models = [
         ("Naive", "Naive", COLORS["Naive"], "s"),
-        ("ElasticNet", "ElasticNet", COLORS["ElasticNet"], "o"),
-        ("RandomForest", "Random Forest", COLORS["RandomForest"], "^"),
-        ("XGBoost", "XGBoost", COLORS["XGBoost"], "D"),
+        ("ElasticNet (+Lag)", "ElasticNet (+Lag)", COLORS["ElasticNet"], "o"),
+        ("RandomForest (+Lag)", "Random Forest (+Lag)", COLORS["RandomForest"], "^"),
+        ("XGBoost (+Lag)", "XGBoost (+Lag)", COLORS["XGBoost"], "D"),
         ("LSTM (+Lag)", "LSTM", COLORS["LSTM (+Lag)"], "X"),
         ("Ensemble (ENet + LSTM)", "Ensemble", COLORS["Ensemble (ENet + LSTM)"], "P"),
     ]
 
     # Compute Deciles on observed test anomalies
-    obs_sample = sub_h1[sub_h1["model"] == "ElasticNet"][["year", "county_fips", "y_true_anomaly"]].drop_duplicates()
+    obs_sample = sub_h1[sub_h1["model"] == "Naive"][["year", "county_fips", "y_true_anomaly"]].drop_duplicates()
     obs_sample["decile"] = pd.qcut(obs_sample["y_true_anomaly"], 10, labels=False) + 1
     decile_map = obs_sample.set_index(["year", "county_fips"])["decile"].to_dict()
     sub_h1["decile"] = sub_h1.set_index(["year", "county_fips"]).index.map(decile_map)
@@ -274,10 +218,10 @@ def plot_figure_5_3(preds):
         pred_mean=("y_pred_anomaly", "mean")
     ).reset_index()
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.5, 4.8))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12,5))
 
     # Panel (a): Decile Reliability Diagram
-    obs_dec = decile_stats[decile_stats["model"] == "ElasticNet"].sort_values("decile")["obs_mean"].values
+    obs_dec = decile_stats[decile_stats["model"] == "Naive"].sort_values("decile")["obs_mean"].values
     min_val, max_val = min(obs_dec.min(), -12), max(obs_dec.max(), 12)
     ax1.plot([min_val - 2, max_val + 2], [min_val - 2, max_val + 2],
              color="#111111", linestyle="--", linewidth=1.1, alpha=0.75, label="1:1 Calibration", zorder=1)
@@ -288,20 +232,20 @@ def plot_figure_5_3(preds):
             ax1.plot(dm["obs_mean"], dm["pred_mean"], label=m_lbl, color=m_col,
                      marker=m_mk, markersize=5.5, linewidth=1.7, zorder=3)
 
-    ax1.set_xlabel(r"Mean Observed Anomaly ($\bar{\epsilon}$, bu/acre by Decile)")
-    ax1.set_ylabel(r"Mean Predicted Anomaly ($\bar{\hat{\epsilon}}$, bu/acre)")
-    ax1.set_title(r"(a) Decile Reliability Diagram ($H=1$)", loc="left", fontsize=11, fontweight="bold")
+    ax1.set_xlabel("Observed decile mean (bu/ac)")
+    ax1.set_ylabel("Predicted decile mean (bu/ac)")
+    ax1.set_title("(a) Decile calibration", loc="left", fontsize=14, fontweight="bold")
     ax1.set_xlim(min_val - 1.5, max_val + 1.5)
     ax1.set_ylim(-6.0, 5.0)
-    ax1.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=8.0)
+    ax1.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=11)
     ax1.grid(True, linestyle="--", alpha=0.4)
 
     # Panel (b): Normal Q-Q Plot of Standardized Residuals
     theo_q = np.linspace(-3.5, 3.5, 100)
     ax2.plot(theo_q, theo_q, color="#111111", linestyle="--", linewidth=1.1, alpha=0.75, label="Theoretical Normal", zorder=1)
 
-    for m_key, m_lbl, m_col in [("ElasticNet", "ElasticNet", COLORS["ElasticNet"]),
-                                 ("XGBoost", "XGBoost", COLORS["XGBoost"]),
+    for m_key, m_lbl, m_col in [("ElasticNet (+Lag)", "ElasticNet (+Lag)", COLORS["ElasticNet"]),
+                                 ("XGBoost (+Lag)", "XGBoost (+Lag)", COLORS["XGBoost"]),
                                  ("LSTM (+Lag)", "LSTM", COLORS["LSTM (+Lag)"])]:
         sm = sub_h1[sub_h1["model"] == m_key]
         if not sm.empty:
@@ -310,12 +254,12 @@ def plot_figure_5_3(preds):
             osm, osr = stats.probplot(std_e, dist="norm", fit=False)
             ax2.scatter(osm[::8], osr[::8], color=m_col, label=f"{m_lbl} Residuals", alpha=0.6, s=16, edgecolors="none", zorder=3)
 
-    ax2.set_xlabel("Theoretical Normal Quantiles ($z$)")
-    ax2.set_ylabel(r"Standardized Residuals ($e / \sigma_e$)")
-    ax2.set_title(r"(b) Normal Q-Q Plot of Residuals ($H=1$)", loc="left", fontsize=11, fontweight="bold")
+    ax2.set_xlabel("Normal quantile")
+    ax2.set_ylabel("Standardized residual")
+    ax2.set_title("(b) Residual Q-Q plot", loc="left", fontsize=14, fontweight="bold")
     ax2.set_xlim(-3.6, 3.6)
     ax2.set_ylim(-4.2, 3.8)
-    ax2.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=8.0)
+    ax2.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=11)
     ax2.grid(True, linestyle="--", alpha=0.4)
 
     # Panel (c): Residual Variance vs Fitted Values (Champion LSTM)
@@ -339,12 +283,12 @@ def plot_figure_5_3(preds):
     ax3.plot(grid_x, mu_smooth, color="#111111", linewidth=1.8, label="Smoothed Mean Bias")
     ax3.fill_between(grid_x, mu_smooth - sigma_smooth, mu_smooth + sigma_smooth, color=col_foc, alpha=0.18, label=r"$\pm 1\sigma$ Residual Band")
 
-    ax3.set_xlabel(r"Fitted Yield Anomaly ($\hat{\epsilon}$, bu/acre)")
-    ax3.set_ylabel(r"Residual Error ($e = \epsilon - \hat{\epsilon}$, bu/acre)")
-    ax3.set_title(r"(c) Residual Variance vs Fitted Values (LSTM)", loc="left", fontsize=11, fontweight="bold")
+    ax3.set_xlabel("Fitted anomaly (bu/ac)")
+    ax3.set_ylabel("Residual (bu/ac)")
+    ax3.set_title("(c) Residuals vs fitted (LSTM)", loc="left", fontsize=14, fontweight="bold")
     ax3.set_xlim(-10.5, 6.0)
     ax3.set_ylim(-18, 16)
-    ax3.legend(loc="lower left", frameon=True, framealpha=0.9, fontsize=8.0)
+    ax3.legend(loc="lower left", frameon=True, framealpha=0.9, fontsize=11)
     ax3.grid(True, linestyle="--", alpha=0.4)
 
     plt.tight_layout()
@@ -357,77 +301,108 @@ def plot_figure_5_3(preds):
 # Helper for Figures 5.4 & 5.5: Train Models & Setup PFI Datasets
 # ==============================================================================
 def prepare_pfi_data():
-    if not FEATURES_H01_PATH.exists() or not TARGET_CSV.exists() or not HPARAMS_PATH.exists():
-        return None
+    """Fixed-2010 diagnostic fits, evaluated at state-specific harvest closure.
 
-    feat_df = pd.read_parquet(FEATURES_H01_PATH)
-    target_df = pd.read_csv(TARGET_CSV)
+    The LSTM surrogate approximates refreshed forecasts in the same fixed-trend
+    space as these diagnostic fits. This is descriptive attribution, not another
+    expanding-window accuracy comparison.
+    """
+    forecasts = load_data()
+    recurrent = forecasts[forecasts.model.eq("LSTM (+Lag)")]
+    target = pd.read_csv(TARGET_CSV, dtype={"county_fips": str})
+    target["county_fips"] = target.county_fips.str.zfill(5)
+    params = json.loads(HPARAMS_PATH.read_text(encoding="utf-8"))
+    segments, fidelity = [], []
+    for horizon in [1, 2]:
+        features = pd.read_parquet(FEATURES_H01_PATH.with_name(f"features_H{horizon:02d}.parquet"))
+        features = features.rename(columns={"crop_year": "year"})
+        features["county_fips"] = features.county_fips.astype(str).str.zfill(5)
+        panel = target.merge(features, on=["county_fips", "year"], validate="one_to_one")
+        trends = {}
+        for fips, group in panel[panel.year.le(2010)].groupby("county_fips"):
+            trends[fips] = np.polyfit(group.year, group.yield_bu_per_acre, 1)
+        panel["trend"] = [trends[f][0]*y+trends[f][1] for f,y in zip(panel.county_fips,panel.year)]
+        panel["anomaly"] = panel.yield_bu_per_acre-panel.trend
+        panel = panel.sort_values(["county_fips", "year"])
+        panel["lag_anomaly"] = panel.groupby("county_fips").anomaly.shift(1)
+        first = panel.year.eq(panel.year.min())
+        panel.loc[first, "lag_anomaly"] = 0.0
+        train = panel[panel.year.le(2010)]
+        test = panel[panel.year.isin(TEST_YEARS)]
+        minnesota = test.county_fips.str.startswith("27")
+        test = test[minnesota if horizon == 2 else ~minnesota].copy()
+        cols = [c for c in features if c not in ["county_fips", "year"]]+["lag_anomaly"]
+        forecast = recurrent[recurrent.H.eq(horizon)][["year", "county_fips", "y_pred_anomaly", "trend"]]
+        test = test.merge(forecast, on=["year", "county_fips"], how="left",
+                          suffixes=("", "_forecast"), validate="one_to_one")
+        required = cols+["anomaly", "y_pred_anomaly", "trend_forecast"]
+        if not np.isfinite(train[cols+["anomaly"]].to_numpy()).all() or not np.isfinite(test[required].to_numpy()).all():
+            raise ValueError("Incomplete attribution panel")
+        X_train, X_test = train[cols].to_numpy(), test[cols].to_numpy()
+        y_train, y_test = train.anomaly.to_numpy(), test.anomaly.to_numpy()
+        scaler = StandardScaler().fit(X_train)
+        models = {
+            "enet": ElasticNet(**params[str(horizon)]["ElasticNet"], max_iter=2000, tol=1e-3, random_state=42),
+            "xgb": XGBRegressor(**params[str(horizon)]["XGBoost"], n_estimators=300, random_state=42, n_jobs=1),
+            "lstm": XGBRegressor(**params[str(horizon)]["XGBoost"], n_estimators=300, random_state=42, n_jobs=1)}
+        models["enet"].fit(scaler.transform(X_train), y_train)
+        models["xgb"].fit(X_train, y_train)
+        # Translate from expanding-trend forecasts to the diagnostic fixed-2010 trend.
+        surrogate_target = (test.y_pred_anomaly+test.trend_forecast-test.trend).to_numpy()
+        models["lstm"].fit(X_test, surrogate_target)
+        fitted = models["lstm"].predict(X_test)
+        fidelity.append({"H": horizon, "n_obs": len(test), "scope": "in_sample_surrogate_fit",
+                         "RMSE": np.sqrt(np.mean((fitted-surrogate_target)**2)),
+                         "R2": 1-np.sum((fitted-surrogate_target)**2)/np.sum((surrogate_target-surrogate_target.mean())**2)})
+        segments.append({"feature_cols": cols, "X_test": X_test, "y_test": y_test,
+                         "scaler": scaler, "models": models})
+    report = PROCESSED_DIR / "diagnostics"
+    pd.DataFrame(fidelity).to_csv(report / "lstm_surrogate_fidelity.csv", index=False)
+    return segments
 
-    if "crop_year" in feat_df.columns and "year" not in feat_df.columns:
-        feat_df = feat_df.rename(columns={"crop_year": "year"})
 
-    feat_df["county_fips"] = feat_df["county_fips"].astype(str).str.zfill(5)
-    target_df["county_fips"] = target_df["county_fips"].astype(str).str.zfill(5)
-    df = target_df.merge(feat_df, on=["county_fips", "year"])
+def attribution_columns(columns, prefixes):
+    """Match complete weather prefixes; precipitation excludes water-balance columns."""
+    selected = set()
+    for prefix in prefixes:
+        if prefix == "spatial":
+            selected.update(c for c in columns if c in ["lat_norm", "lon_norm"])
+        elif prefix == "lag_anomaly":
+            selected.update(c for c in columns if c == prefix)
+        else:
+            selected.update(c for c in columns if c.startswith(prefix+"_m")
+                            and c[len(prefix)+2:].isdigit())
+    if not selected:
+        raise ValueError(f"No attribution columns for {prefixes}")
+    return [i for i,c in enumerate(columns) if c in selected]
 
-    train_df = df[df["year"] <= 2010].copy()
-    test_df = df[df["year"] >= 2011].copy()
 
-    trend_dict = {}
-    for fips, grp in train_df.groupby("county_fips"):
-        trend_dict[fips] = np.polyfit(grp["year"], grp["yield_bu_per_acre"], 1)
+def attribution_losses(segments, prefixes, repeats):
+    """Joint permutations within the two closure strata, with one pooled denominator."""
+    observed = np.concatenate([part["y_test"] for part in segments])
+    denominator = np.sum((observed-observed.mean())**2)
+    baseline = {name: 0.0 for name in ["enet", "xgb", "lstm"]}
+    for part in segments:
+        for name, model in part["models"].items():
+            X = part["X_test"]
+            fitted = model.predict(part["scaler"].transform(X) if name == "enet" else X)
+            baseline[name] += np.sum((part["y_test"]-fitted)**2)
+    random = np.random.default_rng(42)
+    losses = {name: [] for name in baseline}
+    for _ in range(repeats):
+        permuted_sse = {name: 0.0 for name in baseline}
+        for part in segments:
+            indices = attribution_columns(part["feature_cols"], prefixes)
+            X = part["X_test"].copy()
+            permutation = random.permutation(len(X))
+            X[:, indices] = X[permutation][:, indices]
+            for name, model in part["models"].items():
+                fitted = model.predict(part["scaler"].transform(X) if name == "enet" else X)
+                permuted_sse[name] += np.sum((part["y_test"]-fitted)**2)
+        for name in losses:
+            losses[name].append(max(0.0,(permuted_sse[name]-baseline[name])/denominator))
+    return {"dr2_"+name: float(np.mean(values)) for name,values in losses.items()}
 
-    for part in (train_df, test_df):
-        part["trend"] = part.apply(
-            lambda r: trend_dict[r["county_fips"]][0] * r["year"] + trend_dict[r["county_fips"]][1], axis=1
-        )
-        part["anomaly"] = part["yield_bu_per_acre"] - part["trend"]
-
-    df_all = df.copy()
-    df_all["trend"] = df_all.apply(
-        lambda r: trend_dict[r["county_fips"]][0] * r["year"] + trend_dict[r["county_fips"]][1], axis=1
-    )
-    df_all["anomaly"] = df_all["yield_bu_per_acre"] - df_all["trend"]
-    df_all = df_all.sort_values(["county_fips", "year"])
-    df_all["lag_anomaly"] = df_all.groupby("county_fips")["anomaly"].shift(1)
-
-    train_df["lag_anomaly"] = df_all.loc[train_df.index, "lag_anomaly"].fillna(0.0)
-    test_df["lag_anomaly"] = df_all.loc[test_df.index, "lag_anomaly"].fillna(0.0)
-
-    feature_cols = [c for c in feat_df.columns if c not in ("county_fips", "year")] + ["lag_anomaly"]
-    X_train = train_df[feature_cols].values
-    y_train = train_df["anomaly"].values
-    X_test = test_df[feature_cols].values
-    y_test = test_df["anomaly"].values
-
-    scaler = StandardScaler().fit(X_train)
-    X_train_sc = scaler.transform(X_train)
-    X_test_sc = scaler.transform(X_test)
-    ss_tot = np.sum((y_test - np.mean(y_test)) ** 2)
-
-    with open(HPARAMS_PATH, "r", encoding="utf-8") as f:
-        hparams_h1 = json.load(f)["1"]
-
-    enet = ElasticNet(**hparams_h1["ElasticNet"], max_iter=2000, tol=1e-3, random_state=42)
-    enet.fit(X_train_sc, y_train)
-
-    xgb = XGBRegressor(**hparams_h1["XGBoost"], n_estimators=300, random_state=42)
-    xgb.fit(X_train, y_train)
-
-    surrogate = None
-    if LSTM_PREDS_PATH.exists():
-        lstm_df = pd.read_parquet(LSTM_PREDS_PATH)
-        test_merged = test_df[["county_fips", "year"]].merge(lstm_df, on=["county_fips", "year"], how="left")
-        y_lstm = test_merged["pred_anomaly"].values
-        surrogate = XGBRegressor(**hparams_h1["XGBoost"], n_estimators=300, random_state=42)
-        surrogate.fit(X_test, y_lstm)
-
-    return {
-        "feature_cols": feature_cols,
-        "X_test": X_test, "X_test_sc": X_test_sc, "y_test": y_test,
-        "scaler": scaler, "ss_tot": ss_tot,
-        "enet": enet, "xgb": xgb, "surrogate": surrogate
-    }
 
 
 # ==============================================================================
@@ -437,16 +412,6 @@ def plot_figure_5_4(pfi_data):
     print("Generating Figure 5.4: PFI Faceted Bars...")
     if pfi_data is None:
         return
-
-    feature_cols = pfi_data["feature_cols"]
-    X_test = pfi_data["X_test"]
-    X_test_sc = pfi_data["X_test_sc"]
-    y_test = pfi_data["y_test"]
-    scaler = pfi_data["scaler"]
-    ss_tot = pfi_data["ss_tot"]
-    enet = pfi_data["enet"]
-    xgb = pfi_data["xgb"]
-    surrogate = pfi_data["surrogate"]
 
     canonical_domains = [
         {"domain": "Atmospheric Demand & Heat", "color": "#e66101", "vars": [
@@ -470,64 +435,23 @@ def plot_figure_5_4(pfi_data):
         ]}
     ]
 
-    prefix_to_cols = {}
-    for d in canonical_domains:
-        for prefix, _ in d["vars"]:
-            if prefix == "lag_anomaly":
-                prefix_to_cols[prefix] = [c for c in feature_cols if c == "lag_anomaly"]
-            elif prefix == "spatial":
-                prefix_to_cols[prefix] = [c for c in feature_cols if any(k in c.lower() for k in ("lat", "lon", "coord"))]
-            else:
-                prefix_to_cols[prefix] = [c for c in feature_cols if c.startswith(prefix + "_") or c == prefix]
-
-    r2_base_enet = 1.0 - np.sum((y_test - enet.predict(X_test_sc)) ** 2) / ss_tot
-    r2_base_xgb = 1.0 - np.sum((y_test - xgb.predict(X_test)) ** 2) / ss_tot
-    r2_base_lstm = 1.0 - np.sum((y_test - surrogate.predict(X_test)) ** 2) / ss_tot if surrogate is not None else 0.16
-
-    np.random.seed(42)
     records = []
-    for d in canonical_domains:
-        domain_name = d["domain"]
-        domain_color = d["color"]
-        for prefix, label in d["vars"]:
-            cols = prefix_to_cols.get(prefix, [])
-            if not cols:
-                continue
-            idx_list = [feature_cols.index(c) for c in cols if c in feature_cols]
-            if not idx_list:
-                continue
-
-            dr2_enet_reps, dr2_xgb_reps, dr2_lstm_reps = [], [], []
-            for _ in range(5):
-                perm = np.random.permutation(len(X_test))
-                X_test_perm = X_test.copy()
-                X_test_perm[:, idx_list] = X_test_perm[perm][:, idx_list]
-                X_test_sc_perm = scaler.transform(X_test_perm)
-
-                dr2_enet_reps.append(max(0.0, r2_base_enet - (1.0 - np.sum((y_test - enet.predict(X_test_sc_perm)) ** 2) / ss_tot)))
-                dr2_xgb_reps.append(max(0.0, r2_base_xgb - (1.0 - np.sum((y_test - xgb.predict(X_test_perm)) ** 2) / ss_tot)))
-                if surrogate is not None:
-                    dr2_lstm_reps.append(max(0.0, r2_base_lstm - (1.0 - np.sum((y_test - surrogate.predict(X_test_perm)) ** 2) / ss_tot)))
-                else:
-                    dr2_lstm_reps.append(0.0)
-
-            records.append({
-                "domain": domain_name, "color": domain_color, "prefix": prefix, "label": label,
-                "dr2_enet": float(np.mean(dr2_enet_reps)),
-                "dr2_xgb": float(np.mean(dr2_xgb_reps)),
-                "dr2_lstm": float(np.mean(dr2_lstm_reps)),
-            })
-
+    for domain in canonical_domains:
+        for prefix,label in domain["vars"]:
+            row = {"domain":domain["domain"], "color":domain["color"], "prefix":prefix, "label":label}
+            row.update(attribution_losses(pfi_data, [prefix], 5))
+            records.append(row)
     res_df = pd.DataFrame(records)
     res_df["share_enet"] = res_df["dr2_enet"] / res_df["dr2_enet"].sum() * 100.0
     res_df["share_xgb"] = res_df["dr2_xgb"] / res_df["dr2_xgb"].sum() * 100.0
     res_df["share_lstm"] = res_df["dr2_lstm"] / res_df["dr2_lstm"].sum() * 100.0
+    res_df.to_csv(PROCESSED_DIR / "diagnostics/forecast_pfi_groups.csv", index=False)
     # Grouped by class/domain in natural order (inverted so Atmospheric Demand is at top)
     df_plot = res_df.iloc[::-1].reset_index(drop=True)
     y_pos = np.arange(len(df_plot))
     bar_h = 0.65
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(14.8, 9.8), sharey=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10,10), sharey=True)
 
     # Subtle horizontal dividers between physical domains
     curr_dom = None
@@ -539,16 +463,16 @@ def plot_figure_5_4(pfi_data):
         curr_dom = d_name
 
     panels = [
-        (ax1, "share_enet", "(a) ElasticNet (+Lag)"),
-        (ax2, "share_xgb", "(b) XGBoost (+Lag)"),
+        (ax1, "share_enet", "(a) ENet (+Lag)"),
+        (ax2, "share_xgb", "(b) XGB (+Lag)"),
         (ax3, "share_lstm", "(c) LSTM (Surrogate)"),
     ]
 
     for ax, col_name, title in panels:
         bars = ax.barh(y_pos, df_plot[col_name], color=df_plot["color"], alpha=0.90, edgecolor="none", height=bar_h)
-        ax.set_title(title, fontsize=11.5, fontweight="bold", pad=10)
-        ax.set_xlabel("Information Share (%)", fontsize=10.0)
-        ax.set_xlim(0, 32)
+        ax.set_title(title, fontsize=14, fontweight="bold", pad=10)
+        ax.set_xlabel("Information Share (%)", fontsize=12)
+        ax.set_xlim(0, max(32, df_plot[col_name].max()+5))
         ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f%%"))
         ax.grid(axis="x", color="#e8e8e8", linestyle=":", linewidth=0.7)
         ax.yaxis.grid(False)
@@ -558,17 +482,17 @@ def plot_figure_5_4(pfi_data):
         ax.spines["bottom"].set_color("#888888")
         for b, val in zip(bars, df_plot[col_name]):
             if val >= 0.2:
-                ax.text(b.get_width() + 0.45, b.get_y() + b.get_height() / 2, f"{val:.1f}%", va="center", fontsize=8.5, color="#333333")
+                ax.text(b.get_width() + 0.45, b.get_y() + b.get_height() / 2, f"{val:.1f}%", va="center", fontsize=11, color="#333333")
 
     ax1.set_yticks(y_pos)
-    ax1.set_yticklabels(df_plot["label"], fontsize=9.2)
+    ax1.set_yticklabels(df_plot["label"], fontsize=12)
     ax1.tick_params(axis="y", length=0)
 
-    legend_handles = [Patch(facecolor=d["color"], edgecolor="none", label=d["domain"]) for d in canonical_domains]
-    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.955), ncol=5, frameon=False, fontsize=9.0)
+    legend_handles = [Patch(facecolor=d["color"], edgecolor="none", label=DOMAIN_LABELS[d["domain"]]) for d in canonical_domains]
+    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.955), ncol=3, frameon=False, fontsize=11)
 
-    plt.suptitle("Grouped Permutation Feature Importance across Candidate Models and Physical Domains", fontsize=12.0, fontweight="bold", y=0.985)
-    plt.tight_layout(rect=[0, 0, 1, 0.93])
+    plt.suptitle("Grouped predictor importance", fontsize=14, fontweight="bold", y=0.985)
+    plt.tight_layout(rect=[0, 0, 1, 0.86])
 
     fig.savefig(FIGURES_DIR / "fig54_pfi_faceted_bars.pdf")
     fig.savefig(FIGURES_DIR / "fig54_pfi_faceted_bars.png", dpi=300)
@@ -584,65 +508,21 @@ def plot_figure_5_5(pfi_data):
     if pfi_data is None:
         return
 
-    feature_cols = pfi_data["feature_cols"]
-    X_test = pfi_data["X_test"]
-    X_test_sc = pfi_data["X_test_sc"]
-    y_test = pfi_data["y_test"]
-    scaler = pfi_data["scaler"]
-    ss_tot = pfi_data["ss_tot"]
-    enet = pfi_data["enet"]
-    xgb = pfi_data["xgb"]
-    surrogate = pfi_data["surrogate"]
-
     canonical_domains = [
         {"domain": "Atmospheric Demand & Heat", "color": "#e66101", "prefixes": ["VPD", "ET0", "HD30", "HD35", "EDD30"]},
         {"domain": "Hydrological Supply", "color": "#1f78b4", "prefixes": ["P", "P_minus_ET0"]},
         {"domain": "Soil Moisture Dynamics", "color": "#8c510a", "prefixes": ["SM1", "SM2", "SM3", "SM_root"]},
         {"domain": "Thermal & Radiation Regimes", "color": "#e7298a", "prefixes": ["T_mean", "T_max", "T_min", "GDD", "T_dew", "SSRD"]},
-        {"domain": "Memory & Spatial Baseline", "color": "#7570b3", "prefixes": ["lag_anomaly", "spatial"]}
+        {"domain": "Memory & Spatial Baseline", "color": "#4d4d4d", "prefixes": ["lag_anomaly", "spatial"]}
     ]
 
-    r2_base_enet = 1.0 - np.sum((y_test - enet.predict(X_test_sc)) ** 2) / ss_tot
-    r2_base_xgb = 1.0 - np.sum((y_test - xgb.predict(X_test)) ** 2) / ss_tot
-    r2_base_lstm = 1.0 - np.sum((y_test - surrogate.predict(X_test)) ** 2) / ss_tot if surrogate is not None else 0.16
-
-    np.random.seed(42)
     records = []
-    for d in canonical_domains:
-        d_cols = []
-        for p in d["prefixes"]:
-            if p == "lag_anomaly":
-                d_cols.extend([c for c in feature_cols if c == "lag_anomaly"])
-            elif p == "spatial":
-                d_cols.extend([c for c in feature_cols if any(k in c.lower() for k in ("lat", "lon", "coord"))])
-            elif p == "P":
-                d_cols.extend([c for c in feature_cols if c.startswith("P_m") and not c.startswith("P_minus")])
-            else:
-                d_cols.extend([c for c in feature_cols if c.startswith(p + "_") or c == p])
-        idx_list = [feature_cols.index(c) for c in set(d_cols) if c in feature_cols]
-
-        dr2_e, dr2_x, dr2_l = [], [], []
-        for _ in range(10):
-            perm = np.random.permutation(len(X_test))
-            X_test_perm = X_test.copy()
-            X_test_perm[:, idx_list] = X_test_perm[perm][:, idx_list]
-            X_test_sc_perm = scaler.transform(X_test_perm)
-
-            dr2_e.append(max(0.0, r2_base_enet - (1.0 - np.sum((y_test - enet.predict(X_test_sc_perm)) ** 2) / ss_tot)))
-            dr2_x.append(max(0.0, r2_base_xgb - (1.0 - np.sum((y_test - xgb.predict(X_test_perm)) ** 2) / ss_tot)))
-            if surrogate is not None:
-                dr2_l.append(max(0.0, r2_base_lstm - (1.0 - np.sum((y_test - surrogate.predict(X_test_perm)) ** 2) / ss_tot)))
-            else:
-                dr2_l.append(0.0)
-
-        records.append({
-            "domain": d["domain"], "color": d["color"],
-            "dr2_enet": float(np.mean(dr2_e)),
-            "dr2_xgb": float(np.mean(dr2_x)),
-            "dr2_lstm": float(np.mean(dr2_l))
-        })
-
+    for domain in canonical_domains:
+        row = {"domain":domain["domain"], "color":domain["color"]}
+        row.update(attribution_losses(pfi_data, domain["prefixes"], 10))
+        records.append(row)
     dom_df = pd.DataFrame(records)
+    dom_df.to_csv(PROCESSED_DIR / "diagnostics/forecast_pfi_domains.csv", index=False)
     models = ["(a) ElasticNet (+Lag)", "(b) XGBoost (+Lag)", "(c) LSTM (Surrogate)"]
     model_cols = ["dr2_enet", "dr2_xgb", "dr2_lstm"]
 
@@ -650,7 +530,7 @@ def plot_figure_5_5(pfi_data):
     totals = matrix_vals.sum(axis=1, keepdims=True)
     shares_matrix = (matrix_vals / totals) * 100.0
 
-    fig, ax = plt.subplots(figsize=(11.5, 4.8))
+    fig, ax = plt.subplots(figsize=(10,5))
     y_pos = np.arange(len(models))[::-1]
     height = 0.48
     lefts = np.zeros(len(models))
@@ -670,13 +550,13 @@ def plot_figure_5_5(pfi_data):
                 ax.text(
                     lefts[j] + pct / 2, b.get_y() + b.get_height() / 2,
                     f"{pct:.1f}%", ha="center", va="center",
-                    fontsize=10.0, color="white", fontweight="bold"
+                    fontsize=12, color="white", fontweight="bold"
                 )
         lefts += s
 
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(models, fontsize=11.5, fontweight="bold")
-    ax.set_xlabel("Macro-Domain Relative Information Share (%)", fontsize=11.0)
+    ax.set_yticklabels(models, fontsize=14, fontweight="bold")
+    ax.set_xlabel("Macro-Domain Relative Information Share (%)", fontsize=14)
     ax.set_xlim(0, 100)
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f%%"))
 
@@ -687,11 +567,11 @@ def plot_figure_5_5(pfi_data):
     ax.spines["left"].set_color("#888888")
     ax.spines["bottom"].set_color("#888888")
 
-    legend_handles = [Patch(facecolor=c, edgecolor="none", label=d) for d, c in zip(domain_names, domain_colors)]
-    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.93), ncol=5, frameon=False, fontsize=9.2)
+    legend_handles = [Patch(facecolor=c, edgecolor="none", label=DOMAIN_LABELS[d]) for d, c in zip(domain_names, domain_colors)]
+    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.93), ncol=3, frameon=False, fontsize=12)
 
-    plt.suptitle("Figure 5.5: Macro-Domain Information Share across Architectures (100% Stacked)", fontsize=12.0, fontweight="bold", y=0.985)
-    plt.tight_layout(rect=[0, 0, 1, 0.88])
+    plt.suptitle("Macro-domain information share across forecasting specifications", fontsize=14, fontweight="bold", y=0.985)
+    plt.tight_layout(rect=[0, 0, 1, 0.79])
 
     fig.savefig(FIGURES_DIR / "fig55_pfi_domain_bars.pdf")
     fig.savefig(FIGURES_DIR / "fig55_pfi_domain_bars.png", dpi=300)
@@ -708,9 +588,7 @@ def plot_figure_5_6(preds):
 
     sub = preds[(preds["model"] == "LSTM (+Lag)") & (preds["H"] == 1)]
     if sub.empty:
-        sub = preds[(preds["model"] == "XGBoost") & (preds["H"] == 1)]
-        if sub.empty:
-            return
+        raise ValueError("The county map requires the verified LSTM (+Lag) forecasts")
 
     county_r2 = []
     for fips, grp in sub.groupby("county_fips"):
@@ -720,18 +598,19 @@ def plot_figure_5_6(preds):
         county_r2.append({"GEOID": str(fips).zfill(5), "r2_oos": r2})
 
     df_r2 = pd.DataFrame(county_r2)
+    color_limit = max(0.65, float(df_r2.r2_oos.abs().max()))
     gdf = gpd.read_file(SHAPEFILE)
     midwest_fips = ["17", "18", "19", "27", "29", "39"]
     gdf_mw = gdf[gdf["STATEFP"].isin(midwest_fips)].to_crs(epsg=5070)
     gdf_merged = gdf_mw.merge(df_r2, on="GEOID", how="left")
 
-    fig, ax = plt.subplots(figsize=(10.5, 7.8))
+    fig, ax = plt.subplots(figsize=(9,7.8))
     gdf_mw.plot(ax=ax, color="#f2f2f2", edgecolor="#d9d9d9", linewidth=0.4)
     gdf_merged.dropna(subset=["r2_oos"]).plot(
-        column="r2_oos", ax=ax, cmap="YlGnBu", legend=True,
-        vmin=-0.05, vmax=0.65,
+        column="r2_oos", ax=ax, cmap="RdBu", legend=True,
+        vmin=-color_limit, vmax=color_limit,
         legend_kwds={
-            "label": r"Out-of-Sample Explained Variance ($R^2_{\mathrm{OOS}}$ at Harvest Closure $H^*(s)$)",
+            "label": r"Trend-relative $R^2_{\mathrm{OOS}}$ at harvest closure $H^*(s)$",
             "orientation": "horizontal", "pad": 0.04, "shrink": 0.65, "aspect": 25
         },
         edgecolor="#333333", linewidth=0.5
@@ -743,7 +622,7 @@ def plot_figure_5_6(preds):
     gdf_mn = gdf_mw[gdf_mw["STATEFP"] == "27"].dissolve(by="STATEFP")
     gdf_mn.plot(ax=ax, facecolor="none", edgecolor="#99000d", linewidth=2.0, linestyle="--")
 
-    ax.set_title(r"Spatial Heterogeneity of Out-of-Sample Predictive Skill ($R^2_{\mathrm{OOS}}$, Harvest Closure $H^*(s)$, 2011--2025)", fontsize=11.5, fontweight="bold", pad=12)
+    ax.set_title(r"County-level forecast skill at harvest closure $H^*(s)$ (2011--2025)", fontsize=14, fontweight="bold", pad=12)
     ax.axis("off")
 
     plt.tight_layout()

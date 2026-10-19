@@ -8,9 +8,9 @@ available number of crop years without model comparison. Within the supplied
 of the **75 years**, yielding **10,125 observations**. This selected subset is a
 balanced panel. The full 479-county 1950–2025 export remains incomplete.
 
-The 1950 yield is explicitly excluded because its October 1949–October 1950
+The 1950 yield is explicitly excluded because its November 1949--October 1950
 campaign lacks the initial weather. The first retained yield is 1951; keep weather
-from 1950 for the October 1950–October 1951 campaign. Removing 1950 retains the
+from 1950 for the November 1950--October 1951 campaign. Removing 1950 retains the
 same 135 counties. Original workbook rows for 1950 remain unchanged.
 
 `data/target/soybean_yield_1951_2025.csv` contains only `county_fips`, `year` and

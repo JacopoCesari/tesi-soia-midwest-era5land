@@ -10,7 +10,7 @@ The pipeline operates in daily UTC dates on the regional
 original domain `[47.7, -97.0, 35.8, -80.4]` for stored fixtures. Production requests
 derive the smallest rectangle containing the selected weight cell centers:
 `[45.8, -96.8, 36.0, -80.5]` (north, west, south, east). Target years are 1951–2025;
-weather still starts in 1950 for the October 1950–October 1951 campaign.
+weather still starts in 1950 for the November 1950--October 1951 model campaign.
 
 | Responsibility | Module under `src/soybean_yield_forecasting/era5/` |
 |---|---|

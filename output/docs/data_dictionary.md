@@ -93,6 +93,16 @@ D+1 to weather day D. Snow-cover scale is not established by the supplied reduce
 samples, which do not contain that variable; verify it in a live full-field pilot.
 Evaporation signs remain the CDS signs; an agronomic demand convention is not imposed.
 
+## Fitted model subset
+
+The fitted feature subset is documented in `feature_engineering.md`: 17 weather
+indicators, two coordinates, and an optional lagged yield predictor. Daily `heat_day_30`
+and `heat_day_35` are binary; their window totals count days. The additional model
+field `edd_30` is `max(air_temperature_maximum - 30, 0)` in degree-days. It is computed
+from the saved maximum temperature at the model-ingestion boundary if absent from
+the acquisition export. The LSTM has 19 input channels, while the attribution plots
+have 19 predictor groups, including lagged yield and a joint coordinate group.
+
 ## Spatial weights and boundaries
 
 | Field | Meaning / units |

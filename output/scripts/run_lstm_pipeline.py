@@ -28,6 +28,7 @@ Modes:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import math
 import sys
@@ -60,7 +61,16 @@ TARGET_CSV   = ROOT / "data" / "target" / "soybean_yield_1951_2025.csv"
 FEAT_DIR     = ROOT / "output" / "data" / "processed" / "model_datasets"
 SEQ_DIR      = ROOT / "output" / "data" / "processed" / "lstm_sequences"
 REPORT_DIR   = ROOT / "work" / "reports" / "experiments" / "lstm"
-CHECKPOINT_PATH = REPORT_DIR / "checkpoint_lstm.json"
+CHECKPOINT_PATH = REPORT_DIR / "checkpoint_lstm_continuous.json"
+
+# Retained development entry point; sequence construction and training live in scripts/06.
+_spec = importlib.util.spec_from_file_location("canonical_recurrent", ROOT / "scripts/06_train_lstm_model.py")
+recurrent = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(recurrent)
+get_sequence_slice = recurrent.get_sequence_slice
+fit_and_predict = recurrent.fit_and_predict
+RecurrentForecaster = recurrent.RecurrentForecaster
+
 
 SEQ_DIR.mkdir(parents=True, exist_ok=True)
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -77,20 +87,8 @@ INPUT_SIZE  = 19     # 17 bioclimatic indicators + lat_norm + lon_norm
 LR          = 3e-4   # Standard learning rate (Khaki et al. 2020)
 WEIGHT_DECAY = 1e-4  # Decoupled AdamW weight decay (Géron Ch. 11)
 
-CAMPAIGN_MONTH_DAYS = {
-    1: 30, 2: 31, 3: 31, 4: 28, 5: 31, 6: 30,
-    7: 31, 8: 30, 9: 31, 10: 31, 11: 30, 12: 31,
-}
 
-def windows_per_month(W: int) -> dict[int, int]:
-    return {cm: CAMPAIGN_MONTH_DAYS[cm] // W for cm in range(1, 13)}
 
-def seq_len_at_H(H: int, W: int) -> int:
-    if H == 12:
-        return 0
-    m = 13 - H
-    wpm = windows_per_month(W)
-    return sum(wpm[cm] for cm in range(1, m + 1))
 
 
 def compute_weighted_rmse(rmse_dict_or_list, horizons: list[int] | None = None) -> float:
@@ -146,14 +144,14 @@ GRID_44 = build_grid_44()
 def is_viable_5d_config(cfg: dict, cfg_idx: int) -> bool:
     """
     Theoretical and empirical admissibility filter for high-frequency (5-day) resolution.
-    At W=5 (T=72), prunes configurations prone to catastrophic overfitting,
+    At W=5, prunes configurations prone to catastrophic overfitting,
     exploding variance, or gradient saturation.
     """
     h = cfg["hidden_size"]
     l = cfg["num_layers"]
     dr = cfg["dropout"]
 
-    # 1. Structural underfitting: 1 layer with only 64 units cannot compress 72 steps
+    # 1. Structural underfitting: 1 layer with only 64 units cannot compress long sequences
     if h == 64 and l == 1:
         return False
 
@@ -175,20 +173,7 @@ def is_viable_5d_config(cfg: dict, cfg_idx: int) -> bool:
 # ---------------------------------------------------------------------------
 # Sequence Loader with Zero-Cost Slicing
 # ---------------------------------------------------------------------------
-_CACHE: dict[int, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
 
-def get_sequence_slice(W: int, H: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if W not in _CACHE:
-        cache_file = SEQ_DIR / f"seq_{W}d_full_v3.npz"
-        if not cache_file.exists():
-            raise FileNotFoundError(f"Sequence cache {cache_file} not found. Run build_lstm_sequences_fast.py first.")
-        data = np.load(cache_file, allow_pickle=True)
-        _CACHE[W] = (data["X_seq"].astype(np.float32), data["counties"], data["years"].astype(np.int32))
-
-    X_full, counties, years = _CACHE[W]
-    S_H = seq_len_at_H(H, W)
-    X_sliced = X_full[:, :S_H, :]
-    return X_sliced, counties, years
 
 
 # ---------------------------------------------------------------------------
@@ -219,122 +204,12 @@ def compute_anomalies(yield_df: pd.DataFrame, trend_params: dict, years: list[in
 # ---------------------------------------------------------------------------
 # Loss Functions & Neural Architecture
 # ---------------------------------------------------------------------------
-class AsymmetricHuberLoss(nn.Module):
-    """
-    Asymmetric Huber Loss: Quadratic near zero, linear on large residuals,
-    with asymmetric weighting alpha > 1.0 penalizing underestimation of drought collapses.
-    """
-    def __init__(self, delta: float = 1.0, alpha: float = 1.5):
-        super().__init__()
-        self.delta = delta
-        self.alpha = alpha
-
-    def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        err = target - pred  # err < 0 means pred > target (underestimating a drought drop)
-        abs_err = torch.abs(err)
-        huber = torch.where(
-            abs_err <= self.delta,
-            0.5 * (err ** 2),
-            self.delta * (abs_err - 0.5 * self.delta)
-        )
-        weights = torch.where(err < -self.delta, self.alpha, 1.0)
-        return torch.mean(weights * huber)
 
 
-def _init_weights(module: nn.Module) -> None:
-    for name, param in module.named_parameters():
-        if "weight" in name and param.dim() >= 2:
-            if any(k in name for k in ["lstm", "gru", "rnn", "attention"]):
-                nn.init.xavier_uniform_(param)
-            else:
-                nn.init.kaiming_normal_(param, nonlinearity="relu")
-        elif "bias" in name:
-            nn.init.zeros_(param)
 
 
-class TemporalAttention(nn.Module):
-    def __init__(self, hidden_size: int, attn_size: int = 32):
-        super().__init__()
-        self.w_a = nn.Linear(hidden_size, attn_size, bias=True)
-        self.v_a = nn.Linear(attn_size, 1, bias=False)
-
-    def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        u = torch.tanh(self.w_a(hidden_states))
-        scores = self.v_a(u).squeeze(-1)
-        attn_weights = torch.softmax(scores, dim=-1)
-        context = torch.bmm(attn_weights.unsqueeze(1), hidden_states).squeeze(1)
-        return context, attn_weights
 
 
-class RecurrentForecaster(nn.Module):
-    """
-    Production Recurrent Model (LSTM or GRU) with selectable output heads:
-    - 'gelu': MLP Head with GELU activation
-    - 'linear': Direct linear projection (non-squashing)
-    - 'prelu': MLP Head with Parametric ReLU (non-saturating negative slope)
-    """
-    def __init__(
-        self,
-        input_size: int = INPUT_SIZE,
-        hidden_size: int = 128,
-        num_layers: int = 2,
-        dropout: float = 0.2,
-        head_type: str = "gelu",
-        cell_type: str = "lstm",
-        include_lag_yield: bool = False,
-    ):
-        super().__init__()
-        self.include_lag_yield = include_lag_yield
-        self.head_type = head_type
-        self.cell_type = cell_type.lower()
-        if self.cell_type == "gru":
-            self.rnn = nn.GRU(
-                input_size=input_size,
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                dropout=dropout if num_layers > 1 else 0.0,
-                batch_first=True,
-            )
-        else:
-            self.rnn = nn.LSTM(
-                input_size=input_size,
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                dropout=dropout if num_layers > 1 else 0.0,
-                batch_first=True,
-            )
-        self.layer_norm = nn.LayerNorm(hidden_size)
-        self.attention  = TemporalAttention(hidden_size, attn_size=32)
-
-        in_head = hidden_size + (1 if include_lag_yield else 0)
-        if head_type == "linear":
-            self.head = nn.Linear(in_head, 1)
-        elif head_type == "prelu":
-            self.head = nn.Sequential(
-                nn.Linear(in_head, 32),
-                nn.PReLU(),
-                nn.Dropout(dropout),
-                nn.Linear(32, 1),
-            )
-        else:  # default 'gelu'
-            self.head = nn.Sequential(
-                nn.Linear(in_head, 32),
-                nn.GELU(),
-                nn.Dropout(dropout),
-                nn.Linear(32, 1),
-            )
-        _init_weights(self)
-
-    def forward(self, x: torch.Tensor, lag_y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor]:
-        out, _ = self.rnn(x)
-        out = self.layer_norm(out)
-        context, attn = self.attention(out)
-        if self.include_lag_yield and lag_y is not None:
-            features = torch.cat([context, lag_y], dim=-1)
-        else:
-            features = context
-        pred = self.head(features).squeeze(-1)
-        return pred, attn
 
 # Backward-compatible aliases
 LSTMForecaster = RecurrentForecaster
@@ -344,119 +219,6 @@ LSTMForecasterV3 = RecurrentForecaster
 # ---------------------------------------------------------------------------
 # Training Engine
 # ---------------------------------------------------------------------------
-def fit_and_predict(
-    X_tr: np.ndarray,
-    y_tr: np.ndarray,
-    lag_tr: np.ndarray | None,
-    X_va: np.ndarray,
-    y_va: np.ndarray,
-    lag_va: np.ndarray | None,
-    X_te: np.ndarray,
-    lag_te: np.ndarray | None,
-    hidden_size: int = 128,
-    num_layers: int = 2,
-    dropout: float = 0.2,
-    batch_size: int = 25,
-    max_epochs: int = 40,
-    patience: int = 5,
-    seed: int = 42,
-    head_type: str = "gelu",
-    loss_type: str = "mse",
-    cell_type: str = "lstm",
-) -> tuple[np.ndarray, np.ndarray | None, float]:
-    """
-    Fits model on X_tr, monitors early stopping on X_va, and predicts blind on X_te.
-    Returns: (preds_test, attn_test, best_val_rmse)
-    """
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-
-    include_lag = (lag_tr is not None)
-    model = RecurrentForecaster(
-        input_size=INPUT_SIZE,
-        hidden_size=hidden_size,
-        num_layers=num_layers,
-        dropout=dropout,
-        head_type=head_type,
-        cell_type=cell_type,
-        include_lag_yield=include_lag,
-    )
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=2, min_lr=1e-6)
-
-    if loss_type == "asym_huber":
-        criterion = AsymmetricHuberLoss(delta=1.0, alpha=1.5)
-    else:
-        criterion = nn.MSELoss()
-
-    t_X_tr = torch.tensor(X_tr, dtype=torch.float32)
-    t_y_tr = torch.tensor(y_tr, dtype=torch.float32)
-    t_lag_tr = torch.tensor(lag_tr, dtype=torch.float32) if include_lag else None
-
-    t_X_va = torch.tensor(X_va, dtype=torch.float32)
-    t_y_va = torch.tensor(y_va, dtype=torch.float32)
-    t_lag_va = torch.tensor(lag_va, dtype=torch.float32) if include_lag else None
-
-    t_X_te = torch.tensor(X_te, dtype=torch.float32)
-    t_lag_te = torch.tensor(lag_te, dtype=torch.float32) if include_lag else None
-
-    if include_lag:
-        dataset = TensorDataset(t_X_tr, t_y_tr, t_lag_tr)
-    else:
-        dataset = TensorDataset(t_X_tr, t_y_tr)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-    best_val_rmse = float("inf")
-    best_weights  = None
-    p_left = patience
-
-    for epoch in range(max_epochs):
-        model.train()
-        for batch in loader:
-            optimizer.zero_grad()
-            if include_lag:
-                xb, yb, lb = batch
-                pred, _ = model(xb, lb)
-            else:
-                xb, yb = batch
-                pred, _ = model(xb)
-            loss = criterion(pred, yb)
-            loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
-
-        model.eval()
-        with torch.no_grad():
-            if include_lag:
-                val_preds, _ = model(t_X_va, t_lag_va)
-            else:
-                val_preds, _ = model(t_X_va)
-            val_rmse = float(torch.sqrt(torch.mean((val_preds - t_y_va) ** 2)))
-
-        scheduler.step(val_rmse)
-
-        if val_rmse < best_val_rmse:
-            best_val_rmse = val_rmse
-            best_weights  = {k: v.cpu().clone() for k, v in model.state_dict().items()}
-            p_left = patience
-        else:
-            p_left -= 1
-            if p_left <= 0:
-                break
-
-    if best_weights is not None:
-        model.load_state_dict(best_weights)
-
-    model.eval()
-    with torch.no_grad():
-        if include_lag:
-            test_preds, test_attn = model(t_X_te, t_lag_te)
-        else:
-            test_preds, test_attn = model(t_X_te)
-        preds_np = test_preds.numpy()
-        attn_np  = test_attn.numpy()
-
-    return preds_np, attn_np, best_val_rmse
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +285,7 @@ def run_phase_a(
                     save_checkpoint(chk)
                     continue
 
-                X_seq, counties, years = get_sequence_slice(W, H)
+                X_seq, counties, years, lengths = get_sequence_slice(W, H)
                 fold_rmses = []
 
                 for val_y in val_years:
@@ -538,10 +300,9 @@ def run_phase_a(
                     y_tr = np.array([anom_map[(f, y)] for f, y in zip(counties[tr_mask], years[tr_mask])], dtype=np.float32)
                     y_va = np.array([anom_map[(f, y)] for f, y in zip(counties[va_mask], years[va_mask])], dtype=np.float32)
 
-                    flat_tr = X_seq[tr_mask].reshape(-1, INPUT_SIZE)
-                    mu = flat_tr.mean(axis=0); sigma = flat_tr.std(axis=0); sigma[sigma == 0] = 1.0
-                    X_tr_sc = (X_seq[tr_mask] - mu) / sigma
-                    X_va_sc = (X_seq[va_mask] - mu) / sigma
+                    scaled = recurrent.scale_sequences(X_seq, lengths, tr_mask)
+                    X_tr_sc = scaled[tr_mask]
+                    X_va_sc = scaled[va_mask]
 
                     _, _, v_rmse = fit_and_predict(
                         X_tr=X_tr_sc, y_tr=y_tr, lag_tr=None,
@@ -549,6 +310,7 @@ def run_phase_a(
                         X_te=X_va_sc, lag_te=None,
                         hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
                         head_type="gelu", loss_type="mse",
+                        lengths_tr=lengths[tr_mask], lengths_va=lengths[va_mask], lengths_te=lengths[va_mask],
                     )
                     fold_rmses.append(v_rmse)
 
@@ -706,7 +468,7 @@ def run_phase_microgrid(
                         cfg_rmse_list.append(chk[key]["rmse"])
                         continue
 
-                    X_seq, counties, years = get_sequence_slice(champion_freq, H)
+                    X_seq, counties, years, lengths = get_sequence_slice(champion_freq, H)
                     fold_rmses = []
 
                     for val_y in val_years:
@@ -721,10 +483,9 @@ def run_phase_microgrid(
                         y_tr = np.array([anom_map[(f, y)] for f, y in zip(counties[tr_mask], years[tr_mask])], dtype=np.float32)
                         y_va = np.array([anom_map[(f, y)] for f, y in zip(counties[va_mask], years[va_mask])], dtype=np.float32)
 
-                        flat_tr = X_seq[tr_mask].reshape(-1, INPUT_SIZE)
-                        mu = flat_tr.mean(axis=0); sigma = flat_tr.std(axis=0); sigma[sigma == 0] = 1.0
-                        X_tr_sc = (X_seq[tr_mask] - mu) / sigma
-                        X_va_sc = (X_seq[va_mask] - mu) / sigma
+                        scaled = recurrent.scale_sequences(X_seq, lengths, tr_mask)
+                        X_tr_sc = scaled[tr_mask]
+                        X_va_sc = scaled[va_mask]
 
                         _, _, v_rmse = fit_and_predict(
                             X_tr=X_tr_sc, y_tr=y_tr, lag_tr=None,
@@ -732,6 +493,7 @@ def run_phase_microgrid(
                             X_te=X_va_sc, lag_te=None,
                             hidden_size=h, num_layers=l_star, dropout=dr, batch_size=bs_star,
                             head_type=head_t, loss_type=loss_t,
+                            lengths_tr=lengths[tr_mask], lengths_va=lengths[va_mask], lengths_te=lengths[va_mask],
                         )
                         fold_rmses.append(v_rmse)
 
@@ -799,7 +561,7 @@ def run_phase_b(champion_freq: int, champion_configs: dict, horizons: list[int] 
             print(f"  H={H:02d}: Cached Lagged Val RMSE = {chk[key]['rmse']:.4f}")
             continue
 
-        X_seq, counties, years = get_sequence_slice(champion_freq, H)
+        X_seq, counties, years, lengths = get_sequence_slice(champion_freq, H)
         fold_rmses = []
 
         for val_y in val_years:
@@ -817,10 +579,9 @@ def run_phase_b(champion_freq: int, champion_configs: dict, horizons: list[int] 
             lag_tr = np.array([anom_map.get((f, y - 1), 0.0) for f, y in zip(counties[tr_mask], years[tr_mask])], dtype=np.float32).reshape(-1, 1)
             lag_va = np.array([anom_map.get((f, y - 1), 0.0) for f, y in zip(counties[va_mask], years[va_mask])], dtype=np.float32).reshape(-1, 1)
 
-            flat_tr = X_seq[tr_mask].reshape(-1, INPUT_SIZE)
-            mu = flat_tr.mean(axis=0); sigma = flat_tr.std(axis=0); sigma[sigma == 0] = 1.0
-            X_tr_sc = (X_seq[tr_mask] - mu) / sigma
-            X_va_sc = (X_seq[va_mask] - mu) / sigma
+            scaled = recurrent.scale_sequences(X_seq, lengths, tr_mask)
+            X_tr_sc = scaled[tr_mask]
+            X_va_sc = scaled[va_mask]
 
             mu_lag = lag_tr.mean(); std_lag = lag_tr.std() or 1.0
             lag_tr_sc = (lag_tr - mu_lag) / std_lag
@@ -831,6 +592,7 @@ def run_phase_b(champion_freq: int, champion_configs: dict, horizons: list[int] 
                 X_va=X_va_sc, y_va=y_va, lag_va=lag_va_sc,
                 X_te=X_va_sc, lag_te=lag_va_sc,
                 hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
+                lengths_tr=lengths[tr_mask], lengths_va=lengths[va_mask], lengths_te=lengths[va_mask],
             )
             fold_rmses.append(v_rmse)
 
@@ -905,7 +667,7 @@ def run_gru_ablation(
                 print(f"  H={H:02d}: Cached GRU Val RMSE = {chk[key]['rmse']:.4f}")
                 continue
 
-            X_seq, counties, years = get_sequence_slice(champion_freq, H)
+            X_seq, counties, years, lengths = get_sequence_slice(champion_freq, H)
             fold_rmses = []
 
             for val_y in val_years:
@@ -920,10 +682,9 @@ def run_gru_ablation(
                 y_tr = np.array([anom_map[(f, y)] for f, y in zip(counties[tr_mask], years[tr_mask])], dtype=np.float32)
                 y_va = np.array([anom_map[(f, y)] for f, y in zip(counties[va_mask], years[va_mask])], dtype=np.float32)
 
-                flat_tr = X_seq[tr_mask].reshape(-1, INPUT_SIZE)
-                mu = flat_tr.mean(axis=0); sigma = flat_tr.std(axis=0); sigma[sigma == 0] = 1.0
-                X_tr_sc = (X_seq[tr_mask] - mu) / sigma
-                X_va_sc = (X_seq[va_mask] - mu) / sigma
+                scaled = recurrent.scale_sequences(X_seq, lengths, tr_mask)
+                X_tr_sc = scaled[tr_mask]
+                X_va_sc = scaled[va_mask]
 
                 _, _, v_rmse = fit_and_predict(
                     X_tr=X_tr_sc, y_tr=y_tr, lag_tr=None,
@@ -931,6 +692,7 @@ def run_gru_ablation(
                     X_te=X_va_sc, lag_te=None,
                     hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
                     head_type=head_t, loss_type=loss_t, cell_type="gru",
+                    lengths_tr=lengths[tr_mask], lengths_va=lengths[va_mask], lengths_te=lengths[va_mask],
                 )
                 fold_rmses.append(v_rmse)
 
@@ -999,7 +761,7 @@ def run_phase_c(champion_freq: int, champion_configs: dict, include_lag: bool = 
             print(f"  Cached Test RMSE = {chk[key]['rmse_pooled']:.4f}, R2 = {chk[key]['r2_pooled']:.4f}")
             continue
 
-        X_seq, counties, years = get_sequence_slice(champion_freq, H)
+        X_seq, counties, years, lengths = get_sequence_slice(champion_freq, H)
         y_true_all = []
         y_pred_all = []
         y_years_all = []
@@ -1023,11 +785,10 @@ def run_phase_c(champion_freq: int, champion_configs: dict, include_lag: bool = 
             y_va = np.array([anom_map[(f, y)] for f, y in zip(counties[va_mask], years[va_mask])], dtype=np.float32)
             y_te = np.array([anom_map[(f, y)] for f, y in zip(counties[te_mask], years[te_mask])], dtype=np.float32)
 
-            flat_tr = X_seq[tr_mask].reshape(-1, INPUT_SIZE)
-            mu = flat_tr.mean(axis=0); sigma = flat_tr.std(axis=0); sigma[sigma == 0] = 1.0
-            X_tr_sc = (X_seq[tr_mask] - mu) / sigma
-            X_va_sc = (X_seq[va_mask] - mu) / sigma
-            X_te_sc = (X_seq[te_mask] - mu) / sigma
+            scaled = recurrent.scale_sequences(X_seq, lengths, tr_mask)
+            X_tr_sc = scaled[tr_mask]
+            X_va_sc = scaled[va_mask]
+            X_te_sc = scaled[te_mask]
 
             if include_lag:
                 lag_tr = np.array([anom_map.get((f, y - 1), 0.0) for f, y in zip(counties[tr_mask], years[tr_mask])], dtype=np.float32).reshape(-1, 1)
@@ -1046,6 +807,7 @@ def run_phase_c(champion_freq: int, champion_configs: dict, include_lag: bool = 
                 X_te=X_te_sc, lag_te=lag_te_sc,
                 hidden_size=h, num_layers=l, dropout=dr, batch_size=bs,
                 head_type=head_t, loss_type=loss_t, cell_type=cell_type,
+                lengths_tr=lengths[tr_mask], lengths_va=lengths[va_mask], lengths_te=lengths[te_mask],
             )
             y_true_all.extend(y_te)
             y_pred_all.extend(pred_te)

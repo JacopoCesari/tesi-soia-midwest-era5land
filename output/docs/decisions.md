@@ -43,6 +43,43 @@ not fabricated historical approval dates. Earlier selection provenance is unavai
 
 ## Reorganization implementation choices
 
+### Author clarification received on 2026-10-18
+
+The weather-only design is the starting benchmark, followed by an explicit test
+of lagged yield anomalies. The integrated models are retained because the
+recorded comparisons support their predictive contribution. This clarification
+supersedes the lag exclusions recorded on 2026-09-28 and 2026-09-29. Report both
+information sets and enforce training-only detrending and availability at each
+forecast origin. No other predictor modalities are authorized by this change.
+
+The author also confirmed harvest closure H*: September for Minnesota and October
+for the other states. Regional tables, accuracy tests and forecast figures use
+this definition. Calendar-H1 metrics remain separately labelled in the diagnostic
+report; anomaly correlations and reconstructed-level correlations are distinct.
+
+The author approved scoping H3 to the existing fixed-configuration LSTM validation
+comparison (1985--1995), with 30-, 10-, and 5-day inputs. This is frequency-selection
+evidence, not a controlled final-test result across architectures. The main benchmark
+retains monthly ElasticNet versus decad LSTM as a comparison of feasible complete
+forecasting specifications.
+
+The author subsequently fixed the selected 10-day frequency and head-specific
+hyperparameters, retaining the existing validation records. The authorized refresh
+uses complete consecutive daily windows, including partial last blocks and leap
+days, and refits only the 2011--2025 test folds and dependent outputs. Weather,
+monthly tabular inputs and tabular forecasts are retained. The final benchmark does
+not identify an isolated temporal-frequency effect.
+
+The completed refresh contains 660 test fits and 89,100 forecasts with the same
+observed targets and unchanged tabular metrics. `test_refresh_comparison.csv` records
+the metric changes. At H*, pooled R2 is 0.3358 for integrated LSTM and 0.3577 for the
+ensemble. The LSTM--ElasticNet annual HAC comparison has nominal p=0.3609. Regional
+RMSE point estimates are 2.1848 for LSTM and 2.2214 for the ensemble. The attribution
+exhibits use cutoff-specific fixed-2010 diagnostic fits and the refreshed recurrent
+surrogate; their shares are descriptive and do not identify physical mechanisms.
+
+
+
 Existing ERA5 algorithms were extracted into modules. Strict calendar/schema checks,
 failures that stop invalid output, latest-record checksum semantics and isolated
 preflight directories address verified implementation gaps. The area-intersection

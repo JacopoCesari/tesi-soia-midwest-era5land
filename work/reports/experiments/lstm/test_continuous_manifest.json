@@ -1,0 +1,53 @@
+{
+  "window_version": "continuous_daily_v1",
+  "validation_sha256": "8727b9aabd5cb0649171145009c751f082968da0cb97f71da1ec57220f117116",
+  "selected_variants": {
+    "gelu": {
+      "config": {
+        "hidden_size": 128,
+        "num_layers": 2,
+        "dropout": 0.4,
+        "batch_size": 25,
+        "head": "gelu",
+        "loss": "mse"
+      },
+      "val_rmse": 4.687431316073604
+    },
+    "linear": {
+      "config": {
+        "hidden_size": 128,
+        "num_layers": 2,
+        "dropout": 0.4,
+        "batch_size": 25,
+        "head": "linear",
+        "loss": "mse"
+      },
+      "val_rmse": 4.684568624194331
+    },
+    "prelu": {
+      "config": {
+        "hidden_size": 128,
+        "num_layers": 2,
+        "dropout": 0.5,
+        "batch_size": 25,
+        "head": "prelu",
+        "loss": "mse"
+      },
+      "val_rmse": 4.659697884042073
+    },
+    "asym_huber": {
+      "config": {
+        "hidden_size": 128,
+        "num_layers": 2,
+        "dropout": 0.4,
+        "batch_size": 25,
+        "head": "prelu",
+        "loss": "asym_huber"
+      },
+      "val_rmse": 4.709774901387449
+    }
+  },
+  "test_start": 2011,
+  "test_end": 2025,
+  "published_sha256": "1156ecebacd79d206e5ac732c56883858e65db0904dab09c0b539c9f9f810f1b"
+}

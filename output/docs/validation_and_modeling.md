@@ -1,4 +1,4 @@
-# Validation and planned modeling
+# Validation and modeling
 
 ## Implemented temporal splitter
 
@@ -7,11 +7,13 @@
 crop year indivisible. It rejects duplicate keys, missing or noninteger years,
 calendar gaps, changing county membership and insufficient history.
 
-`initial_training_years` is unset in `configs/modeling.yaml`; the splitter rejects
-an unset value. The author has not chosen the first validation year and explicitly
-rejects a fixed 60/40 assumption. Given an approved initial length N, the first
-training interval would be 1951 through 1950+N, testing 1951+N, then expanding
-annually through 2025, subject to horizon-specific information availability.
+The author-approved fitted scripts use 1951--1984 as the base period, 1985--1995
+for hyperparameter selection, and 2011--2025 for expanding test forecasts. Years
+1996--2010 enter the historical training pool. The generic splitter's YAML setting
+is separate from these explicit replication-script constants. During the test-only
+recurrent refresh, frequency, selected head configurations and validation records
+remain fixed. Each test fold retains the existing three-year inner early-stopping
+partition; it does not rerun the 1985--1995 search.
 
 All 135 counties from a crop year remain together. Random county-year splits and
 ordinary row-based k-fold cross-validation are not accepted alternatives.

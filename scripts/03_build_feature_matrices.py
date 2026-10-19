@@ -6,9 +6,9 @@ horizon feature matrices (H=12 down to H=1).
 
 Campaign definition:
 November 1 of year (Y-1) through October 31 of year Y (12 elapsed campaign months).
-For horizon H, elapsed months are m = 13 - H.
+For fitted horizons H=1..11, elapsed months are m = 13 - H; H=12 uses none.
 - H=12: Baseline prior to campaign start (0 weather features, spatial coords only).
-- H=11: End of November Y-1 (1 month of weather).
+- H=11: End of December Y-1 (2 months of weather).
 ...
 - H=1:  End of October Y (all 12 campaign months).
 
@@ -134,7 +134,7 @@ def main():
 
     # Build feature matrices for each horizon H from 12 down to 1
     for H in range(12, 0, -1):
-        num_months = 13 - H  # number of elapsed campaign months
+        num_months = 0 if H == 12 else 13 - H
         print(f"Building feature matrix for Horizon H={H:02d} ({num_months} elapsed campaign months)...")
 
         rows = []

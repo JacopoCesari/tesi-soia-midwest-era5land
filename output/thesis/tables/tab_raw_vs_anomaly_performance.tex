@@ -1,0 +1,21 @@
+\begin{table}[htbp]
+\centering\singlespacing\footnotesize
+\color{red}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Forecast accuracy in anomaly and reconstructed yield space at $H^*(s)$ (2011--2025).}
+\label{tab:raw_vs_anomaly_performance}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc@{}}
+\toprule
+Model & RMSE & MAE & $R^2_{\rm OOS}$ & $R^2_{\rm level}$ & $r_{\rm level}$ \\
+\midrule
+Naive & 6.124 & 5.050 & 0.000 & 0.474 & 0.746 \\
+ENet (+Lag) & 5.049 & 4.045 & 0.320 & 0.642 & 0.821 \\
+XGB (+Lag) & 5.125 & 4.098 & 0.300 & 0.632 & 0.816 \\
+LSTM (+Lag) & 4.991 & 4.012 & 0.336 & 0.651 & 0.832 \\
+Ensemble & 4.908 & 3.941 & 0.358 & 0.662 & 0.836 \\
+\bottomrule
+\end{tabular*}
+\vspace{0.3em}
+{\footnotesize\textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample forecasts.} RMSE and MAE are in bu/ac.}
+\end{table}

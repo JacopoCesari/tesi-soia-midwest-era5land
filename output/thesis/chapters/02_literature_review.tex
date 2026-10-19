@@ -5,9 +5,9 @@
 \section{Introduction and Organization of the Literature}
 \label{sec:lit_structure}
 
-Predicting crop yields prior to harvest is a foundational challenge in agricultural economics and applied machine learning. Over decades of empirical work, researchers have investigated how weather variability governs county-level crop production across the United States Corn Belt. Classical econometric models \citep{Schlenker2009, Hoffman2020} established essential insights: raw yields are dominated by secular technological progress, heat damage exhibits sharp non-linear breakpoints, and reproductive stages suffer disproportionate sensitivity to moisture deficits. Recently, high-resolution reanalyses and flexible predictive algorithms have shifted attention toward intra-seasonal, multi-horizon forecasting frameworks \citep{ChenZhang2026, Vijverberg2023, Yinetal2026, Khaki2020}.
-
-This review synthesizes the agronomic foundations of soybean weather sensitivity, evaluates key design dimensions in empirical crop forecasting, surveys candidate statistical and machine learning architectures, and reviews primary benchmark studies to derive five formal research hypotheses (H1--H5).
+{\color{red}
+This review examines soybean weather sensitivity, empirical forecasting designs, and candidate model families. Primary benchmarks establish the context for five research hypotheses (H1--H5). The review distinguishes retrospective weather-response estimation from forecasts constrained by the information available at each origin.
+}
 
 \section{Technological Trends, Weather Variability, and Soybean Agronomic Sensitivity}
 \label{sec:lit_yield_trend_weather}
@@ -57,7 +57,7 @@ In operational risk management, however, decision-makers face asymmetric exposur
 \subsection{Reference Baselines and Benchmark Anchoring}
 In empirical forecasting, evaluating a model's true capability requires benchmarking against parsimonious reference baselines: historical county climatology, deterministic linear trends, or lagged past yields ($Y-1$). 
 
-In trending agricultural panels, baseline models capture the substantial variance attributable to secular technological momentum and permanent cross-sectional productivity differences across counties. A weather-driven model must demonstrate genuine incremental skill over these reference baselines to verify that meteorological inputs provide actionable predictive value beyond what is already explained by historical inertia. For example, in ablation experiments by \citet{ChenZhang2026}, incorporating lagged yield ($Y-1$) accounted for approximately half of the model's total explained variance, highlighting the essential role of baseline decoupling when isolating pure weather sensitivity.
+In trending agricultural panels, baseline models capture the substantial variance attributable to secular technological momentum and permanent cross-sectional productivity differences across counties. {\color{red} Incremental weather skill is assessed through out-of-sample error reductions relative to these baselines. These reductions establish predictive contribution within the evaluation sample; operational value requires a separate assessment.} For example, in ablation experiments by \citet{ChenZhang2026}, incorporating lagged yield ($Y-1$) accounted for approximately half of the model's total explained variance, highlighting the essential role of baseline decoupling when isolating pure weather sensitivity.
 
 \section{Statistical, Machine Learning, and Sequential Model Architectures}
 \label{sec:lit_model_families}
@@ -75,14 +75,15 @@ The literature features three prominent model families for tabular and sequentia
 \section{Approaches to Unobserved Future Weather at Forecast Origin}
 \label{sec:lit_future_weather}
 
-At any intermediate forecast origin ($H > 1$), meteorological conditions between the cutoff date and final harvest remain unknown. In the literature, three primary approaches address this missing future information:
+{\color{red}
+Forecasting studies handle unobserved weather after the cutoff through three approaches:
 \begin{enumerate}
-    \item \textbf{Zero-Future-Weather Truncation:} Conditioning predictions strictly on meteorological features observed up to the cutoff date, training horizon-specific models exclusively on cumulative observations (e.g., \citealt{ChenZhang2026} for monthly cutoffs; \citealt{Khaki2020} for weekly updates; \citealt{Yinetal2026}). This approach directly isolates the genuine predictive information delivered by realized weather up to the forecast date without confounding model skill with downstream weather assumptions.
-    \item \textbf{Coupling with Dynamical Seasonal Climate Forecasts:} Driving crop models with numerical seasonal weather forecasts (e.g., ECMWF SEAS5 in \citealt{Ceglar2021}; multi-model seasonal hindcasts in \citealt{Iizumietal2021}). While providing complete-season weather projections, this approach couples crop-model performance with the skill limitations and spatial biases of long-range seasonal climate predictions.
-    \item \textbf{Climatological Completion or Synthetic Weather Generation:} Imputing unobserved future weeks using long-term historical daily averages or synthetic weather generators. Historically common in process-based biophysical crop modeling (e.g., DSSAT, APSIM), this method completes the calendar sequence but introduces artificial smoothing and assumes climatologically average future conditions.
+    \item \textbf{Observed-weather truncation.} Horizon-specific models use observations available through the cutoff. \citet{ChenZhang2026} apply monthly cutoffs; related weekly and sub-monthly designs are reviewed below.
+    \item \textbf{Dynamical seasonal forecasts.} Numerical forecasts supply the remaining weather sequence. \citet{Ceglar2021} use ECMWF SEAS5; crop predictions inherit seasonal forecast uncertainty and spatial biases.
+    \item \textbf{Climatological or synthetic completion.} Historical averages or weather generators complete future weeks, as in process-based crop modelling. Completion assumptions influence the resulting yield predictions.
 \end{enumerate}
-
-Zero-future-weather truncation provides the cleanest empirical framework for tracking the progressive emergence of weather-driven predictive skill, as it directly evaluates the unconfounded value of historical atmospheric observations available at the time of forecast formulation.
+We use observed-weather truncation to assess how predictive skill changes as weather information accumulates. This choice excludes seasonal forecasts and synthetic completion from the empirical comparison.
+}
 
 \section{Benchmark Studies and Comparative Analysis}
 \label{sec:lit_closest_studies}
@@ -98,7 +99,7 @@ While \citet{ChenZhang2026} validate long historical panels, they predict raw yi
 \citet{Vijverberg2023} investigate presowing predictability up to 50 days before planting. Using logistic regression and Random Forests driven by Pacific sea surface temperatures and antecedent soil moisture, they predict poor-yield events (anomalies below the 33rd percentile), achieving regional classification skill (ROC-AUC $\approx 0.65$--$0.75$). We integrate this presowing window into a unified continuum, tracking continuous anomaly accuracy and downside tail risk from overwinter dormancy through harvest.
 
 \subsection{Yin et al. (2026): Temporal Aggregation and Sequential Architectures}
-\citet{Yinetal2026} evaluate temporal aggregation granularity (5-day, 10-day, 15-day, and 30-day summaries) across Midwest counties (2000--2020) using CNN, LSTM, and Random Forest architectures. They demonstrate that sub-monthly blocks (5-day and 10-day) preserve acute thermal and hydrologic shocks during flowering and pod filling that monthly means smooth out. We evaluate whether sub-monthly sequence advantages persist over a 75-year record, comparing linear shrinkage, tree ensembles, and recurrent networks under identical information sets.
+\citet{Yinetal2026} evaluate temporal aggregation granularity (5-day, 10-day, 15-day, and 30-day summaries) across Midwest counties (2000--2020) using CNN, LSTM, and Random Forest architectures. They demonstrate that sub-monthly blocks (5-day and 10-day) preserve acute thermal and hydrologic shocks during flowering and pod filling that monthly means smooth out. {\color{red} We compare monthly tabular and decad recurrent specifications on a panel spanning 75 years. The final benchmark evaluates complete forecasting specifications under common chronological splits.}
 
 \subsection{Khaki et al. (2020) and Complementary Frameworks}
 \citet{Khaki2020} deploy hybrid CNN-RNN models with weekly in-season updating for Midwest corn and soybeans (1980--2018), documenting steady error reductions toward harvest. Complementing this, \citet{Iizumietal2021} show that within-season shortfall probabilities can be anticipated several months ahead. These benchmarks establish the value of intra-seasonal tracking, motivating our dual focus on continuous accuracy and tail-risk anticipation.
@@ -107,9 +108,9 @@ While \citet{ChenZhang2026} validate long historical panels, they predict raw yi
 \label{sec:lit_synthesis_gap}
 
 \subsection{Literature Consensus and the Identified Opportunity}
-The empirical literature converges on several foundational principles: crop yield responses to weather are non-linear, with acute penalties above $30^\circ\text{C}$ and elevated vapor pressure deficits; reproductive stages in July and August represent the primary yield-determining window in the U.S. Corn Belt; and machine learning architectures can effectively capture high-dimensional agro-climatic interactions.
-
-However, these empirical dimensions have largely been investigated in isolation, spanning isolated phenological windows, restricted historical intervals, or specific model classes. We synthesize these empirical strands into a unified benchmarking framework across 75 years and twelve monthly horizons ($H=12, \dots, 1$), evaluating how lead time, temporal aggregation (5-day, 10-day, 30-day), and model complexity govern out-of-sample skill and tail-risk anticipation.
+{\color{red}
+The reviewed studies establish non-linear weather responses and reproductive-stage sensitivity. They also differ in target formulation, spatial scale, historical coverage, and available predictors. Our framework examines lead time, temporal aggregation, and model complexity within a common 75-year panel and twelve monthly origins. The hypotheses below organize these comparisons.
+}
 
 \subsection{Derivation of Research Hypotheses}
 \label{sec:lit_hypotheses}
@@ -117,7 +118,7 @@ To address these questions, we formulate five testable research hypotheses:
 \begin{itemize}
     \item \textbf{Hypothesis 1 (Incremental Weather Skill):} Adding observed high-resolution weather reanalysis features to reference historical baselines produces a statistically significant reduction in out-of-sample prediction error for county-level soybean yield anomalies.
     \item \textbf{Hypothesis 2 (Lead-Time Dependence and Persistence):} Incremental forecasting skill increases monotonically as the forecast origin approaches harvest ($H \to 1$). Early predictive gains must persist across subsequent monthly cutoffs without reverting to noise.
-    \item \textbf{Hypothesis 3 (Temporal Aggregation Granularity across Model Families):} High-frequency temporal summaries (5-day and 10-day intervals) and non-linear derived stress indices capture yield-limiting weather shocks more effectively than coarse 30-day monthly aggregations. This finer granularity primarily improves predictive accuracy for flexible architectures (tree ensembles and sequential neural networks) capable of exploiting intra-monthly shock dynamics, whereas linear specifications may suffer from parameter expansion.
+    {\color{red}\item \textbf{Hypothesis 3 (LSTM Temporal Aggregation):} Sub-monthly weather summaries reduce validation error relative to 30-day summaries when the LSTM architecture and hyperparameters are held fixed. This hypothesis concerns frequency selection within the recurrent model; the final cross-model ranking does not isolate temporal resolution.}
     \item \textbf{Hypothesis 4 (Model Complexity under Strict Validation):} Highly parameterized sequential deep learning models (such as LSTMs) do not systematically outperform transparent regularized linear models or tree ensembles (Random Forests, Gradient Boosting) when evaluated on interannual growing-season anomalies under strict temporal validation.
     \item \textbf{Hypothesis 5 (Tail-Risk and Downside Shock Anticipation):} Continuous empirical weather models anticipate severe negative yield shocks and downside tail risks (specifically the bottom decile $D_1$) prior to harvest, mitigating conditional shrinkage toward the historical mean and correctly resolving directional shortfall regimes.
 \end{itemize}

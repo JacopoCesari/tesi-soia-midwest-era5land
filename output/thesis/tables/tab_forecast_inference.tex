@@ -1,0 +1,25 @@
+\begin{table}[htbp]
+\centering\singlespacing\footnotesize
+\color{red}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Nominal $p$-values from one-sided Diebold--Mariano tests against the trend benchmark.}
+\label{tab:forecast_inference}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc@{}}
+\toprule
+Model & June & July & August & September & $H^*(s)$ \\
+\midrule
+ENet (weather) & 0.001 & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+RF (weather) & 0.074 & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+XGB (weather) & 0.094 & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+LSTM (weather) & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+ENet (+Lag) & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+RF (+Lag) & 0.115 & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+XGB (+Lag) & 0.027 & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+LSTM (+Lag) & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+Ensemble & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ & $<0.001$ \\
+\bottomrule
+\end{tabular*}
+\vspace{0.3em}
+{\footnotesize\textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample forecasts.} }
+\end{table}

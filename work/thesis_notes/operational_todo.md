@@ -2,7 +2,7 @@
 
 > **Finalità:** Elencare esclusivamente le attività pratiche ancora aperte per chiudere la tesi. Quando un'attività è conclusa e verificata, viene rimossa per mantenere il foglio snello e pulito.  
 > **Sorgenti di Riferimento:**
-> - Per consultare decisioni, numeri ed evidenze stabili: [`consolidated_memory.md`](./consolidated_memory.md)
+> - Current protocol and verified evidence: [`research_protocol.md`](../../output/docs/research_protocol.md) and [`diagnostics`](../../output/data/processed/diagnostics/).
 > - Per gli spunti interpretativi ed economici: [`discussion_insights.md`](./discussion_insights.md)
 > - Per i confini di ricerca da inserire nel Cap. 6: [`future_developments.md`](./future_developments.md)
 

@@ -35,7 +35,7 @@ Training targets are $\epsilon_{c,t} = y_{c,t} - \hat{\tau}_{c,t}$. On held-out 
 \subsection{Daily Weather Aggregation and Feature Dimensionality}
 \label{sec:meth_temporal_mismatch}
 
-The prediction target is a single annual scalar per county ($\epsilon_{c,Y} \in \mathbb{R}$), while meteorological forcing operates daily across $K = 16$ indicators (Section~\ref{sec:meth_meteo_pool}). Ingesting unconstrained daily weather across 365 days generates approximately $5{,}840$ features per county-year. With $6{,}075$ observations in the initial training pool (1951--1995), this unconstrained parameterization causes severe collinearity and variance inflation.
+{\color{red} The prediction target is a single annual scalar per county ($\epsilon_{c,Y} \in \mathbb{R}$), while meteorological forcing operates daily across $K = 17$ indicators (Section~\ref{sec:meth_meteo_pool}). Ingesting unconstrained daily weather across 365 days generates approximately $6{,}205$ features per county-year. With $6{,}075$ observations in the historical pool through 1995, this unconstrained parameterization causes severe collinearity and variance inflation.}
 
 To preserve phenological timing while restricting dimensionality, daily weather fields are aggregated into structured monthly blocks:
 \begin{equation}
@@ -46,12 +46,12 @@ To preserve phenological timing while restricting dimensionality, daily weather 
     \end{cases}
     \label{eq:monthly_aggregation_rule}
 \end{equation}
-where $\mathcal{K}_{\text{flux}} = \{P, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35}\}$ denotes flux integrals, $\mathcal{K}_{\text{state}} = \{T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}, SM_1, SM_2, SM_3, VPD, SM_{\text{root}}\}$ designates environmental states, and $\mathcal{D}_j$ denotes calendar days in campaign month $j \in \{1, \dots, 12\}$. For each elapsed month $j$, this defines a 16-dimensional meteorological summary vector $\mathbf{w}_{c,Y,j} \in \mathbb{R}^{16}$. Monthly aggregation preserves dimensional stability ($P_H \le 194$) while aligning features with broader crop developmental phases \citep{Hoffman2020}. Sub-monthly tabular concatenation would induce severe multicollinearity on historical samples \citep{Sharmaetal2025}; high-frequency decad dynamics are evaluated separately through sequential deep architectures (Section~\ref{sec:meth_lstm}).
+{\color{red} where $\mathcal{K}_{\text{flux}} = \{P, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35}, EDD_{30}\}$ denotes cumulative exposures, $\mathcal{K}_{\text{state}} = \{T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}, SM_1, SM_2, SM_3, VPD, SM_{\text{root}}\}$ designates environmental states, and $\mathcal{D}_j$ denotes calendar days in campaign month $j \in \{1, \dots, 12\}$. For each elapsed month $j$, this defines a 17-dimensional meteorological summary vector $\mathbf{w}_{c,Y,j} \in \mathbb{R}^{17}$. Monthly aggregation preserves dimensional stability ($P_H \le 206$) while aligning features with broader crop developmental phases \citep{Hoffman2020}. Sub-monthly tabular concatenation would induce severe multicollinearity on historical samples \citep{Sharmaetal2025}; high-frequency decad dynamics are evaluated separately through sequential deep architectures (Section~\ref{sec:meth_lstm}).}
 
 \subsection{Crop Campaign Timeline and Multi-Horizon Feature Expansion}
 \label{sec:meth_timeline_horizons}
 
-The crop campaign spans November 1 (year $Y-1$) to October 31 (year $Y$). Forecasts are generated at the end of each campaign month $m \in \{1, \dots, 12\}$, establishing lead times $H = 13 - m$ prior to harvest.
+{\color{red} The crop campaign spans November 1 of year $Y-1$ to October 31 of year $Y$. The October 31 origin in $Y-1$ ($H=12$) is the zero-anomaly reference. Fitted horizons $H=11,\dots,1$ end in December of $Y-1$ through October of $Y$. They use $m=13-H$ elapsed campaign months, including November weather.}
 
 At forecast horizon $H$, the pure meteorological feature vector $\mathbf{x}_{c,Y}^{(H)}$ concatenates normalized spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ (Section~\ref{sec:meth_spatial_covariates}) with elapsed monthly weather summaries:
 \begin{equation}
@@ -63,21 +63,21 @@ To isolate the marginal value of multi-year agronomic memory against pure meteor
     \mathbf{x}_{c,Y}^{(H, \text{int})} = \left[ \, \mathbf{x}_{c,Y}^{(H)T}, \, \epsilon_{c, Y-1} \, \right]^T \in \mathbb{R}^{P_H + 1}
     \label{eq:integrated_feature_vector}
 \end{equation}
-where $\epsilon_{c, Y-1} = y_{c, Y-1} - \hat{\tau}_{c, Y-1}$ designates the prior-year detrended yield anomaly estimated strictly within training partition $\mathcal{T}_{\text{train}}(Y)$. Ingesting detrended anomaly $\epsilon_{c, Y-1}$ prevents secular trend leakage ($\tau_{c, Y-1}$) while capturing genuine biophysical carryover, such as deep root-zone moisture recharge and rotational soil health.
+where $\epsilon_{c, Y-1} = y_{c, Y-1} - \hat{\tau}_{c, Y-1}$ designates the prior-year detrended yield anomaly estimated strictly within training partition $\mathcal{T}_{\text{train}}(Y)$. {\color{red} Training-only detrending removes the estimated secular component from this predictor. The lag ablation measures its incremental predictive contribution; it does not identify a biophysical carryover mechanism.}
 
 Feature dimensionality expands as meteorological records accumulate:
 \begin{equation}
     P_H = 
     \begin{cases}
         P_{\text{geo}} = 2, & \text{for } H = 12 \quad (m = 1, \text{ zero weather}) \\[1ex]
-        P_{\text{geo}} + K \cdot m = 2 + 16 \cdot m, & \text{for } H \in \{11, \dots, 1\} \quad (m = 2, \dots, 12)
+        P_{\text{geo}} + K \cdot m = 2 + 17 \cdot m, & \text{for } H \in \{11, \dots, 1\} \quad (m = 2, \dots, 12)
     \end{cases}
     \label{eq:feature_dimension_formula}
 \end{equation}
 This schedule structures information accumulation:
 \begin{itemize}
     \item \textbf{Horizon $H = 12$ ($m = 1$, Nov 30): Zero-Weather Benchmark.} Ingests spatial coordinates only ($P_{12} = 2, P_{\text{met}} = 0$). Candidate models output $\hat{\epsilon}_{c,Y}^{(12)} = 0$, defining the unaugmented secular trend baseline ($\hat{y}_{c,Y}^{(12)} = \hat{\tau}_{c,Y}$, $R^2_{\text{OOS}} = 0$).
-    \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather through Month $m$, expanding feature dimensionality from $P_{11} = 34$ to $P_1 = 194$ in October (or $P_1 = 195$ under integrated carryover).
+    \item \textbf{Horizons $H \in \{11, \dots, 1\}$ ($m \in \{2, \dots, 12\}$): Cumulative Weather Ingestion.} Models ingest observed weather through Month $m$, expanding feature dimensionality from $P_{11} = 36$ to $P_1 = 206$ in October (or $P_1 = 207$ under integrated carryover).
 \end{itemize}
 
 To reflect state maturation timing (Section~\ref{sec:data_phenology}), we define harvest closure horizon $H^*(s)$:
@@ -104,7 +104,7 @@ where $\mathbf{\Theta}_H$ denotes the parameter vector. Direct forecasting preve
 \subsection{Pooled Panel Estimation and County-Level Evaluation}
 \label{sec:meth_pooled_panel}
 
-Models are estimated within a pooled cross-sectional panel framework across all $C = 135$ counties simultaneously. Separate county-by-county estimation with 45 to 74 historical observations causes parameter collapse ($P_H > T$) against feature vectors with up to 194 variables. Pooling expands sample size to $N_{\text{train}} = 135 \times |\mathcal{T}_{\text{train}}(Y)|$ observations. The baseline 1951--1995 partition provides $6{,}075$ county-years, expanding to $8{,}100$ observations at the final 2025 fold.
+{\color{red} Models are estimated within a pooled cross-sectional panel framework across all $C = 135$ counties simultaneously. Separate county-by-county estimation with 45 to 74 historical observations causes parameter collapse ($P_H > T$) against feature vectors with up to 206 variables. Pooling expands sample size to $N_{\text{train}} = 135 \times |\mathcal{T}_{\text{train}}(Y)|$ observations. The baseline 1951--1995 partition provides $6{,}075$ county-years, expanding to $9{,}990$ observations at the final 2025 fold.}
 
 While estimation parameters are pooled, predictions remain county-specific: for each county $c$ and year $Y$, the model generates an individual anomaly forecast $\hat{\epsilon}_{c,Y}^{(H)}$ by evaluating localized weather series and spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$. County yield forecasts are reconstructed using county-specific trends $\hat{\tau}_{c,Y}$. Empirical skill is evaluated both across the pooled panel and via annual regional averages (Section~\ref{sec:meth_evaluation}).
 
@@ -132,17 +132,16 @@ Coordinates are scaled to $[0, 1]$ using training bounds:
     \label{eq:coord_normalization}
 \end{equation}
 
-Administrative state dummies are excluded. Political state borders do not reflect agro-ecological boundaries. Contiguous counties across state lines share identical soils, microclimates, and topography, whereas counties within the same state span substantial latitudinal gradients. Categorical state dummies introduce artificial discontinuities at administrative borders. Continuous coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ allow non-linear estimators to learn smooth biophysical response surfaces, capturing spatial autocorrelation and photoperiod gradients natively.
+{\color{red}
+We encode location through continuous centroid coordinates. This representation captures geographic gradients without imposing discontinuities at state borders. Coordinates can condition weather responses on location; their predictive contribution is examined in Chapter~\ref{chap:empirical_results}.
+}
 
 \subsection{Agrometeorological Predictor Space and Functional Partitioning}
 \label{sec:meth_meteo_pool}
 
-The meteorological predictor space builds upon the $K = 16$ daily environmental indicators derived from ECMWF ERA5-Land reanalysis in Section~\ref{sec:data_derived_weather} and cataloged in Table~\ref{tab:weather_variables}. For empirical estimation, we formalize their functional partitioning:
-\begin{enumerate}
-    \item \textbf{Flux Integrals ($\mathcal{K}_{\text{flux}}$, 7 variables):} Total precipitation ($P$), surface solar radiation downwards ($SSRD$), reference evapotranspiration ($ET_0$), climatic water balance ($P - ET_0$), growing degree days ($GDD$), moderate heat days ($HD_{30}$), and extreme heat days ($HD_{35}$). These indicators represent volumetric and energy accumulation, aggregated via cumulative summation over temporal windows (Eq.~\eqref{eq:monthly_aggregation_rule}).
-    \item \textbf{Environmental State Variables ($\mathcal{K}_{\text{state}}$, 9 variables):} Daily mean, maximum, minimum, and dewpoint temperatures ($T_{\text{mean}}, T_{\text{max}}, T_{\text{min}}, T_{\text{dew}}$), volumetric soil water across three horizons ($SM_1, SM_2, SM_3$), vapor pressure deficit ($VPD$), and root-zone soil moisture ($SM_{\text{root}}$). These indicators reflect continuous background ambient stress, aggregated via arithmetic time-averaging (Eq.~\eqref{eq:monthly_aggregation_rule}).
-\end{enumerate}
-This functional grouping maps daily physical reanalysis directly into structured feature matrices.
+{\color{red}
+The predictor pool contains the 17 daily indicators defined in Section~\ref{sec:data_derived_weather} and Table~\ref{tab:weather_variables}. Equation~\eqref{eq:monthly_aggregation_rule} partitions them into eight cumulative indicators, summed within each window, and nine environmental states, averaged within each window. The same physical distinction governs the construction of the model inputs.
+}
 
 % ==============================================================================
 % SECTION 4.3: CANDIDATE FORECASTING MODELS AND COMPLEXITY LADDER
@@ -151,17 +150,23 @@ This functional grouping maps daily physical reanalysis directly into structured
 \section{Candidate Forecasting Models and Complexity Ladder}
 \label{sec:meth_models}
 
-To isolate the predictive value of meteorological features and test the utility of algorithmic complexity, we structure candidate algorithms into a four-tier complexity ladder. This progression bridges parsimonious linear baselines and sequential deep learning models.
+{\color{red}
+We compare a deterministic trend benchmark, regularized linear regression, tree ensembles, and recurrent networks to evaluate the contribution of weather inputs and model complexity.
+}
 
 \subsection{Reference Baseline: Naive Deterministic Trend Benchmark}
 \label{sec:meth_baselines}
 
-To establish the statistical boundary where meteorological predictors provide genuine predictive skill, we formulate the naive deterministic trend benchmark ($\mathcal{B}_{\text{naive}}$):
+{\color{red}
+The deterministic trend benchmark predicts a zero anomaly:
+}
 \begin{equation}
     \hat{\epsilon}_{c,Y} = 0 \iff \hat{y}_{c,Y} = \hat{\tau}_{c,Y}
     \label{eq:naive_baseline}
 \end{equation}
-This reference benchmark assumes zero weather-induced anomaly, projecting future yields strictly along the county's historical technological trend. At Month 1 ($H=12$), where zero meteorological predictors are ingested ($P_{\text{met}} = 0$), this benchmark defines the reference origin with an out-of-sample skill score $R^2_{\text{OOS}} = 0$. Any positive $R^2_{\text{OOS}} > 0$ achieved at subsequent horizons ($H \le 11$) demonstrates genuine value from environmental forcing beyond historical inertia.
+{\color{red}
+This benchmark extrapolates the county trend fitted on training data. It defines $H=12$ and the reference value $R^2_{\text{OOS}}=0$. Positive scores at later horizons indicate lower squared prediction error than this baseline; statistical significance is assessed separately.
+}
 
 \subsection{Regularized Linear Model: ElasticNet}
 \label{sec:meth_elasticnet}
@@ -210,7 +215,11 @@ The Long Short-Term Memory (LSTM) network operates directly on a three-dimension
 \end{equation}
 Here, $N_{\text{train}}$ represents sample size, $T_H$ denotes sequence length across elapsed campaign steps at horizon $H$, and $D_{\text{in}} = 19$ represents input channel dimensionality. Following the spatial encoding evaluation in Section~\ref{sec:meth_input_representation}, $D_{\text{in}}$ comprises the $K = 17$ agrometeorological indicators (including acute heat stress $HD_{30}$ and $HD_{35}$) concatenated with the two normalized continuous spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ ingested at every sequence step. This enables recurrent memory cells to modulate hydrothermal responses conditionally on geographical latitude and longitude without requiring discrete county embeddings.
 
-To resolve sub-monthly extreme events while maintaining computational tractability, meteorological series are structured into 10-day decad intervals ($W^* = 10\text{d}$). The full 12-month campaign spans 35 decad steps ($T_1 = 35$ at harvest), scaling down to three steps ($T_{11} = 3$) at the November pre-sowing cutoff. February is standardized to 28 days to preserve invariant sequence lengths across leap and non-leap years. This decad resolution captures short-duration heat waves and moisture deficits that are smoothed by monthly averages \citep{Yinetal2026}.
+{\color{red} Meteorological series are partitioned into consecutive 10-day windows beginning on November 1 of year $Y-1$. Windows can cross calendar-month boundaries. At each horizon, the final window ends at the forecast cutoff and retains any remaining days. The full campaign contains 37 steps: 36 complete windows and a final window of five or six days. Leap days are retained. Sums use the actual available days, and state variables are averaged over the same dates. Batch tensors use masked trailing padding when campaign lengths differ; padded positions are excluded from scaling and attention. This resolution represents within-month weather variation examined by \citet{Yinetal2026}.}
+
+{\color{red}
+The 10-day frequency and head-specific hyperparameters are fixed before evaluating the 2011--2025 test partition. The retained 1985--1995 validation records guide model selection. No controlled frequency ablation on the final test partition is reported.
+}
 
 At each sequence step $t \in \{1, \dots, T_H\}$, the recurrent cell ingests the input vector $\mathbf{z}_t \in \mathbb{R}^{19}$ and updates its internal state via gated recurrent transitions:
 \begin{align}
@@ -235,19 +244,19 @@ We evaluate two projection head architectures mapping context vector $\mathbf{c}
 \begin{enumerate}
     \item \textbf{Non-Linear PReLU Head (Weather-Only Specification):}
     \begin{equation}
-        \hat{\epsilon}_{c,Y}^{(H)} = \mathbf{W}_2 \operatorname{PReLU}\left(\mathbf{W}_1 \left[ \mathbf{c}_{\text{ctx}}^T, \, \tilde{\text{Lat}}_c, \, \tilde{\text{Lon}}_c \right]^T + \mathbf{b}_1\right) + b_2
+        {\color{red}\hat{\epsilon}_{c,Y}^{(H)} = \mathbf{W}_2 \operatorname{PReLU}\left(\mathbf{W}_1 \mathbf{c}_{\text{ctx}} + \mathbf{b}_1\right) + b_2}
         \label{eq:lstm_prelu_head}
     \end{equation}
-    where $\operatorname{PReLU}(z) = \max(0, z) + a \min(0, z)$ learns parameter $a$ during backpropagation. The parametric rectified linear unit captures asymmetric crop responses, applying steep penalizations to acute heat and moisture deficits while maintaining moderate slopes for benign climatic deviations. In the validation sweep (1985--1995), this architecture achieved the lowest weighted error among meteorological candidates ($4.66\text{ bu/ac}$), establishing the benchmark non-linear specification for pure weather sequences.
+    {\color{red} where $\operatorname{PReLU}(z)=\max(0,z)+a\min(0,z)$ learns its negative activation slope during backpropagation. The selected weather-only specification has two recurrent layers with 128 hidden units, dropout of 0.5, and batches of 25. Coordinates enter at each sequence step; they are not appended again to the context vector.}
     \item \textbf{Linear Projection Head (Parsimonious and Integrated Specification):}
     \begin{equation}
-        \hat{\epsilon}_{c,Y}^{(H)} = \mathbf{W}_{\text{out}} \left[ \mathbf{c}_{\text{ctx}}^T, \, \tilde{\text{Lat}}_c, \, \tilde{\text{Lon}}_c \right]^T + b_{\text{out}}
+        {\color{red}\hat{\epsilon}_{c,Y}^{(H)} = \mathbf{W}_{\text{out}} \mathbf{c}_{\text{ctx}} + b_{\text{out}}}
         \label{eq:lstm_linear_head}
     \end{equation}
-    establishing a direct linear mapping baseline from the recurrent context vector. When conditioning on prior-year yield memory, the linear head directly accommodates the additive carryover $[\mathbf{c}_{\text{ctx}}^T, \tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c, \epsilon_{c, \text{lag}}]^T$, preventing non-linear distortion of the detrended persistence channel.
+    {\color{red} The linear specification uses two recurrent layers with 128 hidden units, dropout of 0.4, and batches of 25. Its integrated version appends lagged yield to form $[\mathbf{c}_{\text{ctx}}^T,\epsilon_{c,Y-1}]^T$. The lag therefore enters the prediction head separately from the 19-channel weather and coordinate sequence.}
 \end{enumerate}
 
-To evaluate the contribution of historical yield persistence, we formulate two parallel information tiers: \textit{Category B (Weather-Only)}, where inputs are strictly meteorological; and \textit{Category C (Integrated)}, where the historical detrended yield anomaly $\epsilon_{c, Y-1}$ (or $\epsilon_{c, Y-2}$ at early horizons $H \ge 8$, adhering to USDA NASS release timing) is concatenated directly to the dense projection layer $[\mathbf{c}_{\text{ctx}}^T, \tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c, \epsilon_{c, \text{lag}}]^T$. We evaluate both head configurations on the out-of-sample test panel to contrast pure meteorological and integrated information regimes.
+{\color{red} We evaluate weather-only and integrated information sets. The retrospective integrated ablation uses the training-only detrended anomaly of year $Y-1$ at every fitted horizon. The first training-panel year has no retained prior-year yield and its lag is centred at zero, following the implemented training convention. Operational use at origins in $Y-1$ requires checking official label availability; the experiment does not implement a release-calendar adjustment to $Y-2$. Both prediction heads are evaluated with and without the lag.}
 
 \paragraph{Linear-Recurrent Ensemble.}
 We combine regularized linear shrinkage and sequential deep learning in an equal-weighted ensemble:
@@ -255,9 +264,11 @@ We combine regularized linear shrinkage and sequential deep learning in an equal
     \hat{\epsilon}_{c,Y}^{(H, \text{ens})} = 0.5 \, \hat{\epsilon}_{c,Y}^{(H, \text{ENet})} + 0.5 \, \hat{\epsilon}_{c,Y}^{(H, \text{LSTM})}
     \label{eq:linear_recurrent_ensemble}
 \end{equation}
-This convex blend unites orthogonal inductive biases: low estimation variance from penalized linear shrinkage and recurrent attention for acute heat pulses. Combining estimators with weakly correlated errors contracts prediction variance below either component without fitting post-hoc weights \citep{James2023}.
+{\color{red}
+The fixed blend combines penalized linear and recurrent predictions without estimating combination weights. Its benefit depends on component accuracy and error covariance and is evaluated out-of-sample \citep{James2023}.
+}
 
-Network parameters are optimized via AdamW with initial learning rate $\eta = 3 \times 10^{-4}$ and weight decay $10^{-4}$ \citep{Geron2022}. Learning rates decay dynamically via a plateau scheduler ($\text{factor} = 0.5$, $\text{patience} = 3$), and training terminates via early stopping ($\text{patience} = 7$) on train-only folds. Table~\ref{tab:model_summary} summarizes the complete forecasting portfolio.
+{\color{red} Network parameters are optimized with AdamW at an initial learning rate of $3\times10^{-4}$ and weight decay of $10^{-4}$ \citep{Geron2022}. Gradient norms are clipped at one. Training runs for at most 40 epochs. A plateau scheduler halves the learning rate after two epochs without improvement, down to $10^{-6}$. Early stopping retains the best weights after five epochs without improvement. For each test year, the preceding three historical years provide the inner stopping partition; older observations train the network. Table~\ref{tab:model_summary} summarizes the forecasting portfolio.}
 
 \begin{table}[htbp]
 \centering
@@ -276,7 +287,7 @@ ElasticNet & Regularized Linear & Tabular 2D ($P_H$) & $L_1 + L_2$ convex loss &
 Random Forest & Bagging Trees & Tabular 2D ($P_H$) & $p_{\text{split}}$, leaf size & $p_{\text{split}}$, $n_{\text{leaf}}$, $d_{\text{max}}$ & Non-parametric partition; variance reduction. \\
 XGBoost & Gradient Boosting & Tabular 2D ($P_H$) & $\lambda_{\text{reg}}$, $\gamma_{\text{split}}$, shrinkage & $\eta$, $d_{\text{max}}$, colsample, $\lambda$, $\alpha_{\text{reg}}$ & Additive boosting; non-linear interaction. \\
 LSTM (Linear) & Recurrent Deep & Sequence 3D (10d) & Dropout, weight decay & $d_h, l, dr, bs$ & Decad sequential tracking; linear projection for integrated persistence. \\
-LSTM (PReLU) & Recurrent Deep & Sequence 3D (10d) & Dropout, weight decay & $d_h, l, dr, bs$ & Decad tracking + temporal attention; non-linear weather-only champion. \\
+LSTM (PReLU) & Recurrent Deep & Sequence 3D (10d) & Dropout, weight decay & $d_h, l, dr, bs$ & {\color{red}Recurrent weather-only specification with a PReLU prediction head.} \\
 Ensemble & Linear-Recurrent & Hybrid & Convex combination & Fixed $w=0.5$ & Orthogonal bias fusion; variance contraction. \\
 \bottomrule
 \end{tabularx}
@@ -450,7 +461,9 @@ Let $\bar{d}(H) = \frac{1}{N_{\text{test}}} \sum_{Y=2011}^{2025} d_Y(H)$ denote 
     S_{\text{DM}}(H) = \frac{\bar{d}(H)}{\sqrt{\widehat{\text{Var}}(\bar{d}(H))}}
     \label{eq:dm_statistic}
 \end{equation}
-where $\widehat{\text{Var}}(\bar{d}(H))$ is estimated via the Newey-West HAC variance estimator. The statistic tests the null hypothesis of equal predictive accuracy ($\mathbb{E}[d_Y] = 0$) against the one-sided alternative of superior model precision.
+{\color{red}
+We estimate $\widehat{\mathrm{Var}}(\bar d(H))$ with Bartlett Newey--West HAC covariance. The automatic bandwidth is $L=\lfloor4(T/100)^{2/9}\rfloor$, giving two annual lags for $T=15$. Covariance uses the $T/(T-1)$ correction. We report upper-tail standard-normal $p$-values against superior accuracy of the candidate model. These are nominal asymptotic tests, without a multiple-comparison adjustment. Monthly horizon labels do not determine annual HAC lag length.
+}
 
 \subsection{Residual Diagnostics}
 \label{sec:meth_residual_diagnostics}
