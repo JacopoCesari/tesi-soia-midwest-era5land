@@ -117,9 +117,9 @@ Hodrick-Prescott ($\lambda=6.25$) & --- & 0.959 & 2.21 & --- & --- & --- & --- \
 \noindent \textbf{\large 4. Errori di previsione e calibrazione per decile}
 \vspace{0.15em}
 
-\noindent Il risultato principale è che anche usando il trend oracolo totale la sovrastima nel decile peggiore ($D_1$) rimane praticamente uguale ($+6.96$ con l'oracolo contro $+6.46$\,bu/ac con il trend baseline expanding, Tabella~\ref{tab:comp_decile_error_performance_short} e Figura~\ref{fig:decile_calibration_comp}). 
+\noindent Il risultato principale è che anche usando il trend oracolo totale la previsione nel decile peggiore ($D_1$) si attesta in media a $-2.85$\,bu/ac a fronte di un crollo reale di $-9.81$\,bu/ac (errore residuo di sovrastima di $+6.96$\,bu/ac, contro $-2.14$\,bu/ac previsti su $-8.82$\,bu/ac reali nel trend baseline expanding con errore di $+6.46$\,bu/ac, Tabella~\ref{tab:comp_decile_error_performance_short} e Figura~\ref{fig:decile_calibration_comp}). 
 
-\noindent Questo dimostra che la sovrastima nelle annate peggiori non è un errore di detrending, ma deriva dalle proprietà statistiche della stima: poiché le variabili meteo a livello di contea spiegano circa un terzo della varianza ($R^2 \approx 0.32$), qualsiasi modello ottimizzato con perdita quadratica contrae fisiologicamente la previsione verso la media ($\hat{\epsilon} \approx 0.32 \times (-10) \approx -3.2$\,bu/ac). La parte restante riflette rumore locale non meteorologico.
+\noindent Questo dimostra che la contrazione nelle annate peggiori non è un difetto di detrending, ma riflette le proprietà statistiche della stima: poiché le variabili meteo a livello di contea spiegano circa un terzo della varianza ($R^2 \approx 0.32$), qualsiasi modello ottimizzato con perdita quadratica contrae fisiologicamente la previsione dell'anomalia verso lo zero ($\hat{\epsilon} \approx 0.32 \times (-10) \approx -3.2$\,bu/ac). La quota residua rappresenta rumore locale non meteorologico.
 
 \input{tables/tab_decile_error_performance_comparison.tex}
 

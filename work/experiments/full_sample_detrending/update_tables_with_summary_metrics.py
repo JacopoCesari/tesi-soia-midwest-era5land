@@ -126,11 +126,11 @@ def generate_table_2():
         r"\scriptsize",
         r"\setlength{\tabcolsep}{2.2pt}",
         r"\renewcommand{\arraystretch}{1.08}",
-        r"\caption{Errore medio per decile ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/ac) a chiusura raccolto $H = 1^*$. In grassetto la specificazione con errore minore.}",
+        r"\caption{Previsione media dell'anomalia per decile ($\bar{\hat{\epsilon}}$, bu/ac) vs anomalia osservata ($\bar{\epsilon}$) a chiusura raccolto $H = 1^*$. In grassetto la specificazione con previsione pi\`u vicina all'osservato.}",
         r"\label{tab:comp_decile_error_performance_short}",
         r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc cc cc cc cc @{}}",
         r"\toprule",
-        r"& \multicolumn{2}{c}{\textbf{Observed } $\bar{\epsilon}$} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM (+Lag)}} & \multicolumn{2}{c}{\textbf{Ensemble}} & \multicolumn{2}{c}{\textbf{Media Modelli}} \\",
+        r"& \multicolumn{2}{c}{\textbf{Osservato } $\bar{\epsilon}$} & \multicolumn{2}{c}{\textbf{ElasticNet } $\bar{\hat{\epsilon}}$} & \multicolumn{2}{c}{\textbf{XGBoost } $\bar{\hat{\epsilon}}$} & \multicolumn{2}{c}{\textbf{LSTM } $\bar{\hat{\epsilon}}$} & \multicolumn{2}{c}{\textbf{Ensemble } $\bar{\hat{\epsilon}}$} & \multicolumn{2}{c}{\textbf{Media Modelli } $\bar{\hat{\epsilon}}$} \\",
         r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}\cmidrule(lr){12-13}",
         r"\textbf{Decile} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\",
         r"\midrule",
@@ -144,16 +144,25 @@ def generate_table_2():
             return f"{vb:+.2f}", f"\\textbf{{{vf:+.2f}}}"
         else:
             return f"{vb:+.2f}", f"{vf:+.2f}"
+
+    def fmt_pred_pair(pb, pf, eb, ef):
+        ab, af = abs(eb), abs(ef)
+        if ab < af:
+            return f"\\textbf{{{pb:+.2f}}}", f"{pf:+.2f}"
+        elif af < ab:
+            return f"{pb:+.2f}", f"\\textbf{{{pf:+.2f}}}"
+        else:
+            return f"{pb:+.2f}", f"{pf:+.2f}"
             
     for i, r in df_d.iterrows():
         d = int(r["d"])
         d_lbl = f"$D_{{{d}}}$" + (" (Crollo)" if d == 1 else (" (Picco)" if d == 10 else ""))
         
-        en_b_s, en_f_s = fmt_pair(r["e_en_b"], r["e_en_f"])
-        xgb_b_s, xgb_f_s = fmt_pair(r["e_xgb_b"], r["e_xgb_f"])
-        ls_b_s, ls_f_s = fmt_pair(r["e_ls_b"], r["e_ls_f"])
-        ens_b_s, ens_f_s = fmt_pair(r["e_ens_b"], r["e_ens_f"])
-        ml_b_s, ml_f_s = fmt_pair(r["e_ml_b"], r["e_ml_f"])
+        en_b_s, en_f_s = fmt_pred_pair(r["pred_en_b"], r["pred_en_f"], r["e_en_b"], r["e_en_f"])
+        xgb_b_s, xgb_f_s = fmt_pred_pair(r["pred_xgb_b"], r["pred_xgb_f"], r["e_xgb_b"], r["e_xgb_f"])
+        ls_b_s, ls_f_s = fmt_pred_pair(r["pred_ls_b"], r["pred_ls_f"], r["e_ls_b"], r["e_ls_f"])
+        ens_b_s, ens_f_s = fmt_pred_pair(r["pred_ens_b"], r["pred_ens_f"], r["e_ens_b"], r["e_ens_f"])
+        ml_b_s, ml_f_s = fmt_pred_pair(r["pred_ml_b"], r["pred_ml_f"], r["e_ml_b"], r["e_ml_f"])
         
         tex.append(f"{d_lbl} & {r['yt_b']:+.2f} & {r['yt_f']:+.2f} & {en_b_s} & {en_f_s} & {xgb_b_s} & {xgb_f_s} & {ls_b_s} & {ls_f_s} & {ens_b_s} & {ens_f_s} & {ml_b_s} & {ml_f_s} \\\\")
         
