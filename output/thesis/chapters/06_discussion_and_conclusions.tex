@@ -11,7 +11,7 @@ This chapter synthesizes the empirical evidence established across the twelve fo
 \section{Synthesis of Empirical Findings}
 \label{sec:disc_synthesis}
 
-{\color{red}
+{
 The twelve-horizon evaluation shows limited early-season predictability and increasing skill as reproductive weather accumulates. Regularized linear models remain competitive with tree ensembles, while integrated LSTM and ensemble forecasts achieve the lowest harvest errors. Regional averaging improves aggregate accuracy but leaves county-level tail attenuation. These findings separate the timing of useful weather information from the additional contribution of model complexity.
 }
 
@@ -23,7 +23,7 @@ The twelve-horizon evaluation shows limited early-season predictability and incr
 \label{sec:disc_literature}
 
 \subsection{Target Formulation and the Detrending Confound}
-{\color{red}
+{
 Target definitions constrain comparisons with published scores. \citet{ChenZhang2026} report raw-yield $R^2$ near $0.67$ with lagged yield; omitting that predictor reduces their score to approximately $0.33$. This ablation demonstrates the importance of separating historical yield information from weather inputs.
 
 Our LSTM (+Lag) reaches $R^2_{\text{OOS}}=0.336$ on anomalies and $R^2_{\text{level}}=0.651$ after trend reconstruction (Table~\ref{tab:raw_vs_anomaly_performance}). This integrated specification extends the starting weather-only benchmark. The comparison of information sets quantifies the additional contribution of lagged yield.
@@ -32,21 +32,21 @@ Our LSTM (+Lag) reaches $R^2_{\text{OOS}}=0.336$ on anomalies and $R^2_{\text{le
 }
 
 \subsection{Spatial Aggregation: County Disaggregation versus Regional Portfolios}
-{\color{red}
+{
 Spatial scale also affects reported accuracy. County forecasts retain local variation from weather exposure and unobserved management. Averaging across counties can offset some local errors, as shown by the regional results in Section~\ref{sec:res_macro_portfolio}. Spatially correlated errors remain, so the reduction does not imply independent county observations.
 
 The ensemble's regional RMSE is $2.22\text{ bu/ac}$, compared with $4.91\text{ bu/ac}$ at county level. LSTM has a lower regional RMSE point estimate, while the ensemble has the lowest pooled county-level error. The ensemble's correlation with regional anomalies is $0.888$; its correlation with reconstructed regional yield levels is $0.947$. These metrics describe different prediction tasks. Studies reporting state or national averages should therefore be compared at a matching aggregation level. Our regional mean is equally weighted across counties and does not estimate acreage-weighted production.
 }
 
 \subsection{Task Formulation and Sample Scope: Continuous Regression versus Classification}
-{\color{red}
+{
 \citet{Iizumietal2021} evaluate directional and event-based forecasts. Our continuous predictions retain anomaly magnitude, while directional accuracy provides a complementary diagnostic. Similar hit rates do not establish equivalent performance when event definitions, spatial units, and evaluation samples differ.
 
 \citet{Vijverberg2023} examine presowing predictability using ocean and land precursors, with an emphasis on poor-yield events. Our evaluation covers all $2{,}025$ county-years in the test period. It therefore assesses both extreme departures and central regimes. Differences in predictor scope and event selection matter when interpreting the absence of early skill in our surface-weather benchmark.
 }
 
 \subsection{Observational Perimeters: Reanalysis versus Remote Sensing and Breeding Trials}
-{\color{red}
+{
 \citet{Xie2025} combine satellite vegetation information with weather and report county-level RMSE between $4.43$ and $6.22\text{ bu/ac}$. Our county errors fall within that range, but differences in samples and predictors preclude a controlled accuracy comparison. Optical inputs also depend on cloud conditions and processing availability.
 
 \citet{Yinetal2026} include Solar-Induced Chlorophyll Fluorescence (SIF) and near-infrared reflectance of vegetation (NIRv). These measurements describe crop state during the season. Their exclusion here isolates information from surface weather and preserves the multidecadal observation window.
@@ -55,7 +55,7 @@ The ensemble's regional RMSE is $2.22\text{ bu/ac}$, compared with $4.91\text{ b
 }
 
 \subsection{Model Complexity, Inductive Bias, and Temporal Sequences}
-{\color{red}
+{
 Our monthly-input results show that tree ensembles do not consistently improve on ElasticNet. This finding supports the use of regularized linear benchmarks in crop forecasting comparisons \citep{Sharmaetal2025}.
 
 The integrated LSTM gains $1.5$ percentage points over integrated ElasticNet at harvest closure. The benchmark compares feasible specifications: monthly tabular inputs limit coefficient expansion, while the recurrent architecture shares weights over decad steps. The resulting ranking evaluates both complete forecasting solutions. \citet{Yinetal2026} provide a basis for the additional temporal-resolution analysis. The 10-day frequency is retained from model selection (Section~\ref{sec:res_frequency_validation}); the final test compares complete forecasting specifications. Tree attenuation in bumper seasons and the small ensemble gain are discussed in Chapter~\ref{chap:empirical_results}.
@@ -73,7 +73,7 @@ Table~\ref{tab:hypotheses_verdicts} summarizes the empirical verdicts for the fi
 \begin{table}[htbp]
 \centering
 \singlespacing
-\footnotesize\color{red}
+\footnotesize
 \setlength{\tabcolsep}{5.0pt}
 \renewcommand{\arraystretch}{1.2}
 \caption{Empirical assessment of H1--H5: 2011--2025 test results and 1985--1995 validation evidence for H3.}
@@ -82,7 +82,7 @@ Table~\ref{tab:hypotheses_verdicts} summarizes the empirical verdicts for the fi
 \toprule
 \textbf{Hypothesis} & \textbf{Formal Statement} & \textbf{Empirical Evidence} & \textbf{Verdict} \\
 \midrule
-\textbf{H1} & Weather reanalysis features reduce out-of-sample prediction error relative to trend baselines. & Weather-only ElasticNet reduces harvest RMSE from $6.12$ to $5.15$ bu/ac. Annual HAC DM tests support improvement at June ($p=0.0011$) and later cutoffs; significance differs across model families (Table~\ref{tab:forecast_inference}). & \textbf{Supported} \\
+\textbf{H1} & Weather reanalysis features reduce out-of-sample prediction error relative to trend baselines. & Weather-only ElasticNet reduces harvest RMSE from $6.12$ to $5.15$ bu/ac. Annual HAC DM tests support improvement at June ($p=0.0011$) and later cutoffs; significance differs across model families. & \textbf{Supported} \\
 \textbf{H2} & Predictive skill increases monotonically as harvest approaches ($H \to 1$). & Seasonal skill improves overall, but individual trajectories contain reversals. The strict monotonicity requirement does not hold across the evaluated specifications. & \shortstack{\textbf{Not}\\\textbf{supported}} \\
 \textbf{H3} & Sub-monthly summaries reduce validation error at fixed LSTM architecture and hyperparameters. & The 10-day frequency is retained from model selection. The final test compares selected forecasting specifications; an isolated frequency effect is not assessed. & \shortstack{Selection\\evidence} \\
 \textbf{H4} & Highly parameterized deep models do not systematically outperform regularized linear models. & ElasticNet is competitive at early horizons. At $H^*(s)$, integrated scores are $0.320$ for ElasticNet and $0.336$ for LSTM; these point differences do not alone establish systematic deep-learning superiority. & \textbf{Supported} \\
@@ -96,7 +96,7 @@ Table~\ref{tab:hypotheses_verdicts} summarizes the empirical verdicts for the fi
 \section{Operational Implications for Agrifood Supply Chains}
 \label{sec:disc_operational}
 
-{\color{red}
+{
 The seasonal pattern suggests different uses for forecast updates. Weak planting-window skill warrants cautious interpretation of early signals. July updates may inform preliminary sourcing and storage scenarios as reproductive weather becomes available. The 2012 case illustrates the potential value of updated supply assessments during reproductive development, before the October reference.
 
 Continuous anomaly forecasts provide a magnitude for these scenarios, beyond a shortfall direction alone. Their use in procurement or freight planning would require uncertainty estimates, acreage information, and timely operational weather inputs. The retrospective experiment does not quantify trading profits, hedging performance, or realized logistical savings.
@@ -113,7 +113,7 @@ Several boundary conditions govern the interpretation of our findings:
 \begin{enumerate}
     \item \textbf{Reanalysis Latency versus Real-Time Deployment:} ERA5-Land reanalysis is released with an operational latency of approximately 2 to 3 months. Consequently, retrospective benchmarks delineate the theoretical upper bound of weather-driven predictability. Operational deployment requires pairing the model with near-real-time streams (such as ECMWF ERA5T with a 5-day latency) or operational numerical weather prediction analyses.
     \item \textbf{Panel Selection and Survivorship:} Our 75-year panel balances 135 counties continuously from 1951 to 2025 without imputation. This design prioritizes multidecadal temporal depth to capture historical climate extremes, but introduces geographic selection toward high-productivity commercial counties. Results represent commercial rainfed production across the core Midwestern Corn Belt, and cannot be extrapolated directly to marginal or arid fringes.
-    {\color{red}\item \textbf{Unobserved Management and Hydrological Drivers:} Irrigation, drainage, planting dates and cultivar choices are not observed as predictors. Residual spatial clustering therefore cannot be attributed to a particular omitted mechanism. County-level differences in accuracy describe the model's empirical limits within this sample.}
+    {\item \textbf{Unobserved Management and Hydrological Drivers:} Irrigation, drainage, planting dates and cultivar choices are not observed as predictors. Residual spatial clustering therefore cannot be attributed to a particular omitted mechanism. County-level differences in accuracy describe the model's empirical limits within this sample.}
     \item \textbf{October Harvest-Timing Contamination:} Across northern study counties, soybean harvesting begins in early October. While synchronizing harvest closure ($H^*=2$) resolves post-harvest contamination for Minnesota, fixed calendar cutoffs in other northern fringes (such as northern Ohio) can still introduce uninformative late-October weather into unadjusted baselines.
 \end{enumerate}
 
@@ -124,7 +124,7 @@ Several boundary conditions govern the interpretation of our findings:
 \section{Concluding Remarks and Future Research}
 \label{sec:disc_conclusions}
 
-{\color{red}
+{
 Observed weather adds forecasting information during the growing season, while regularized linear models remain competitive with recurrent networks. Training-only detrending and chronological validation make the incremental contribution explicit. These findings apply to the selected counties and retrospective test period.
 }
 

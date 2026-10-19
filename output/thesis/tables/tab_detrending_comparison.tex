@@ -1,10 +1,10 @@
 \begin{table}[htbp]
 \centering
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
+\small
 \caption{Econometric and diagnostic comparison of detrending models across the 75-year panel (1951--2025).}
 \label{tab:detrending_comparison}
-\begin{tabularx}{\textwidth}{l c c c c c c c c}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l c c c c c c c c}
 \toprule
 \textbf{Specification} & \textbf{Params} & \textbf{$R^2$} & \textbf{Adj. $R^2$} & \textbf{RSE} & \textbf{AIC} & \textbf{BIC} & \textbf{ADF $p$} & \textbf{OOS RMSE} \\
  & ($k$) & & & (bu/ac) & & & & (bu/ac) \\
@@ -21,7 +21,8 @@ Linear OLS (County-Specific) & 2 & 0.8122 & 0.8096 & 5.12 & --- & --- & < 0.001 
 Quadratic (County-Specific) & 3 & 0.8245 & 0.8196 & 4.98 & --- & --- & < 0.001 & 6.030 \\
 Cubic (County-Specific) & 4 & 0.8310 & 0.8239 & 4.92 & --- & --- & < 0.001 & 6.385 \\
 \bottomrule
-\end{tabularx}
+\end{tabular}%
+}
 \vspace{1ex}
 \raggedright
 \scriptsize{\textit{Notes:} $k$: parameter count. RSE: residual standard error (bu/ac). ADF $p$: Augmented Dickey-Fuller test $p$-value ($H_0$: unit root). OOS RMSE: 1-step-ahead out-of-sample forecast accuracy across expanding windows. In Panel B, BIC strictly favors Linear OLS in $65.9\%$ of counties ($89/135$). \textit{Source:} Author's calculation on USDA NASS yield panel (1951--2025).}

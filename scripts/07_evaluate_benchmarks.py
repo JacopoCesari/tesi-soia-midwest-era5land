@@ -224,14 +224,80 @@ def regional_report(predictions, scope):
 
 
 def write_table(filename, caption, label, headers, rows, notes=""):
-    """Write a compact exhibit with an explicit source and unchanged data units."""
-    lines = [r"\begin{table}[htbp]", r"\centering\singlespacing\footnotesize",
-             r"\color{red}", r"\setlength{\tabcolsep}{3pt}", r"\renewcommand{\arraystretch}{1.12}",
+    """Write evidence using the established thesis typography and table layout."""
+    deciles = filename == "tab_decile_error_performance.tex"
+    regional = filename == "tab_yearly_macro_yields.tex"
+    horizons = filename == "tab_horizon_performance.tex"
+    shocks = filename == "tab_tail_risk_performance.tex"
+    spacing = "1.08" if deciles else ("1.10" if regional else "1.12")
+    padding = "3.0pt" if deciles else ("3.2pt" if regional else ("3.5pt" if horizons else "4.0pt"))
+    cutoffs = {11: "Dec 31", 10: "Jan 31", 9: "Feb 28/29", 8: "Mar 31", 7: "Apr 30",
+               6: "May 31", 5: "Jun 30", 4: "Jul 31", 3: "Aug 31", 2: "Sep 30", 1: r"$H^*(s)$"}
+    if horizons:
+        headers = ["H", "Cutoff Date", "ENet", "RF", "XGB", "LSTM", "ENet", "RF", "XGB", "LSTM", "Ens"]
+    elif shocks:
+        headers = ["H", "Cutoff Date", "Naive Trend", "ElasticNet", "XGBoost", "LSTM", "Ens"]
+    columns = "c l" + " c"*(len(headers)-2) if horizons or shocks else ("l" if deciles else "c") + " c"*(len(headers)-1)
+    lines = [r"\begin{table}[htbp]", r"\centering", r"\singlespacing", r"\footnotesize",
+             r"\setlength{\tabcolsep}{" + padding + "}", r"\renewcommand{\arraystretch}{" + spacing + "}",
              r"\caption{" + caption + "}", r"\label{" + label + "}",
-             r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l" + "c"*(len(headers)-1) + "@{}}",
-             r"\toprule", " & ".join(headers) + r" \\", r"\midrule"]
-    lines.extend(" & ".join(map(str, row)) + r" \\" for row in rows)
-    lines.extend([r"\bottomrule", r"\end{tabular*}", r"\vspace{0.3em}",
+             r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}" + columns + " @{}}", r"\toprule"]
+    if horizons:
+        lines.extend([r"& & \multicolumn{4}{c}{\textbf{Weather-Only ($R^2_{\mathrm{OOS}}$)}} & \multicolumn{5}{c}{\textbf{Integrated (+Lag, $R^2_{\mathrm{OOS}}$)}} \\",
+                      r"\cmidrule(lr){3-6}\cmidrule(lr){7-11}"])
+    lines.extend([" & ".join(r"\textbf{" + header + "}" for header in headers) + r" \\", r"\midrule"])
+    panels = {0: r"\textbf{Panel A: Early Vegetative Horizon} ($H=5$, June 30)",
+              10: r"\textbf{Panel B: Pod-Filling Horizon} ($H=3$, August 31)",
+              20: r"\textbf{Panel C: Harvest Closure Horizon} ($H^*(s)$)"}
+    for index, row in enumerate(rows):
+        cells = list(map(str, row))
+        if horizons:
+            horizon = int(cells[0])
+            if horizon in [11, 6]:
+                if horizon == 6:
+                    lines.append(r"\midrule")
+                title = r"Pre-Sowing Horizons ($H=11\dots7$)" if horizon == 11 else r"Crop Campaign ($H=6\dots1$)"
+                lines.append(r"\multicolumn{11}{l}{\textit{" + title + r"}} \\")
+            scores = list(map(float, cells[1:]))
+            cells[1:] = [r"\textbf{" + value + "}" if float(value) == max(scores) else value for value in cells[1:]]
+            cells = ["$H=" + cells[0] + "$", cutoffs[horizon], *cells[1:]]
+        elif shocks:
+            if index in [0, 5]:
+                if index:
+                    lines.append(r"\midrule")
+                title = "Panel A: 2012 Flash Drought" if index == 0 else "Panel B: 2016 Bumper Season"
+                lines.append(r"\multicolumn{7}{l}{\textbf{" + title + r"}} \\")
+            horizon = int(cells[1])
+            values = list(map(float, cells[2:]))
+            cells = ["$H=" + cells[1] + "$", cutoffs[horizon], *[r"\textbf{" + value + "}" if float(value) == min(values) else value for value in cells[2:]]]
+        elif deciles:
+            if index in panels:
+                if index:
+                    lines.append(r"\midrule")
+                lines.append(r"\multicolumn{8}{l}{" + panels[index] + r"} \\")
+            observed = float(cells[2])
+            errors = [abs(float(value)-observed) for value in cells[3:]]
+            cells[2] = "$" + cells[2] + "$"
+            cells[3:] = [r"\textbf{" + value + "}" if abs(error-min(errors)) < 1e-9 else "$" + value + "$"
+                         for value, error in zip(cells[3:], errors)]
+        elif regional:
+            if index == 15:
+                lines.append(r"\midrule")
+            if index < 15:
+                observed = float(cells[1])
+                errors = [abs(float(value)-observed) for value in cells[3:]]
+                cells[3:] = [r"\textbf{" + value + "}" if abs(error-min(errors)) < 1e-9 else value
+                             for value, error in zip(cells[3:], errors)]
+            else:
+                cells[0] = r"\textbf{" + cells[0] + "}"
+                numeric = [(i, float(value)) for i, value in enumerate(cells) if i >= 2 and value != "---"]
+                if numeric:
+                    best = max(value for _, value in numeric) if index == 18 else min(abs(value) for _, value in numeric)
+                    for i, value in numeric:
+                        if abs((value if index == 18 else abs(value))-best) < 1e-9:
+                            cells[i] = r"\textbf{" + cells[i] + "}"
+        lines.append(" & ".join(cells) + r" \\")
+    lines.extend([r"\bottomrule", r"\end{tabular*}", r"\vspace{0.2em}",
                   r"{\footnotesize\textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample forecasts.} " + notes + "}",
                   r"\end{table}", ""])
     (TABLE_DIR / filename).write_text("\n".join(lines), encoding="utf-8")
@@ -249,25 +315,16 @@ def write_evidence_tables(predictions, metrics, inference, regional):
     write_table("tab_horizon_performance.tex", r"Pooled out-of-sample $R^2$ across forecast horizons and information sets (2011--2025).",
                 "tab:horizon_performance", ["H", "ENet W", "RF W", "XGB W", "LSTM W", "ENet L", "RF L", "XGB L", "LSTM L", "Ens L"], rows,
                 r"W: weather-only; L: integrated lagged-yield specification; Ens: ensemble.")
-    rows=[]
-    for model in all_models:
-        values=[]
-        for horizon in [5,4,3,2,1]:
-            value=inference[inference.model.eq(model)&inference.reference.eq("Naive")&inference.H.eq(horizon)].iloc[0].p_one_sided
-            values.append("---" if not np.isfinite(value) else (r"$<0.001$" if value<0.001 else f"{value:.3f}"))
-        rows.append([SHORT_NAMES[model],*values])
-    write_table("tab_forecast_inference.tex", r"Nominal $p$-values from one-sided Diebold--Mariano tests against the trend benchmark.",
-                "tab:forecast_inference", ["Model", "June", "July", "August", "September", r"$H^*(s)$"], rows,
-                "")
     reg=regional[regional.scope.eq("harvest_closure")]
     observed=reg[reg.model.eq("Naive")].set_index("year").observed
     rows=[]
-    for year in observed.sort_index().index:
+    for year in observed.sort_values().index:
         values=reg[reg.year.eq(year)].set_index("model").predicted
         rows.append([str(year),f"{observed[year]:+.2f}",*[f"{values[m]:+.2f}" for m in PRIMARY_MODELS]])
     for field in ["RMSE","MAE","Bias","r_anomaly"]:
         values=reg.groupby("model")[field].first()
-        rows.append([field.replace("r_anomaly",r"Pearson $r$ (anomaly)"),"---",*["---" if not np.isfinite(values[m]) else f"{values[m]:.3f}" for m in PRIMARY_MODELS]])
+        title = r"Pearson $r$ (anomaly)" if field == "r_anomaly" else field + " (bu/ac)"
+        rows.append([title,"---",*["---" if not np.isfinite(values[m]) else f"{values[m]:.3f}" for m in PRIMARY_MODELS]])
     write_table("tab_yearly_macro_yields.tex", r"Regional mean yield anomalies (bu/ac) and forecast accuracy at harvest closure (2011--2025).",
                 "tab:yearly_macro_yields", ["Year", "Observed", "Naive", "ENet", "RF", "XGB", "LSTM", "Ens"], rows,
                 r"ENet: ElasticNet; RF: Random Forest; XGB: XGBoost; Ens: ensemble.")
@@ -296,9 +353,15 @@ def write_evidence_tables(predictions, metrics, inference, regional):
         for decile,group in ref.groupby("decile"):
             selected=predictions[predictions.H.eq(horizon)].merge(group[["year","county_fips"]],on=["year","county_fips"],validate="many_to_one")
             means=selected.groupby("model").y_pred_anomaly.mean()
-            rows.append([str(horizon),str(decile),f"{group.y_true_anomaly.mean():+.2f}",*[f"{means[model]:+.2f}" for model in PRIMARY_MODELS[1:]]])
+            name = "$D_{" + str(decile) + "}$"
+            if decile == 1:
+                name += " (Severe Shortfall)"
+            elif decile == 10:
+                name += " (Peak Yield)"
+            interval = f"$[{group.y_true_anomaly.min():+.2f}, {group.y_true_anomaly.max():+.2f}]$"
+            rows.append([name,interval,f"{group.y_true_anomaly.mean():+.2f}",*[f"{means[model]:+.2f}" for model in PRIMARY_MODELS[1:]]])
     write_table("tab_decile_error_performance.tex", "Mean forecast anomalies (bu/ac) within realized anomaly deciles at three cutoffs (2011--2025).",
-                "tab:decile_error_performance",["H","Decile","Observed","ENet","RF","XGB","LSTM","Ens"],rows,
+                "tab:decile_error_performance",["Decile","Range (bu/ac)","Mean Obs.","ENet","RF","XGB","LSTM","Ens"],rows,
                 r"Ens: ensemble.")
 
 

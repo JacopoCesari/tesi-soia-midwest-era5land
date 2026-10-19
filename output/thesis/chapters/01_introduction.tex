@@ -5,7 +5,7 @@
 \section{Problem, Practical Value, and Motivation}
 \label{sec:intro_problem}
 
-{\color{red}
+{
 Agricultural yield becomes observable at harvest, after many operational and commercial commitments have been made. Earlier forecasts can support risk management in agrifood supply chains. Soybean supplies domestic livestock feed and international trade, with the Midwestern Corn Belt driving U.S. production \citep{Schlenker2009}.
 }
 
@@ -13,7 +13,7 @@ Harvest surprises in this region carry severe, asymmetric economic costs. Region
 
 We focus specifically on county-level soybean yield anomalies, measured in bushels per acre. Aggregate production volumes and market prices fall outside our scope: production totals depend on acreage allocations across counties, while commercial prices reflect global carryover stocks and trade flows. These supply-chain repercussions establish the practical motivation for our research.
 
-{\color{red}
+{
 Forecast value depends on lead time. Earlier estimates can support procurement and storage planning, while in-season updates inform sourcing and freight commitments. We assess three criteria: accuracy across the yield distribution, the timing of predictive gains, and their persistence across subsequent updates. Twelve monthly forecast origins, anchored to an October harvest reference, trace this progression ($H=12,\dots,1$).
 }
 
@@ -42,7 +42,7 @@ However, existing empirical studies examine these dimensions in isolation, focus
 We address these gaps through two primary methodological contributions:
 \begin{enumerate}
     \item \textbf{Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12, \dots, 1$):} We establish the empirical boundaries of weather-driven predictability across twelve standardized monthly origins, spanning from the preceding autumn through harvest eve. By relying strictly on cumulative surface reanalysis from ERA5-Land without numerical forecast inputs, we track precisely when observed atmospheric states begin to generate stable predictive skill.
-    {\color{red}\item \textbf{Comparison of Forecasting Specifications:} We compare regularized linear models, tree ensembles (Random Forest, XGBoost), and recurrent architectures (LSTM) on the selected county panel. The final benchmark evaluates monthly tabular models and a 10-day LSTM. The recurrent frequency and head-specific parameters are fixed before the final test evaluation.}
+    {\item \textbf{Comparison of Forecasting Specifications:} We compare regularized linear models, tree ensembles (Random Forest, XGBoost), and recurrent architectures (LSTM) on the selected county panel. The final benchmark evaluates monthly tabular models and a 10-day LSTM. The recurrent frequency and head-specific parameters are fixed before the final test evaluation.}
 \end{enumerate}
 
 \paragraph{Scope Boundaries and Methodological Discipline.}
@@ -50,13 +50,13 @@ We evaluate this framework on soybean across a balanced panel of 135 counties in
 
 We interpret feature importance strictly as empirical predictive association, without claiming structural causal identification.
 
-{\color{red}
+{
 Weather-only models provide the initial benchmark. We then test the incremental contribution of lagged yield anomalies and retain integrated specifications supported by that comparison. Reported scores distinguish the two information sets; lagged anomalies are detrended on training data and included only when available at the forecast origin.
 }
 
 \section{Structure of the Study}
 \label{sec:intro_structure}
 
-{\color{red}
+{
 Chapter~\ref{chap:literature_review} reviews the literature and derives H1--H5. Chapter~\ref{chap:data_and_study_area} describes the data and exploratory analysis. Chapter~\ref{chap:methodology} presents the methodology. Chapters~\ref{chap:empirical_results} and~\ref{chap:discussion_conclusions} report and discuss the results.
 }

@@ -35,7 +35,6 @@ from sklearn.linear_model import ElasticNet
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 
-plt.rcParams.update({"font.size": 12})
 
 ROOT = Path(__file__).resolve().parent.parent
 PROCESSED_DIR = ROOT / "output" / "data" / "processed"
@@ -59,18 +58,13 @@ COLORS = {
     "Naive": "#555555",
     "ElasticNet": "#1f77b4",
     "RandomForest": "#ff7f0e",
+    "ElasticNet (+Lag)": "#1f77b4",
+    "RandomForest (+Lag)": "#ff7f0e",
+    "XGBoost (+Lag)": "#d62728",
     "XGBoost": "#d62728",
     "LSTM (Weather-Only)": "#2ca02c",
     "LSTM (+Lag)": "#8e44ad",
     "Ensemble (ENet + LSTM)": "#16a085",
-}
-
-DOMAIN_LABELS = {
-    "Atmospheric Demand & Heat": "Demand / heat",
-    "Hydrological Supply": "Water supply",
-    "Soil Moisture Dynamics": "Soil moisture",
-    "Thermal & Radiation Regimes": "Temperature / radiation",
-    "Memory & Spatial Baseline": "Lag / location",
 }
 
 
@@ -86,37 +80,62 @@ def load_data():
 # FIGURE 5.1: Multi-Horizon Progression Curves
 # ==============================================================================
 def plot_figure_5_1(preds):
-    """Compare information sets and matched-family lag increments."""
-    fig,(left,right)=plt.subplots(1,2,figsize=(10,5),sharex=True)
-    x=np.arange(len(HORIZONS))
-    scores={}
-    for (model,horizon),group in preds.groupby(["model","H"]):
-        scores[(model,horizon)]=1-np.sum((group.y_pred_anomaly-group.y_true_anomaly)**2)/np.sum(group.y_true_anomaly**2)
-    pairs=[("ElasticNet","ElasticNet (+Lag)","ENet",COLORS["ElasticNet"]),
-           ("RandomForest","RandomForest (+Lag)","RF",COLORS["RandomForest"]),
-           ("XGBoost","XGBoost (+Lag)","XGB",COLORS["XGBoost"]),
-           ("LSTM (Weather-Only)","LSTM (+Lag)","LSTM",COLORS["LSTM (+Lag)"])]
-    for weather,integrated,label,color in pairs:
-        left.plot(x,[scores[(weather,h)] for h in HORIZONS],color=color,ls="-",label=f"{label} weather",lw=1.5)
-        left.plot(x,[scores[(integrated,h)] for h in HORIZONS],color=color,ls="--",label=f"{label} +Lag",lw=1.5)
-        matched="LSTM (Linear Weather-Only)" if label=="LSTM" else weather
-        right.plot(x,[scores[(integrated,h)]-scores[(matched,h)] for h in HORIZONS],color=color,label=label,marker="o",markersize=3,lw=1.5)
-    left.plot(x,[scores[("Ensemble (ENet + LSTM)",h)] for h in HORIZONS],color=COLORS["Ensemble (ENet + LSTM)"],ls="-.",label="Ensemble +Lag",lw=2)
-    for ax in (left,right):
-        ax.axhline(0,color="black",lw=.8,ls=":")
-        ax.set_xticks(x)
-        ax.set_xticklabels([r"$H^*(s)$" if h == 1 else str(h) for h in HORIZONS])
-        ax.set_xlabel(r"Forecast horizon $H$")
-        ax.grid(alpha=.3)
-    left.set_ylabel(r"Pooled $R^2_{\mathrm{OOS}}$")
-    left.set_title("(a) Weather-only and integrated forecasts",loc="left",fontsize=14)
-    left.legend(fontsize=11,ncol=2,loc="lower left")
-    right.set_ylabel(r"$\Delta R^2$: integrated minus weather-only")
-    right.set_title("(b) Lag increment within model families",loc="left",fontsize=14)
-    right.legend(fontsize=11)
-    fig.tight_layout()
-    fig.savefig(FIGURES_DIR/"fig_r2_horizon_progression.pdf")
-    fig.savefig(FIGURES_DIR/"fig_r2_horizon_progression.png",dpi=300)
+    print("Generating Figure 5.1: R2 and RMSE progression across horizons...")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.0, 5.4), sharex=True)
+    x_pos = np.arange(len(HORIZONS))
+
+    for ax in (ax1, ax2):
+        ax.axvspan(-0.5, 5.5, color="#f2f4f8", alpha=0.75)
+        ax.axvspan(5.5, 10.5, color="#fdfbf2", alpha=0.85)
+        ax.axvline(5.5, color="#c0392b", linestyle=":", linewidth=1.5, alpha=0.85)
+
+    ax1.plot(x_pos, np.zeros(len(HORIZONS)), label="Naive Secular Trend", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
+
+    models_to_plot = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "ElasticNet (+Lag)", "RandomForest (+Lag)", "XGBoost (+Lag)", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
+    for m in models_to_plot:
+        sub_m = preds[preds["model"] == m]
+        if sub_m.empty:
+            continue
+        r2_vals, rmse_vals = [], []
+        for h in HORIZONS:
+            sh = sub_m[sub_m["H"] == h]
+            if sh.empty:
+                r2_vals.append(np.nan)
+                rmse_vals.append(np.nan)
+            else:
+                yt, yp = sh["y_true_anomaly"].values, sh["y_pred_anomaly"].values
+                ss_res, ss_tot = np.sum((yt - yp) ** 2), np.sum(yt ** 2)
+                r2_vals.append(1.0 - ss_res / ss_tot if ss_tot > 0 else np.nan)
+                rmse_vals.append(np.sqrt(np.mean((yt - yp) ** 2)))
+
+        ls = "--" if "+Lag" in m else ("-." if "Ensemble" in m else "-")
+        lw = 2.2 if "Ensemble" in m else 1.8
+        ax1.plot(x_pos, r2_vals, label=m, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        ax2.plot(x_pos, rmse_vals, label=m, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
+
+    ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
+    ax1.set_ylabel(r"Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$")
+    ax1.set_title(r"(a) Multi-Horizon Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)", loc="left", fontweight="bold", fontsize=11)
+    ax1.set_ylim(min(-0.35, min(ax1.get_ylim())), max(0.42, max(ax1.get_ylim())))
+    ax1.legend(loc="lower left", frameon=True, fontsize=8.0, ncol=2)
+
+    reference = preds[(preds["model"] == "Naive") & (preds["H"] == 1)]
+    naive_rmse = np.sqrt(np.mean(reference["y_true_anomaly"] ** 2))
+    ax2.plot(x_pos, np.full(len(HORIZONS), naive_rmse), label=f"Naive Baseline ({naive_rmse:.2f} bu/ac)", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
+    ax2.set_ylabel("Out-of-Sample RMSE (bu/acre)")
+    ax2.set_title("(b) Forecast Error Magnitude (RMSE)", loc="left", fontweight="bold", fontsize=11)
+    ax2.set_ylim(min(4.80, min(ax2.get_ylim())), max(7.20, max(ax2.get_ylim())))
+    ax2.legend(loc="upper right", frameon=True, fontsize=8.0, ncol=2)
+
+    for ax in (ax1, ax2):
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([MONTH_LABELS[h] for h in HORIZONS])
+        ax.set_xlabel("Forecast Horizon & Campaign Month")
+        ax.grid(True, linestyle="--", alpha=0.4)
+
+    plt.tight_layout()
+    fig.savefig(FIGURES_DIR / "fig_r2_horizon_progression.pdf")
+    fig.savefig(FIGURES_DIR / "fig_r2_horizon_progression.png")
     plt.close(fig)
 
 
@@ -126,7 +145,7 @@ def plot_figure_5_1(preds):
 # ==============================================================================
 def plot_figure_5_2(preds):
     print("Generating Figure 5.2: Shock bias profiles and scatter resolution...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.8, 5.2))
     active_h = [5, 4, 3, 2, 1]
     x_pos = np.arange(len(active_h))
 
@@ -149,11 +168,11 @@ def plot_figure_5_2(preds):
 
     ax1.axhline(0, color="black", linestyle=":", linewidth=1.2, label="Zero Bias")
     ax1.set_ylabel(r"Mean Anomaly Bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/acre)")
-    ax1.set_title("(a) Regional forecast bias", loc="left", fontweight="bold", fontsize=14)
+    ax1.set_title("(a) Regional forecast bias", loc="left", fontweight="bold", fontsize=11)
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels([r"$H^*(s)$" if h == 1 else f"H={h}" for h in active_h])
     ax1.set_xlabel("Forecast Horizon")
-    ax1.legend(loc="lower left", frameon=True, fontsize=10, ncol=2)
+    ax1.legend(loc="lower left", frameon=True, fontsize=7.8, ncol=2)
     ax1.grid(True, linestyle="--", alpha=0.4)
 
     # Panel (b): Scatter of Predicted vs Observed 2012 Drought Anomalies with OLS Trendlines
@@ -178,8 +197,8 @@ def plot_figure_5_2(preds):
 
     ax2.set_xlabel("Observed 2012 County Anomaly (bu/acre)")
     ax2.set_ylabel("Predicted Anomaly (bu/acre)")
-    ax2.set_title("(b) 2012 drought forecasts (LSTM)", loc="left", fontweight="bold", fontsize=14)
-    ax2.legend(loc="upper left", frameon=True, fontsize=11)
+    ax2.set_title("(b) 2012 drought forecasts (LSTM)", loc="left", fontweight="bold", fontsize=11)
+    ax2.legend(loc="upper left", frameon=True, fontsize=8.0)
     ax2.grid(True, linestyle="--", alpha=0.4)
 
     plt.tight_layout()
@@ -218,7 +237,7 @@ def plot_figure_5_3(preds):
         pred_mean=("y_pred_anomaly", "mean")
     ).reset_index()
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12,5))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.5, 4.8))
 
     # Panel (a): Decile Reliability Diagram
     obs_dec = decile_stats[decile_stats["model"] == "Naive"].sort_values("decile")["obs_mean"].values
@@ -234,10 +253,10 @@ def plot_figure_5_3(preds):
 
     ax1.set_xlabel("Observed decile mean (bu/ac)")
     ax1.set_ylabel("Predicted decile mean (bu/ac)")
-    ax1.set_title("(a) Decile calibration", loc="left", fontsize=14, fontweight="bold")
+    ax1.set_title("(a) Decile calibration", loc="left", fontsize=11, fontweight="bold")
     ax1.set_xlim(min_val - 1.5, max_val + 1.5)
     ax1.set_ylim(-6.0, 5.0)
-    ax1.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=11)
+    ax1.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=8.0)
     ax1.grid(True, linestyle="--", alpha=0.4)
 
     # Panel (b): Normal Q-Q Plot of Standardized Residuals
@@ -256,10 +275,10 @@ def plot_figure_5_3(preds):
 
     ax2.set_xlabel("Normal quantile")
     ax2.set_ylabel("Standardized residual")
-    ax2.set_title("(b) Residual Q-Q plot", loc="left", fontsize=14, fontweight="bold")
+    ax2.set_title("(b) Residual Q-Q plot", loc="left", fontsize=11, fontweight="bold")
     ax2.set_xlim(-3.6, 3.6)
     ax2.set_ylim(-4.2, 3.8)
-    ax2.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=11)
+    ax2.legend(loc="upper left", frameon=True, framealpha=0.9, fontsize=8.0)
     ax2.grid(True, linestyle="--", alpha=0.4)
 
     # Panel (c): Residual Variance vs Fitted Values (Champion LSTM)
@@ -285,10 +304,10 @@ def plot_figure_5_3(preds):
 
     ax3.set_xlabel("Fitted anomaly (bu/ac)")
     ax3.set_ylabel("Residual (bu/ac)")
-    ax3.set_title("(c) Residuals vs fitted (LSTM)", loc="left", fontsize=14, fontweight="bold")
+    ax3.set_title("(c) Residuals vs fitted (LSTM)", loc="left", fontsize=11, fontweight="bold")
     ax3.set_xlim(-10.5, 6.0)
     ax3.set_ylim(-18, 16)
-    ax3.legend(loc="lower left", frameon=True, framealpha=0.9, fontsize=11)
+    ax3.legend(loc="lower left", frameon=True, framealpha=0.9, fontsize=8.0)
     ax3.grid(True, linestyle="--", alpha=0.4)
 
     plt.tight_layout()
@@ -451,7 +470,7 @@ def plot_figure_5_4(pfi_data):
     y_pos = np.arange(len(df_plot))
     bar_h = 0.65
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10,10), sharey=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(14.8, 9.8), sharey=True)
 
     # Subtle horizontal dividers between physical domains
     curr_dom = None
@@ -470,8 +489,8 @@ def plot_figure_5_4(pfi_data):
 
     for ax, col_name, title in panels:
         bars = ax.barh(y_pos, df_plot[col_name], color=df_plot["color"], alpha=0.90, edgecolor="none", height=bar_h)
-        ax.set_title(title, fontsize=14, fontweight="bold", pad=10)
-        ax.set_xlabel("Information Share (%)", fontsize=12)
+        ax.set_title(title, fontsize=11.5, fontweight="bold", pad=10)
+        ax.set_xlabel("Information Share (%)", fontsize=10.0)
         ax.set_xlim(0, max(32, df_plot[col_name].max()+5))
         ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f%%"))
         ax.grid(axis="x", color="#e8e8e8", linestyle=":", linewidth=0.7)
@@ -482,17 +501,17 @@ def plot_figure_5_4(pfi_data):
         ax.spines["bottom"].set_color("#888888")
         for b, val in zip(bars, df_plot[col_name]):
             if val >= 0.2:
-                ax.text(b.get_width() + 0.45, b.get_y() + b.get_height() / 2, f"{val:.1f}%", va="center", fontsize=11, color="#333333")
+                ax.text(b.get_width() + 0.45, b.get_y() + b.get_height() / 2, f"{val:.1f}%", va="center", fontsize=8.5, color="#333333")
 
     ax1.set_yticks(y_pos)
-    ax1.set_yticklabels(df_plot["label"], fontsize=12)
+    ax1.set_yticklabels(df_plot["label"], fontsize=9.2)
     ax1.tick_params(axis="y", length=0)
 
-    legend_handles = [Patch(facecolor=d["color"], edgecolor="none", label=DOMAIN_LABELS[d["domain"]]) for d in canonical_domains]
-    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.955), ncol=3, frameon=False, fontsize=11)
+    legend_handles = [Patch(facecolor=d["color"], edgecolor="none", label=d["domain"]) for d in canonical_domains]
+    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.955), ncol=5, frameon=False, fontsize=9.0)
 
-    plt.suptitle("Grouped predictor importance", fontsize=14, fontweight="bold", y=0.985)
-    plt.tight_layout(rect=[0, 0, 1, 0.86])
+    plt.suptitle("Grouped predictor importance", fontsize=12.0, fontweight="bold", y=0.985)
+    plt.tight_layout(rect=[0, 0, 1, 0.93])
 
     fig.savefig(FIGURES_DIR / "fig54_pfi_faceted_bars.pdf")
     fig.savefig(FIGURES_DIR / "fig54_pfi_faceted_bars.png", dpi=300)
@@ -513,7 +532,7 @@ def plot_figure_5_5(pfi_data):
         {"domain": "Hydrological Supply", "color": "#1f78b4", "prefixes": ["P", "P_minus_ET0"]},
         {"domain": "Soil Moisture Dynamics", "color": "#8c510a", "prefixes": ["SM1", "SM2", "SM3", "SM_root"]},
         {"domain": "Thermal & Radiation Regimes", "color": "#e7298a", "prefixes": ["T_mean", "T_max", "T_min", "GDD", "T_dew", "SSRD"]},
-        {"domain": "Memory & Spatial Baseline", "color": "#4d4d4d", "prefixes": ["lag_anomaly", "spatial"]}
+        {"domain": "Memory & Spatial Baseline", "color": "#7570b3", "prefixes": ["lag_anomaly", "spatial"]}
     ]
 
     records = []
@@ -530,7 +549,7 @@ def plot_figure_5_5(pfi_data):
     totals = matrix_vals.sum(axis=1, keepdims=True)
     shares_matrix = (matrix_vals / totals) * 100.0
 
-    fig, ax = plt.subplots(figsize=(10,5))
+    fig, ax = plt.subplots(figsize=(11.5, 4.8))
     y_pos = np.arange(len(models))[::-1]
     height = 0.48
     lefts = np.zeros(len(models))
@@ -550,13 +569,13 @@ def plot_figure_5_5(pfi_data):
                 ax.text(
                     lefts[j] + pct / 2, b.get_y() + b.get_height() / 2,
                     f"{pct:.1f}%", ha="center", va="center",
-                    fontsize=12, color="white", fontweight="bold"
+                    fontsize=10.0, color="white", fontweight="bold"
                 )
         lefts += s
 
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(models, fontsize=14, fontweight="bold")
-    ax.set_xlabel("Macro-Domain Relative Information Share (%)", fontsize=14)
+    ax.set_yticklabels(models, fontsize=11.5, fontweight="bold")
+    ax.set_xlabel("Macro-Domain Relative Information Share (%)", fontsize=11.0)
     ax.set_xlim(0, 100)
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%.0f%%"))
 
@@ -567,11 +586,11 @@ def plot_figure_5_5(pfi_data):
     ax.spines["left"].set_color("#888888")
     ax.spines["bottom"].set_color("#888888")
 
-    legend_handles = [Patch(facecolor=c, edgecolor="none", label=DOMAIN_LABELS[d]) for d, c in zip(domain_names, domain_colors)]
-    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.93), ncol=3, frameon=False, fontsize=12)
+    legend_handles = [Patch(facecolor=c, edgecolor="none", label=d) for d, c in zip(domain_names, domain_colors)]
+    fig.legend(handles=legend_handles, loc="upper center", bbox_to_anchor=(0.5, 0.93), ncol=5, frameon=False, fontsize=9.2)
 
-    plt.suptitle("Macro-domain information share across forecasting specifications", fontsize=14, fontweight="bold", y=0.985)
-    plt.tight_layout(rect=[0, 0, 1, 0.79])
+    plt.suptitle("Macro-domain information share across forecasting specifications", fontsize=12.0, fontweight="bold", y=0.985)
+    plt.tight_layout(rect=[0, 0, 1, 0.88])
 
     fig.savefig(FIGURES_DIR / "fig55_pfi_domain_bars.pdf")
     fig.savefig(FIGURES_DIR / "fig55_pfi_domain_bars.png", dpi=300)
@@ -598,17 +617,18 @@ def plot_figure_5_6(preds):
         county_r2.append({"GEOID": str(fips).zfill(5), "r2_oos": r2})
 
     df_r2 = pd.DataFrame(county_r2)
-    color_limit = max(0.65, float(df_r2.r2_oos.abs().max()))
+    color_min = min(-0.05, float(df_r2.r2_oos.min()))
+    color_max = max(0.65, float(df_r2.r2_oos.max()))
     gdf = gpd.read_file(SHAPEFILE)
     midwest_fips = ["17", "18", "19", "27", "29", "39"]
     gdf_mw = gdf[gdf["STATEFP"].isin(midwest_fips)].to_crs(epsg=5070)
     gdf_merged = gdf_mw.merge(df_r2, on="GEOID", how="left")
 
-    fig, ax = plt.subplots(figsize=(9,7.8))
+    fig, ax = plt.subplots(figsize=(10.5, 7.8))
     gdf_mw.plot(ax=ax, color="#f2f2f2", edgecolor="#d9d9d9", linewidth=0.4)
     gdf_merged.dropna(subset=["r2_oos"]).plot(
-        column="r2_oos", ax=ax, cmap="RdBu", legend=True,
-        vmin=-color_limit, vmax=color_limit,
+        column="r2_oos", ax=ax, cmap="YlGnBu", legend=True,
+        vmin=color_min, vmax=color_max,
         legend_kwds={
             "label": r"Trend-relative $R^2_{\mathrm{OOS}}$ at harvest closure $H^*(s)$",
             "orientation": "horizontal", "pad": 0.04, "shrink": 0.65, "aspect": 25
@@ -622,7 +642,7 @@ def plot_figure_5_6(preds):
     gdf_mn = gdf_mw[gdf_mw["STATEFP"] == "27"].dissolve(by="STATEFP")
     gdf_mn.plot(ax=ax, facecolor="none", edgecolor="#99000d", linewidth=2.0, linestyle="--")
 
-    ax.set_title(r"County-level forecast skill at harvest closure $H^*(s)$ (2011--2025)", fontsize=14, fontweight="bold", pad=12)
+    ax.set_title(r"County-level forecast skill at harvest closure $H^*(s)$ (2011--2025)", fontsize=11.5, fontweight="bold", pad=12)
     ax.axis("off")
 
     plt.tight_layout()
