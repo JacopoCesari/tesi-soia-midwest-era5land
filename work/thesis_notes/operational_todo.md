@@ -10,6 +10,9 @@
 
 ## Task Aperti (Prossimi Passi)
 
+### LSTM training stability
+- [ ] **Repeat the LSTM test evaluation with multiple predefined random seeds**: assess training variability after the complete-day window correction, keeping the selected 10-day frequency, hyperparameters, original validation records and 2011–2025 test folds fixed. Compare all runs with the current results and report their distribution; retain the current run as the reference and avoid selecting a replacement solely because its test score improves. If the adopted results change, regenerate the ensemble, diagnostics, tables, figures and matching thesis text through the canonical scripts.
+
 ### Integrazione Analisi Econometrica (Capitolo 3 e 4)
 - [ ] **Test di Rottura Strutturale di Chow nel Testo della Tesi**: Integrare la formalizzazione econometrica del test di Chow (1951–2025), la verifica di stazionarietà ADF e l'evidenza del salto di livello nel 2014 ($F = 21.96, p < 0.0001, \Delta = +4.83$\,bu/ac) e la figura a due pannelli [`fig_chow_structural_break.pdf`](./fig_chow_structural_break.pdf). Da inserire nel Capitolo 3 (proprietà empiriche delle rese) o Capitolo 4 (giustificazione del detrending lineare expanding e spiegazione del bias out-of-sample recente). Script di riferimento: [`run_chow_test.py`](./run_chow_test.py).
 
