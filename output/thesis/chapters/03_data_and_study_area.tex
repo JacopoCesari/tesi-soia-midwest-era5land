@@ -90,10 +90,10 @@ Absolute yield dispersion also increases over time, despite a declining coeffici
 
 \input{tables/tab_detrending_comparison}
 
-Table~\ref{tab:detrending_comparison} evaluates alternative detrending specifications. In Panel~A (Regional Aggregate Mean, $N=75$), Linear OLS accounts for over 93\% of annual variation with two parameters ($k=2$). While quadratic and cubic polynomials marginally reduce residual standard error, they increase parameter complexity. 
+Table~\ref{tab:detrending_comparison} evaluates alternative county-applicable detrending specifications. In Panel~A (Regional Aggregate Mean, $N=75$), Linear OLS accounts for over 93\% of annual variation with two parameters ($k=2, R^2=0.9323$). While quadratic and cubic polynomials marginally reduce in-sample residual standard error (reaching $R^2=0.9428$ for the cubic specification), they increase parameter complexity. 
 
 {
-Panel~B compares 6,075 expanding-window county-year predictions. County-specific linear OLS has the lowest RMSE, at $5.889\text{ bu/ac}$, and is preferred by BIC in $89/135$ counties. Higher-order polynomials increase forecast error despite their closer in-sample fit. The reported Augmented Dickey-Fuller test rejects a unit root in the detrended series ($p<0.001$); this result does not establish strict stationarity.
+Panel~B evaluates out-of-sample forecast accuracy across 4,050 expanding-window county-year evaluations restricted to the pre-test period (1981--2010), strictly preventing data snooping into the subsequent machine-learning test set (2011--2025). County-specific linear OLS achieves the lowest out-of-sample RMSE, at $5.767\text{ bu/ac}$ (compared to $6.145\text{ bu/ac}$ for quadratic and $6.618\text{ bu/ac}$ for cubic), and is preferred by BIC in $89/135$ counties over quadratic ($65.9\%$) and in $84/135$ counties overall ($62.2\%$). Higher-order polynomials increase forecast error outside the sample despite their closer in-sample fit. The reported Augmented Dickey-Fuller test rejects a unit root in the detrended series ($p<0.001$); this result does not establish strict stationarity.
 }
 
 \subsection{Spatial Heterogeneity and Regional Productivity Divergence}

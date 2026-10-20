@@ -143,3 +143,36 @@ Il bias negativo osservato nelle annate avverse recenti ($D_1$ nel test set 2011
 - L'esistenza della rottura strutturale nel 2014 è provata oggettivamente e spiega la componente non meteorologica del ritardo predittivo recente. Tuttavia, la correzione ex-ante è metodologicamente illegittima in un contesto operativo. L'expanding window OLS rimane confermato come unico protocollo ermetico e replicabile.
 - **Esito operativo**: Promossa in [`consolidated_memory.md`](./consolidated_memory.md) (Sezione 2.4), documentata nel report per il relatore e inserita come punto cardine della discussione econometrica nei Capitoli 3, 4 e 6.
 
+
+
+---
+
+## 7. Ipotesi 7: Aggregazione Macro-Regionale vs. Dispersione di Contea (Legge dei Grandi Numeri e Dinamica degli Horizon)
+
+### Riflessione Iniziale
+A livello di singola contea, le previsioni puntuali presentano un fisiologico *shrinkage* verso la media nelle code incondizionate ($D_1$) e un errore RMSE che incontra un limite inferiore insuperabile ($\approx 5.0\text{ bu/ac}$), poiché le forzanti meteorologiche su scala di griglia spiegano solo circa il $30\%$ della varianza locale (il restante $70\%$ è rumore stocastico non climatico: grandine localizzata, parassiti, gestione colturale, errori campionari USDA).  
+Ci si chiede: l'abilità predittiva del framework agrometeorologico è realmente limitata a questo livello, oppure quando aggreghiamo le 135 contee a scala macro-regionale (la vera scala operativa di mercato e di filiera) il rumore locale si annulla per la Legge dei Grandi Numeri, rivelando un segnale climatico predittivo di accuratezza decisamente superiore?
+
+### Verifica Oggettiva con i Numeri (Blind Test 2011–2025)
+1. **Confronto tra Livello Contea e Livello Macro lungo gli Horizon ($H=12 \dots 1$)**:
+   - $H=12 \dots 6$ (pre-stagionale e inizio semina): assenza di segnale estivo. County RMSE $= 6.12\text{ bu/ac}$, Macro RMSE $= 3.84\text{ bu/ac}$ (identico al Naive, $R^2_{\text{macro}} = 0.311$).
+   - $H=4$ (fine giugno, sviluppo vegetativo): County RMSE scende a $5.45\text{ bu/ac}$, mentre Macro RMSE crolla a **$2.94\text{ bu/ac}$** ($R^2_{\text{macro}}$ balza a **$0.596$**, $r = 0.891$).
+   - $H=3$ (fine luglio, fioritura critica R1–R2): County RMSE $= 5.20\text{ bu/ac}$, Macro RMSE scende a **$2.77\text{ bu/ac}$** ($R^2_{\text{macro}} = 0.640$, $r = 0.903$).
+   - $H=2$ (fine agosto, riempimento baccelli R3–R6): County RMSE $= 5.14\text{ bu/ac}$, Macro RMSE tocca **$2.50\text{ bu/ac}$** ($R^2_{\text{macro}} = 0.707$, $r = 0.919$).
+   - $H=1$ (raccolto con Ensemble): Macro MAE scende a **$1.92\text{ bu/ac}$** (Baseline Expanding) e **$1.46\text{ bu/ac}$** (Cubico Full-Sample), con correlazione $r = 0.946$.
+2. **Cattura degli Shock Sistemici (Siccità Estrema 2012)**:
+   - Resa reale media osservata nelle 135 contee: **$43.55\text{ bu/ac}$** (crollo di oltre 14 bu/ac sotto il trend).
+   - Previsione Baseline Expanding: **$43.44\text{ bu/ac}$** (errore di appena **$-0.11\text{ bu/ac}$**).
+   - Previsione Full-Sample Cubico: **$43.71\text{ bu/ac}$** (errore di appena **$+0.17\text{ bu/ac}$**).
+3. **Analisi del Trend Cubico vs. Lineare Medio (1951–2025, Figura `fig_mean_cubic_vs_linear_trend.png`)**:
+   - Tracciando la media dei trend delle 135 contee, il trend cubico flette verso l'alto a partire dal 2014, raggiungendo nel 2025 un valore di $59.11\text{ bu/ac}$ contro i $55.64\text{ bu/ac}$ del lineare ($\Delta = +3.47\text{ bu/ac}$).
+   - Questo dimostra che il maggior fit in-sample del cubico ($R^2 = 0.831$) è dovuto all'adattamento ex-post al salto tecnologico del 2014 (Chow test $F = 21.96, \Delta = +4.83\text{ bu/ac}$). Tuttavia, in expanding window causale, la tendenza del polinomio di terzo grado a divergere fuori campione porta a un peggioramento dell'RMSE OOS ($6.39$ vs $5.89\text{ bu/ac}$ del lineare), giustificando la scelta del lineare per la modellazione causale.
+
+### Riscontro della Letteratura Economica e della Pratica di Mercato
+- **Necessità dell'Addestramento Granulare**: Addestrare a livello di singola contea ($N = 10.125$) è indispensabile per fornire sufficienti gradi di libertà agli algoritmi di machine learning (ElasticNet, Random Forest, LSTM) e mappare le soglie termiche e idriche non lineari locali (ad es. $VPD > 15\text{ hPa}$, $EDD_{30}$). Su sole 75 osservazioni macro-regionali aggregate, qualsiasi modello ML soffrirebbe di *sample starvation* e grave overfitting.
+- **Valore Operativo dell'Aggregazione**: Nella gestione delle catene di fornitura, nel procurement industriale (Areté, trader internazionali, trasformatori) e nella copertura sui mercati a termine (CBOT), gli operatori non assumono decisioni su scala di singola contea, ma definiscono strategie di bilancio di offerta/domanda e di prezzo a scala macro-regionale.
+- A questa scala, il rumore non climatico locale si compensa vicendevolmente ($\sigma / \sqrt{N}$), e il clima spiega oltre il $70\%$ della varianza reale.
+
+### Verdetto Super Partes: ACCETTATA & FORMALIZZATA
+- L'ipotesi è pienamente confermata dai dati numerici: l'addestramento su contee è il **motore metodologico di identificazione statistica**, mentre la valutazione aggregata macro-regionale è il **deliverable operativo primario** per l'economia e la supply chain.
+- **Esito operativo**: Formalizzata in [`consolidated_memory.md`](./consolidated_memory.md) (Sezione 4) e inserita nel Capitolo 5 come secondo livello di analisi dopo i decili di contea, nonché proposta al relatore per il tracciamento degli errori lungo i 12 horizon.

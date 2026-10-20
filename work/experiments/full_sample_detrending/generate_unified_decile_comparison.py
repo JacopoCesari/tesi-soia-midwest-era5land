@@ -48,13 +48,14 @@ plt.rcParams.update({
 
 
 def compute_historical_anomalies(df_y):
-    """Compute historical expanding trend (T_min=30, expanding from 1981) and full-sample trend."""
+    """Compute historical expanding trend (T_min=30, expanding from 1981) and full-sample cubic trend."""
     records = []
     for fips, grp in df_y.groupby("county_fips"):
         grp = grp.sort_values("year").reset_index(drop=True)
-        # Full sample fit
-        p_full = np.polyfit(grp["year"], grp["yield_bu_per_acre"], 1)
-        tr_full = p_full[0] * grp["year"] + p_full[1]
+        # Full sample cubic fit (degree 3)
+        t = grp["year"].values - 1951
+        p_full = np.polyfit(t, grp["yield_bu_per_acre"].values, 3)
+        tr_full = np.polyval(p_full, t)
         
         # Expanding fit (T_min=30, base window 1951-1980)
         tr_exp = []
@@ -112,9 +113,9 @@ def main():
     
     # 2. Test set anomalies (2,025 obs, 2011-2025)
     df_b = load_baseline_predictions()
-    df_f = load_full_detrend_predictions()
-    sub_b = df_b[(df_b["H"] == 1) & (df_b["model"] == "ElasticNet") & (df_b["spec"] == "Integrated")].copy()
-    sub_f = df_f[(df_f["H"] == 1) & (df_f["model"] == "ElasticNet") & (df_f["spec"] == "Integrated")].copy()
+    df_f = pd.read_parquet(EXP_DIR / "data" / "predictions_cubic_full_detrend.parquet")
+    sub_b = df_b[(df_b["H"] == 1) & (df_b["model"] == "ElasticNet") & (df_b["spec"] == "Integrated")].drop_duplicates(subset=["year", "county_fips"]).copy()
+    sub_f = df_f[(df_f["H"] == 1) & (df_f["model"] == "ElasticNet")].drop_duplicates(subset=["year", "county_fips"]).copy()
     
     s_hist_exp = df_hist["anom_exp"]
     s_hist_full = df_hist["anom_full"]
@@ -138,11 +139,11 @@ def main():
         r"\scriptsize",
         r"\setlength{\tabcolsep}{3.5pt}",
         r"\renewcommand{\arraystretch}{1.06}",
-        r"\caption{Distribuzione delle anomalie per decile: Trend Expanding vs Full-Sample.}",
+        r"\caption{Distribuzione delle anomalie per decile: Trend Expanding vs Full-Sample (Cubico).}",
         r"\label{tab:decile_distribution}",
         r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc @{}}",
         r"\toprule",
-        r"& \multicolumn{2}{c}{\textbf{Trend Expanding (Train-Only / OOS)}} & \multicolumn{2}{c}{\textbf{Trend Full-Sample (In-Sample / Oracle)}} \\",
+        r"& \multicolumn{2}{c}{\textbf{Trend Expanding (Baseline)}} & \multicolumn{2}{c}{\textbf{Trend Full-Sample (Oracolo Cubico)}} \\",
         r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}",
         r"\textbf{Decile} & \textbf{Range} & \textbf{\% } $\epsilon < 0$ & \textbf{Range} & \textbf{\% } $\epsilon < 0$ \\",
         r"\midrule",
@@ -207,7 +208,7 @@ def main():
     kde_he = gaussian_kde(s_hist_exp)
     kde_hf = gaussian_kde(s_hist_full)
     ax_a.plot(grid_h, kde_he(grid_h), label=f"Expanding (Media {s_hist_exp.mean():+.2f})", color=color_exp, linestyle="--", linewidth=1.8)
-    ax_a.plot(grid_h, kde_hf(grid_h), label=f"Full-Sample (Media {s_hist_full.mean():+.2f})", color=color_full, linestyle="-", linewidth=1.8)
+    ax_a.plot(grid_h, kde_hf(grid_h), label=f"Trend Cubico (Media {s_hist_full.mean():+.2f})", color=color_full, linestyle="-", linewidth=1.8)
     ax_a.axvline(s_hist_exp.mean(), color=color_exp, linestyle="--", alpha=0.6, linewidth=1.0)
     ax_a.axvline(s_hist_full.mean(), color=color_full, linestyle="-", alpha=0.6, linewidth=1.0)
     ax_a.axvline(0, color="gray", linestyle=":", alpha=0.7, linewidth=0.9)
@@ -223,7 +224,7 @@ def main():
     kde_te = gaussian_kde(s_test_exp)
     kde_tf = gaussian_kde(s_test_full)
     ax_b.plot(grid_t, kde_te(grid_t), label=f"Baseline Expanding (Media {s_test_exp.mean():+.2f})", color=color_exp, linestyle="--", linewidth=1.8)
-    ax_b.plot(grid_t, kde_tf(grid_t), label=f"Full-Sample (Media {s_test_full.mean():+.2f})", color=color_full, linestyle="-", linewidth=1.8)
+    ax_b.plot(grid_t, kde_tf(grid_t), label=f"Trend Cubico (Media {s_test_full.mean():+.2f})", color=color_full, linestyle="-", linewidth=1.8)
     ax_b.axvline(s_test_exp.mean(), color=color_exp, linestyle="--", alpha=0.6, linewidth=1.0)
     ax_b.axvline(s_test_full.mean(), color=color_full, linestyle="-", alpha=0.6, linewidth=1.0)
     ax_b.axvline(0, color="gray", linestyle=":", alpha=0.7, linewidth=0.9)
@@ -238,7 +239,7 @@ def main():
     x_dec = np.arange(1, 11)
     w = 0.35
     ax_c.bar(x_dec - w/2, d_hist_exp["mean"], width=w, label="Expanding Trend", color=color_exp, alpha=0.85, edgecolor="none")
-    ax_c.bar(x_dec + w/2, d_hist_full["mean"], width=w, label="Full-Sample Trend", color=color_full, alpha=0.85, edgecolor="none")
+    ax_c.bar(x_dec + w/2, d_hist_full["mean"], width=w, label="Trend Cubico", color=color_full, alpha=0.85, edgecolor="none")
     ax_c.axhline(0, color="gray", linestyle=":", alpha=0.7, linewidth=0.9)
     ax_c.set_xticks(x_dec)
     ax_c.set_xticklabels([f"$D_{{{i}}}$" for i in x_dec])
@@ -251,7 +252,7 @@ def main():
     # (d) Test Set Decile Means (Bottom-Right)
     ax_d = axes[1, 1]
     ax_d.bar(x_dec - w/2, d_test_exp["mean"], width=w, label="Baseline Expanding", color=color_exp, alpha=0.85, edgecolor="none")
-    ax_d.bar(x_dec + w/2, d_test_full["mean"], width=w, label="Full-Sample Trend", color=color_full, alpha=0.85, edgecolor="none")
+    ax_d.bar(x_dec + w/2, d_test_full["mean"], width=w, label="Trend Cubico", color=color_full, alpha=0.85, edgecolor="none")
     ax_d.axhline(0, color="gray", linestyle=":", alpha=0.7, linewidth=0.9)
     ax_d.set_xticks(x_dec)
     ax_d.set_xticklabels([f"$D_{{{i}}}$" for i in x_dec])
