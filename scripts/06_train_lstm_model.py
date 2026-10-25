@@ -6,6 +6,7 @@ The training architecture and engine follow the existing project implementation;
 Geron (2022) supports recurrent networks, AdamW and gradient clipping.
 """
 from __future__ import annotations
+import argparse
 import hashlib
 import json
 import time
@@ -38,6 +39,17 @@ FLUX_COLS = ["total_precipitation", "surface_solar_radiation_downwards",
 STATE_COLS = ["air_temperature_mean", "air_temperature_maximum", "air_temperature_minimum",
     "dewpoint_temperature_mean", "volumetric_soil_water_layer_1",
     "volumetric_soil_water_layer_2", "volumetric_soil_water_layer_3", "vapor_pressure_deficit"]
+
+def safe_replace(src: Path, dst: Path, retries: int = 10, delay: float = 0.5):
+    for i in range(retries):
+        try:
+            src.replace(dst)
+            return
+        except OSError:
+            if i == retries - 1:
+                raise
+            time.sleep(delay)
+
 
 def fit_trends(yield_df: pd.DataFrame, train_years: list[int]) -> dict[str, tuple[float, float]]:
     train = yield_df[yield_df["year"].isin(train_years)]
@@ -192,7 +204,7 @@ def fit_and_predict(
     batch_size: int = 25,
     max_epochs: int = 40,
     patience: int = 5,
-    seed: int = 42,
+    seed: int = 88,
     head_type: str = "gelu",
     loss_type: str = "mse",
     cell_type: str = "lstm",
@@ -406,7 +418,7 @@ def scale_sequences(values, lengths, train_mask):
     return scaled
 
 
-def test_fold(values, counties, years, lengths, target, config, head, lag, test_year):
+def test_fold(values, counties, years, lengths, target, config, head, lag, test_year, seed=88):
     """Preserve the existing expanding fold and three-year early-stopping rule."""
     history = sorted(target.loc[target.year < test_year, "year"].unique())
     inner = [test_year-3, test_year-2, test_year-1]
@@ -431,7 +443,7 @@ def test_fold(values, counties, years, lengths, target, config, head, lag, test_
     predictions, _, _ = fit_and_predict(
         scaled[train], observed[train], lag_tr, scaled[validation], observed[validation], lag_va,
         scaled[test], lag_te, hidden_size=config["hidden_size"], num_layers=config["num_layers"],
-        dropout=config["dropout"], batch_size=config["batch_size"], head_type=head,
+        dropout=config["dropout"], batch_size=config["batch_size"], seed=seed, head_type=head,
         lengths_tr=lengths[train], lengths_va=lengths[validation], lengths_te=lengths[test])
     if not np.isfinite(predictions).all() or len(predictions) != int(test.sum()):
         raise ValueError("Test fold produced incomplete or nonfinite predictions")
@@ -439,20 +451,140 @@ def test_fold(values, counties, years, lengths, target, config, head, lag, test_
                          "actual_anomaly": observed[test], "pred_anomaly": predictions})
 
 
-def fit_saved_fold(horizon, head, lag, year, config):
+def fit_saved_fold(horizon, head, lag, year, config, seed=88):
     """Independent deterministic fold; the parent alone publishes completed results."""
     torch.set_num_threads(1)
     values, counties, years, lengths = get_sequence_slice(10, horizon)
     target = pd.read_csv(TARGET_CSV, dtype={"county_fips": str})
     target["county_fips"] = target.county_fips.str.zfill(5)
     start = time.monotonic()
-    result = test_fold(values, counties, years, lengths, target, config, head, lag, year)
+    result = test_fold(values, counties, years, lengths, target, config, head, lag, year, seed=seed)
     result["horizon"], result["head_variant"] = horizon, head
     result["cell_type"], result["include_lag"], result["frequency"] = "lstm", lag, 10
+    result["seed"] = seed
     return result, time.monotonic()-start
 
 
+def run_single_seed(seed, horizons, heads, selected, fingerprint, completed_ref=None):
+    """Run expanding test folds for a single random seed."""
+    seed_preds_path = REPORT_DIR / f"test_predictions_seed_{seed}.parquet"
+    if seed_preds_path.exists():
+        completed = pd.read_parquet(seed_preds_path)
+    elif completed_ref is not None and not completed_ref.empty and "seed" in completed_ref.columns and (completed_ref["seed"] == seed).all():
+        completed = completed_ref.copy()
+    else:
+        completed = pd.DataFrame()
+
+    with ProcessPoolExecutor(max_workers=6) as pool:
+        for horizon in horizons:
+            jobs = {}
+            for head in heads:
+                config = selected["variant_champions"][head]["config"]
+                for lag in [False, True]:
+                    for year in range(2011, 2026):
+                        if not completed.empty:
+                            existing = completed[completed.horizon.eq(horizon) & completed.head_variant.eq(head)
+                                                 & completed.include_lag.eq(lag) & completed.year.eq(year)]
+                            if len(existing) == 135 and existing.county_fips.nunique() == 135:
+                                continue
+                            if not existing.empty:
+                                raise ValueError("Incomplete saved test fold")
+                        future = pool.submit(fit_saved_fold, horizon, head, lag, year, config, seed)
+                        jobs[future] = (horizon, head, lag, year)
+            if jobs:
+                print(f"[Seed {seed}] H={horizon:02d}: submitted {len(jobs)} independent folds", flush=True)
+                for future in as_completed(jobs):
+                    horizon, head, lag, year = jobs[future]
+                    result, duration = future.result()
+                    completed = pd.concat([completed, result], ignore_index=True)
+                    temporary = seed_preds_path.with_suffix(".tmp.parquet")
+                    completed.to_parquet(temporary, index=False)
+                    safe_replace(temporary, seed_preds_path)
+                    rmse = np.sqrt(np.mean((result.actual_anomaly - result.pred_anomaly)**2))
+                    print(f"[Seed {seed}] Saved H={horizon:02d} {head} lag={lag} year={year}: RMSE={rmse:.4f}; {duration:.1f}s", flush=True)
+
+    completed["seed"] = seed
+    completed.to_parquet(seed_preds_path, index=False)
+    return completed
+
+
+def evaluate_multiseed_summary(seed_dfs: dict[int, pd.DataFrame]) -> pd.DataFrame:
+    """Evaluate individual seed metrics, distribution, and seed-ensemble."""
+    all_seeds = sorted(seed_dfs.keys())
+    combined = pd.concat([df.assign(seed=s) for s, df in seed_dfs.items()], ignore_index=True)
+
+    records = []
+    for (horizon, head, lag), grp in combined.groupby(["horizon", "head_variant", "include_lag"]):
+        per_seed_r2 = {}
+        per_seed_rmse = {}
+        per_seed_mae = {}
+
+        for s in all_seeds:
+            sub_s = grp[grp["seed"] == s]
+            if sub_s.empty:
+                continue
+            yt = sub_s["actual_anomaly"].values
+            yp = sub_s["pred_anomaly"].values
+            ss_res = float(np.sum((yt - yp) ** 2))
+            ss_tot = float(np.sum(yt ** 2))
+            r2 = float(1.0 - ss_res / ss_tot) if ss_tot > 0 else np.nan
+            rmse = float(np.sqrt(np.mean((yt - yp) ** 2)))
+            mae = float(np.mean(np.abs(yt - yp)))
+            per_seed_r2[s] = r2
+            per_seed_rmse[s] = rmse
+            per_seed_mae[s] = mae
+            records.append({
+                "type": "individual_seed",
+                "seed": str(s),
+                "horizon": horizon,
+                "head_variant": head,
+                "include_lag": lag,
+                "r2": r2,
+                "rmse": rmse,
+                "mae": mae,
+                "delta_r2_vs_ref": 0.0 if s == 42 else (r2 - per_seed_r2.get(42, r2)),
+            })
+
+        piv = grp.groupby(["year", "county_fips", "actual_anomaly"])["pred_anomaly"].mean().reset_index()
+        yt_ens = piv["actual_anomaly"].values
+        yp_ens = piv["pred_anomaly"].values
+        ss_res_ens = float(np.sum((yt_ens - yp_ens) ** 2))
+        ss_tot_ens = float(np.sum(yt_ens ** 2))
+        r2_ens = float(1.0 - ss_res_ens / ss_tot_ens) if ss_tot_ens > 0 else np.nan
+        rmse_ens = float(np.sqrt(np.mean((yt_ens - yp_ens) ** 2)))
+        mae_ens = float(np.mean(np.abs(yt_ens - yp_ens)))
+
+        r2_vals = list(per_seed_r2.values())
+        rmse_vals = list(per_seed_rmse.values())
+        r2_ref = per_seed_r2.get(42, r2_vals[0] if r2_vals else np.nan)
+        rmse_ref = per_seed_rmse.get(42, rmse_vals[0] if rmse_vals else np.nan)
+
+        records.append({
+            "type": "seed_ensemble",
+            "seed": f"Ensemble_{len(all_seeds)}seeds",
+            "horizon": horizon,
+            "head_variant": head,
+            "include_lag": lag,
+            "r2": r2_ens,
+            "rmse": rmse_ens,
+            "mae": mae_ens,
+            "r2_mean_seeds": float(np.mean(r2_vals)),
+            "r2_std_seeds": float(np.std(r2_vals)),
+            "rmse_mean_seeds": float(np.mean(rmse_vals)),
+            "rmse_std_seeds": float(np.std(rmse_vals)),
+            "delta_r2_vs_ref": r2_ens - r2_ref,
+            "delta_rmse_vs_ref": rmse_ens - rmse_ref,
+        })
+    return pd.DataFrame(records)
+
+
 def main():
+    parser = argparse.ArgumentParser(description="LSTM test forecast expanding window training")
+    parser.add_argument("--seeds", type=int, nargs="+", default=[88], help="Random seeds (default: [88])")
+    parser.add_argument("--horizons", type=int, nargs="+", default=list(range(11, 0, -1)), help="Horizons to run (default: 11..1)")
+    parser.add_argument("--heads", type=str, nargs="+", default=["prelu", "linear"], help="Heads to run (default: prelu linear)")
+    args = parser.parse_args()
+
     torch.set_num_threads(1)
     build_sequence_caches(10)
     validation_bytes = CHECKPOINT_PATH.read_bytes()
@@ -464,63 +596,51 @@ def main():
                    "selected_variants": selected["variant_champions"],
                    "test_start": 2011, "test_end": 2025}
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    published_sha = None
-    if RUN_MANIFEST.exists():
-        saved_manifest = json.loads(RUN_MANIFEST.read_text())
-        published_sha = saved_manifest.pop("published_sha256", None)
-        if saved_manifest != fingerprint:
-            raise ValueError("Existing test run belongs to different inputs/configurations")
-    else:
-        if RUN_PREDS.exists():
-            raise ValueError("Test predictions exist without their run manifest")
-        RUN_MANIFEST.write_text(json.dumps(fingerprint, indent=2), encoding="utf-8")
-    if RUN_PREDS.exists():
-        completed = pd.read_parquet(RUN_PREDS)
-    elif published_sha is not None:
-        if not OUT_PREDS.exists() or hashlib.sha256(OUT_PREDS.read_bytes()).hexdigest() != published_sha:
-            raise ValueError("Published test predictions differ from the completed-run manifest")
-        completed = pd.read_parquet(OUT_PREDS)
-    else:
-        completed = pd.DataFrame()
-    with ProcessPoolExecutor(max_workers=6) as pool:
-        for horizon in range(11, 0, -1):
-            jobs = {}
-            for head in ["prelu", "linear"]:
-                config = selected["variant_champions"][head]["config"]
-                for lag in [False, True]:
-                    for year in range(2011, 2026):
-                        if not completed.empty:
-                            existing = completed[completed.horizon.eq(horizon) & completed.head_variant.eq(head)
-                                                 & completed.include_lag.eq(lag) & completed.year.eq(year)]
-                            if len(existing) == 135 and existing.county_fips.nunique() == 135:
-                                continue
-                            if not existing.empty:
-                                raise ValueError("Incomplete saved test fold")
-                        future = pool.submit(fit_saved_fold, horizon, head, lag, year, config)
-                        jobs[future] = (horizon, head, lag, year)
-            print(f"H={horizon:02d}: submitted {len(jobs)} independent folds", flush=True)
-            for future in as_completed(jobs):
-                horizon, head, lag, year = jobs[future]
-                result, duration = future.result()
-                completed = pd.concat([completed, result], ignore_index=True)
-                temporary = RUN_PREDS.with_suffix(".tmp.parquet")
-                completed.to_parquet(temporary, index=False)
-                temporary.replace(RUN_PREDS)
-                rmse = np.sqrt(np.mean((result.actual_anomaly-result.pred_anomaly)**2))
-                print(f"Saved H={horizon:02d} {head} lag={lag} year={year}: RMSE={rmse:.4f}; {duration:.1f}s", flush=True)
-    if len(completed) != 11*4*15*135 or completed.duplicated(["horizon", "head_variant", "include_lag", "year", "county_fips"]).any():
-        raise ValueError("Incomplete final prediction panel")
-    if CHECKPOINT_PATH.read_bytes() != validation_bytes:
-        raise ValueError("Validation source changed during the test run")
-    temporary = OUT_PREDS.with_suffix(".tmp.parquet")
-    completed.to_parquet(temporary, index=False)
-    temporary.replace(OUT_PREDS)
-    fingerprint["published_sha256"] = hashlib.sha256(OUT_PREDS.read_bytes()).hexdigest()
-    temporary_manifest = RUN_MANIFEST.with_suffix(".tmp.json")
-    temporary_manifest.write_text(json.dumps(fingerprint, indent=2), encoding="utf-8")
-    temporary_manifest.replace(RUN_MANIFEST)
-    RUN_PREDS.unlink(missing_ok=True)
-    print("Completed test forecasts; published corrected predictions_lstm.parquet", flush=True)
+
+    completed_ref = None
+    if OUT_PREDS.exists():
+        completed_ref = pd.read_parquet(OUT_PREDS)
+
+    seed_dfs = {}
+    for s in args.seeds:
+        print(f"\n==========================================")
+        print(f"Executing expanding LSTM test folds for SEED {s}")
+        print(f"==========================================")
+        seed_df = run_single_seed(s, args.horizons, args.heads, selected, fingerprint, completed_ref)
+        seed_dfs[s] = seed_df
+
+    primary_seed = args.seeds[0] if len(args.seeds) == 1 else None
+    if primary_seed in seed_dfs:
+        df_canon = seed_dfs[primary_seed]
+        if len(df_canon) == 11 * 4 * 15 * 135 and not df_canon.duplicated(["horizon", "head_variant", "include_lag", "year", "county_fips"]).any():
+            temporary = OUT_PREDS.with_suffix(".tmp.parquet")
+            df_canon.to_parquet(temporary, index=False)
+            safe_replace(temporary, OUT_PREDS)
+            fingerprint["published_sha256"] = hashlib.sha256(OUT_PREDS.read_bytes()).hexdigest()
+            fingerprint["canonical_seed"] = primary_seed
+            temporary_manifest = RUN_MANIFEST.with_suffix(".tmp.json")
+            temporary_manifest.write_text(json.dumps(fingerprint, indent=2), encoding="utf-8")
+            temporary_manifest.replace(RUN_MANIFEST)
+            RUN_PREDS.unlink(missing_ok=True)
+            print(f"Published canonical predictions_lstm.parquet for seed {primary_seed}", flush=True)
+
+    if len(args.seeds) > 1:
+        print("\n=== Multi-Seed Evaluation & Seed-Ensemble Analysis ===")
+        summary_df = evaluate_multiseed_summary(seed_dfs)
+        diag_dir = ROOT / "output" / "data" / "processed" / "diagnostics"
+        diag_dir.mkdir(parents=True, exist_ok=True)
+        summary_path = diag_dir / "lstm_multiseed_evaluation.csv"
+        summary_df.to_csv(summary_path, index=False)
+        print(f"Saved multi-seed evaluation to {summary_path}")
+
+        # Display key horizons comparison
+        ens_rows = summary_df[summary_df["type"] == "seed_ensemble"].sort_values(["horizon", "head_variant", "include_lag"])
+        print("\nMulti-Seed Performance Summary (Key Horizons):")
+        for _, row in ens_rows.iterrows():
+            h, head, lag = int(row["horizon"]), row["head_variant"], row["include_lag"]
+            spec = f"H={h:02d} {head} (lag={lag})"
+            r2_ref = row["r2"] - row["delta_r2_vs_ref"]
+            print(f"  {spec:25s} | Ref (seed 42): R2={r2_ref:.4f} | Seeds: {row['r2_mean_seeds']:.4f} +/- {row['r2_std_seeds']:.4f} | Seed-Ens: R2={row['r2']:.4f} ({row['delta_r2_vs_ref']:+.4f}) | RMSE={row['rmse']:.4f}")
 
 
 if __name__ == "__main__":

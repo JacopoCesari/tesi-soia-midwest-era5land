@@ -17,6 +17,7 @@ the subsequent machine-learning test set (2011-2025).
 Outputs:
 - output/thesis/tables/tab_detrending_comparison.tex (Table 3.4)
 - output/thesis/figures/fig_detrending_diagnostics.pdf / .png (Figure 3.4)
+- output/thesis/figures/fig_chow_structural_break.pdf / .png (Appendix Figure A.1)
 """
 
 from pathlib import Path
@@ -25,7 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-from scipy.stats import gaussian_kde
+from scipy.stats import f, gaussian_kde
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
 
@@ -36,6 +37,8 @@ YIELD_CSV = ROOT / "data" / "target" / "soybean_yield_1951_2025.csv"
 TAB_OUT = ROOT / "output" / "thesis" / "tables" / "tab_detrending_comparison.tex"
 FIG_PDF = ROOT / "output" / "thesis" / "figures" / "fig_detrending_diagnostics.pdf"
 FIG_PNG = ROOT / "output" / "thesis" / "figures" / "fig_detrending_diagnostics.png"
+CHOW_PDF = ROOT / "output" / "thesis" / "figures" / "fig_chow_structural_break.pdf"
+CHOW_PNG = ROOT / "output" / "thesis" / "figures" / "fig_chow_structural_break.png"
 
 
 def main():
@@ -262,6 +265,126 @@ def main():
     fig.savefig(FIG_PNG, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Saved Figure 3.4 to {FIG_PDF} and {FIG_PNG}")
+
+    # 7. Generate Chow structural break test figure (Appendix Figure A.1)
+    generate_chow_test_figure(df_yield)
+
+
+def generate_chow_test_figure(df_yield):
+    print("Generating Chow structural break analysis (Appendix Figure A.1)...")
+    annual = df_yield.groupby("year")["yield_bu_per_acre"].mean().reset_index()
+    annual.columns = ["year", "yield"]
+    n = len(annual)
+    min_obs = 15
+
+    X_base = pd.DataFrame({
+        "const": 1.0,
+        "trend": annual["year"] - annual["year"].min()
+    })
+    model_restricted = sm.OLS(annual["yield"], X_base).fit()
+    RSS_restricted = model_restricted.ssr
+    k_base = X_base.shape[1]
+
+    F_level = np.zeros(n)
+    F_trend = np.zeros(n)
+    F_combined = np.zeros(n)
+
+    for i in range(min_obs, n - 4):
+        yr_break = annual.iloc[i]["year"]
+        D_t = np.where(annual["year"] >= yr_break, 1, 0)
+        T_break = np.where(annual["year"] >= yr_break, annual["year"] - yr_break, 0)
+
+        # Level break
+        X_level = X_base.copy()
+        X_level["level_break"] = D_t
+        m_level = sm.OLS(annual["yield"], X_level).fit()
+        F_level[i] = ((RSS_restricted - m_level.ssr) / 1) / (m_level.ssr / (n - k_base - 1))
+
+        # Trend break
+        X_trend = X_base.copy()
+        X_trend["trend_break"] = T_break
+        m_trend = sm.OLS(annual["yield"], X_trend).fit()
+        F_trend[i] = ((RSS_restricted - m_trend.ssr) / 1) / (m_trend.ssr / (n - k_base - 1))
+
+        # Combined break
+        X_combined = X_base.copy()
+        X_combined["level_break"] = D_t
+        X_combined["trend_break"] = T_break
+        m_combined = sm.OLS(annual["yield"], X_combined).fit()
+        F_combined[i] = ((RSS_restricted - m_combined.ssr) / 2) / (m_combined.ssr / (n - k_base - 2))
+
+    opt_level_idx = np.argmax(F_level[min_obs:n-4]) + min_obs
+    opt_trend_idx = np.argmax(F_trend[min_obs:n-4]) + min_obs
+    opt_combined_idx = np.argmax(F_combined[min_obs:n-4]) + min_obs
+
+    opt_yr_level = int(annual.iloc[opt_level_idx]["year"])
+    opt_yr_trend = int(annual.iloc[opt_trend_idx]["year"])
+    opt_yr_combined = int(annual.iloc[opt_combined_idx]["year"])
+
+    alpha = 0.05
+    crit_1df = f.ppf(1 - alpha, 1, n - k_base - 1)
+    crit_2df = f.ppf(1 - alpha, 2, n - k_base - 2)
+
+    X_opt = X_base.copy()
+    X_opt["level_break"] = np.where(annual["year"] >= opt_yr_level, 1, 0)
+    m_opt = sm.OLS(annual["yield"], X_opt).fit()
+
+    fig, axes = plt.subplots(1, 2, figsize=(13.0, 5.0))
+    years = annual["year"].values
+    pred_linear = model_restricted.predict(X_base)
+    pred_break = m_opt.predict(X_opt)
+
+    # Panel (a): F-statistics trajectory
+    ax = axes[0]
+    mask_plot = (years >= annual.iloc[min_obs]["year"]) & (years <= annual.iloc[n-5]["year"])
+    ax.plot(years[mask_plot], F_level[mask_plot], color="#1d4ed8", linewidth=2.0,
+            label=f"Level Break (Max $F={F_level[opt_level_idx]:.1f}$ at {opt_yr_level})")
+    ax.plot(years[mask_plot], F_trend[mask_plot], color="#d97706", linewidth=1.8, linestyle="--",
+            label=f"Trend Break (Max $F={F_trend[opt_trend_idx]:.1f}$ at {opt_yr_trend})")
+    ax.plot(years[mask_plot], F_combined[mask_plot], color="#059669", linewidth=1.8, linestyle="-.",
+            label=f"Combined Break (Max $F={F_combined[opt_combined_idx]:.1f}$ at {opt_yr_combined})")
+
+    ax.axhline(crit_1df, color="#1d4ed8", linestyle=":", linewidth=1.0, alpha=0.7, label=f"Critical Value 1 df ($F={crit_1df:.2f}$)")
+    ax.axhline(crit_2df, color="#059669", linestyle=":", linewidth=1.0, alpha=0.7, label=f"Critical Value 2 df ($F={crit_2df:.2f}$)")
+
+    ax.scatter([opt_yr_level], [F_level[opt_level_idx]], color="#1d4ed8", s=60, zorder=5)
+    ax.scatter([opt_yr_trend], [F_trend[opt_trend_idx]], color="#d97706", s=60, zorder=5)
+    ax.scatter([opt_yr_combined], [F_combined[opt_combined_idx]], color="#059669", s=60, zorder=5)
+
+    ax.set_title("(a) Chow Test F-Statistic Trajectory (1966--2021)", loc="left", fontweight="bold")
+    ax.set_xlabel("Candidate Break Year ($T^*$)")
+    ax.set_ylabel("Chow F-Statistic")
+    ax.legend(loc="upper left", frameon=True, facecolor="white", framealpha=0.9, fontsize=8.2)
+    ax.grid(True, linestyle="--", alpha=0.5)
+
+    # Panel (b): Trajectory with Fitted Break Model
+    ax = axes[1]
+    ax.plot(years, annual["yield"], color="#475569", marker="o", markersize=3.5, linewidth=1.2, alpha=0.85, label="Observed Mean Yield")
+    ax.plot(years, pred_linear, color="#dc2626", linestyle="--", linewidth=1.8,
+            label=f"Linear OLS Trend (+{model_restricted.params['trend']:.3f} bu/ac/yr, $R^2={model_restricted.rsquared:.3f}$)")
+    ax.plot(years, pred_break, color="#1d4ed8", linewidth=2.2,
+            label=f"Fitted 2014 Level Break (+{m_opt.params['level_break']:+.2f} bu/ac, $R^2={m_opt.rsquared:.3f}$)")
+
+    ax.set_ylim(16, 62)
+    ax.axvline(opt_yr_level, color="#1d4ed8", linestyle=":", linewidth=1.2, alpha=0.8)
+    ax.annotate(f"Level Break ({opt_yr_level}):\nShift $\\Delta = {m_opt.params['level_break']:+.2f}$ bu/ac ($p < 0.0001$)",
+                xy=(opt_yr_level, pred_break[opt_level_idx]), xytext=(-125, -45), textcoords="offset points",
+                fontsize=8.5, fontweight="bold", color="#1d4ed8",
+                bbox=dict(boxstyle="round,pad=0.35", facecolor="#ffffff", edgecolor="#1d4ed8", alpha=0.95, lw=1.0),
+                arrowprops=dict(arrowstyle="->", color="#1d4ed8", lw=1.0, shrinkB=4, connectionstyle="arc3,rad=0.15"))
+
+    ax.set_title("(b) Comparison of Linear Trend vs 2014 Level-Break Model", loc="left", fontweight="bold")
+    ax.set_xlabel("Harvest Year")
+    ax.set_ylabel("Soybean Yield (bu/acre)")
+    ax.legend(loc="upper left", frameon=True, facecolor="white", framealpha=0.9, fontsize=8.2)
+    ax.grid(True, linestyle="--", alpha=0.5)
+
+    plt.tight_layout()
+    CHOW_PDF.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(CHOW_PDF, dpi=300, bbox_inches="tight")
+    fig.savefig(CHOW_PNG, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved Chow test figure to {CHOW_PDF} and {CHOW_PNG}")
 
 
 if __name__ == "__main__":

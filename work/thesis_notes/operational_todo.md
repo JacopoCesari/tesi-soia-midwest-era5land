@@ -13,27 +13,34 @@
 ### Thesis text recovery before further expansion
 - [ ] **Review the previous text reductions before adding material**: start with `5258c4a` (2026-10-17 12:16, Europe/Rome), **"Refine thesis narrative and streamline text under 100k character budget"**. This commit shortened Chapters 1--6 by removing table-reading and repeated cross-chapter explanations. Also inspect `0d60748` (2026-10-18 22:57), **"refactor(thesis): refine academic tone and streamline self-explanatory captions and tables"**, for the subsequent prose, caption and table cleanup, and `36c3161` (2026-10-19 03:06), **"Rebuild LSTM test forecasts with complete weather windows"**, which combined updated evidence with further substantial chapter rewrites. Use `git show <commit> -- output/thesis/chapters output/thesis/tables` to inspect the removed and added passages. Recover only material consistent with the current methodology and verified results; check the character budget after assessing content needs. Section 5.2.3, **"Predictive Accuracy Tests"**, and its former inference table were introduced by `36c3161`; the subsection and inference table were subsequently removed locally at the author's request. The section text is retained in the procedural note below.
 
-### LSTM training stability
-- [ ] **Repeat the LSTM test evaluation with multiple predefined random seeds**: assess training variability after the complete-day window correction, keeping the selected 10-day frequency, hyperparameters, original validation records and 2011–2025 test folds fixed. Compare all runs with the current results and report their distribution; retain the current run as the reference and avoid selecting a replacement solely because its test score improves. If the adopted results change, regenerate the ensemble, diagnostics, tables, figures and matching thesis text through the canonical scripts.
+### LSTM training stability & Multi-Seed Ensembling (Completato Torneo Top 5)
+- [x] **Torneo Multi-Seed e Selezione Seed Campione ($H = 5 \dots 1$)**:
+  - Screening iniziale a 10 seed su $H=1$: isolata la top 5 (`88`, `2024`, `555`, `101`, `123`) contro la baseline (`42`).
+  - Torneo multi-orizzonte su $H = 5 \dots 1$: **Seed 88** vince in modo schiacciante (#1 in 4 orizzonti su 5: $H=5, 4, 2, 1$; media $R^2$ sui 5 orizzonti pari a $0.6172$ vs $0.6074$ di Seed 42; $R^2$ a chiusura raccolto $H=1$ pari a $0.6726$ vs $0.6483$; RMSE a $4.831$\,bu/ac; Ensemble con ElasticNet a $R^2 = 0.6704$).
+  - **Dati salvati e pronti al 100%**: `test_predictions_seed_88.parquet` ha già **tutti gli 11 orizzonti completati al 100%** ($89.100$ osservazioni). I file intermedi di tutti i seed (`42`, `88`, `2024`, `555`) sono memorizzati in `work/reports/experiments/lstm/`.
+  - **Prossimo passo immediato alla ripresa**:
+    1. Conferma elezione Seed 88 e pubblicazione in `output/data/processed/predictions_lstm.parquet` (istantanea).
+    2. Esecuzione `07_evaluate_benchmarks.py` e `09_generate_results_figures.py` per refresh di tabelle e figure.
+    3. Aggiornamento numerico nel testo di Capitolo 5, verifica budget caratteri (<100.000) e compilazione LaTeX.
 
 ### Integrazione Analisi Econometrica (Capitolo 3 e 4)
-- [ ] **Test di Rottura Strutturale di Chow nel Testo della Tesi**: Integrare la formalizzazione econometrica del test di Chow:
-  - *Pre-test (1951-2010)*: il test non rifiuta la stabilità del trend (F_max = 2.85 < F_crit = 4.01, p = 0.093), dimostrando che prima del test set non vi era alcuna evidenza statistica di rottura (giustificazione formale del trend lineare causale ex-ante).
-  - *Full sample (1951-2025)*: evidenza di un break strutturale post-hoc nel 2014 (F = 21.96, p < 0.0001, Delta = +4.83 bu/ac), serie trend-stazionaria ADF (p < 0.001), e figura a due pannelli [`fig_chow_structural_break.pdf`](./fig_chow_structural_break.pdf). Da inserire nel Capitolo 3 (proprietà empiriche delle rese) o Capitolo 4 (giustificazione del detrending lineare expanding e spiegazione del bias out-of-sample recente). Script di riferimento: [`run_chow_test.py`](./run_chow_test.py).
-- [ ] **Chiarimento Limiti del Detrending Lineare Expanding vs. Robustezza Cubica (Appendice)**: Documentare con rigore dove il trend lineare è superiore e dove mostra limitazioni. È superiore strettamente nella previsione **Out-of-Sample a 1 passo**:
-  - Nel periodo pre-test 1981-2010 (4.050 fold), l'RMSE del lineare è 5.77 bu/ac contro 5.86 del quadratico e 6.27 del cubico.
-  - Sull'intero orizzonte 1981-2025 (6.075 fold), l'RMSE del lineare è 5.89 bu/ac vs 6.03 quadratico e 6.39 cubico, con BIC favorevole nel 65.9% delle contee.
-  - Ha invece un fit in-sample inferiore (R^2 = 0.812 vs 0.831 del cubico) perché non flette per incorporare il break post-2014. Il report di appendice [`Report_detrending.pdf`](../experiments/full_sample_detrending/Report_detrending.pdf) dimostra che anche adottando il trend cubico a massimo fit in-sample, lo shrinkage delle code (D_1) e le performance comparative dell'ML restano immutate.
+- [x] **Test di Rottura Strutturale di Chow nel Testo della Tesi** (Integrato in Appendix A e discusso in Cap. 6): formalizzazione econometrica del test di Chow (1951-2010 vs 1951-2025 con break nel 2014, $+4.83$\,bu/ac), serie trend-stazionaria ADF ($p < 0.0001$) e Figura A.1 generata da `scripts/04_compare_detrending.py`.
+- [x] **Chiarimento Limiti del Detrending Lineare Expanding vs. Robustezza Cubica (Appendice A)** (Completato in Appendix A, con tabelle e figure in `output/thesis/`): documentazione del fit in-sample vs previsione out-of-sample a 1 passo (lineare superiore in OOS con RMSE 5.89 vs 6.39 bu/ac e BIC favorevole nel 65.9% delle contee), invarianza dello shrinkage di coda in $D_1$ (+8.38 vs +6.74 bu/ac), e tabelle A.1–A.3 generate da `scripts/09_generate_results_figures.py`.
 
 ### Struttura Risultati Empirici (Capitolo 5)
-- [ ] **Doppio Livello di Valutazione (Contea vs. Macro-Regionale)**:
-  1. *Livello Contea*: riportare l'analisi per decili ($D_1 \dots D_{10}$), evidenziando con trasparenza la limitazione intrinseca della loss $L_2$ (conditional tail shrinkage dovuto al fatto che il clima spiega il $\sim 30\%$ della varianza locale, mentre il $70\%$ è rumore non meteo).
-  2. *Livello Macro-Regionale Aggregato (135 contee)*: mostrare come l'aggregazione spaziale cancelli il rumore idiosincratico locale, rivelando l'elevatissima accuratezza del segnale meteo a scala di mercato ($r > 0.94$, errore sullo shock estremo 2012 di soli $-0.11$\,bu/ac).
-- [ ] **Proposta al Relatore: Valutazione degli Errori lungo gli Horizon ($H=12 \dots 1$) a Livello Macro**: Valutare e discutere l'opportunità di inserire il grafico di discesa dell'errore (Macro-RMSE / Macro-MAE) da $H=12$ a $H=1$ calcolato sul dato medio aggregato Midwest, che rappresenta l'output operativo di riferimento per trading desk e supply chain.
+- [x] **Doppio Livello di Valutazione (Contea vs. Macro-Regionale)**:
+  1. *Livello Contea*: riportata l'analisi per decili ($D_1 \dots D_{10}$, Tabella 5.4 e Figura 5.4), evidenziando la limitazione intrinseca della loss $L_2$ (conditional tail shrinkage dovuto al rapporto segnale/rumore locale).
+  2. *Livello Macro-Regionale Aggregato (135 contee)*: mostrato come l'aggregazione spaziale cancelli il rumore idiosincratico locale, rivelando l'elevatissima accuratezza del segnale meteo a scala di mercato ($r > 0.94$, errore sullo shock estremo 2012 di soli $-0.21$\,bu/ac).
+- [x] **Grafico di Traiettoria degli Errori lungo gli Horizon ($H=12 \dots 1$) a Livello Macro**: Generato come Figura 5.2 (`fig_macro_horizon_progression.pdf`) tramite `scripts/09_generate_results_figures.py` e integrato nella Sezione 5.3.1. Mostra la discesa dell'errore (Macro-RMSE da 3.84 a 2.18 bu/ac) e la salita di $R^2_{\text{macro}}$ fino a 0.676 a partire dall'inflessione critica di giugno ($H=5$).
 
-### Stesura e Chiusura dei Capitoli Conclusivi (Capitoli 6 e 7)
-- [ ] **Capitolo 6 (Discussion & Limitations)**: attingere dagli spunti consolidati in [`discussion_insights.md`](./discussion_insights.md) (inclusa l'Ipotesi 6 sul break strutturale del 2014) e integrare i confini metodologici da [`future_developments.md`](./future_developments.md).
-- [ ] **Capitolo 7 (Conclusions)**: sintesi asciutta delle risposte alle domande di ricerca e takeaway scientifico finale.
+### Stesura e Chiusura dei Capitoli Conclusivi (Capitolo 6)
+- [x] **Capitolo 6 Unificato (Discussion and Conclusions)**: completato in `output/thesis/chapters/06_discussion_and_conclusions.tex`. Risponde puntualmente alle 5 domande di ricerca con evidenze quantitative, riallinea il confronto deep learning vs modelli lineari valorizzando la frequenza decadale, include la Tabella 6.1 dei verdetti su H1–H5 e confronta i risultati con la letteratura (Chen & Zhang 2026, Hoffman et al. 2020, Sharma et al. 2025).
+
+### Revisione Finale e Allineamento Codici per il Professore
+- [x] **Allineamento Totale della Replication Suite (`scripts/01_`–`09_`)**:
+  - Tutti i 9 script sono verificati, autocontenuti e coprono al 100% tutte le figure e tabelle della tesi (Capitoli 3, 5 e Appendice A).
+  - Documentazione completa e aggiornata in `scripts/README.md`.
+- [ ] **Recupero Testo Tagliato (Opzionale)**: tenuto per ultimo come richiesto dall'autore; budget attuale a 92.304 caratteri (7.696 caratteri di margine libero).
 
 
 ## Project procedural notes

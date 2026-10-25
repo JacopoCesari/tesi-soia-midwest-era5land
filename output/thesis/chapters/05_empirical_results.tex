@@ -108,6 +108,19 @@ Regional averages summarize whether forecasts capture shared seasonal departures
 All models retain negative regional bias, especially in high-yield seasons. The positive mean observed anomaly is consistent with under-projection by the expanding linear trend. Unobserved management and cultivar changes may also contribute, but these data do not identify their separate effects. ElasticNet has the smallest mean bias among the evaluated models. The structural stability of the trend therefore remains relevant to the interpretation of recent forecast errors.
 }
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_macro_horizon_progression.pdf}
+    \caption{Progression of out-of-sample macro-regional predictive performance across monthly lead times ($H = 11 \dots 1$) for the Midwestern portfolio ($C = 135$ counties, 2011--2025): (a) Macro-Regional $R^2_{\text{macro}}$; (b) Macro-Regional RMSE (bu/ac).}
+    \label{fig:macro_horizon_progression}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025.}}
+\end{figure}
+
+{
+Figure~\ref{fig:macro_horizon_progression} contrasts macro-regional error trajectories across lead times with the county-level curves in Figure~\ref{fig:r2_horizon_progression}. While county forecasts level off at $R^2_{\mathrm{OOS}} \approx 0.35$, spatial portfolio averaging cancels unobserved idiosyncratic county variance, driving $R^2_{\mathrm{macro}}$ to $0.665$ for the ensemble and $0.676$ for LSTM at harvest closure. Regional skill emerges sharply between June ($H=5$, Macro-RMSE $= 3.24\text{ bu/ac}$) and August ($H=3$, Macro-RMSE $= 2.55\text{ bu/ac}$), matching the pod-filling window when broad-scale moisture deficits dictate aggregate supply.
+}
+
 \subsection{{Forecasts during the 2012 Drought and 2016 Bumper Season}}
 \label{sec:res_conditional_performance}
 

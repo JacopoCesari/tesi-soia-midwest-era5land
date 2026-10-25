@@ -1,0 +1,46 @@
+\begin{table}[htbp]
+\centering
+\singlespacing
+\small
+\caption{Empirical yield anomaly distributions by decile ($D_1 \dots D_{10}$): Baseline Expanding Linear Trend vs Full-Sample Cubic Trend.}
+\label{tab:appendix_decile_distribution}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc @{}}
+\toprule
+& \multicolumn{2}{c}{\textbf{Baseline (Expanding Linear Trend)}} & \multicolumn{2}{c}{\textbf{Robustness (Full-Sample Cubic Trend)}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+\textbf{Decile} & \textbf{Anomaly Range (bu/ac)} & \textbf{\% Negative ($\epsilon < 0$)} & \textbf{Anomaly Range (bu/ac)} & \textbf{\% Negative ($\epsilon < 0$)} \\
+\midrule
+\multicolumn{5}{l}{\textit{\textbf{Panel A: Complete Historical Panel (1951--2025, $N = 10{,}125$)}}} \\
+\midrule
+$D_{1}$ (Shortfall) & $[-25.5, -5.8]$ & 100\% & $[-25.1, -6.0]$ & 100\% \\
+$D_{2}$ & $[-5.8, -3.2]$ & 100\% & $[-6.0, -3.3]$ & 100\% \\
+$D_{3}$ & $[-3.2, -1.5]$ & 100\% & $[-3.3, -1.7]$ & 100\% \\
+$D_{4}$ & $[-1.5, -0.2]$ & 100\% & $[-1.7, -0.5]$ & 100\% \\
+$D_{5}$ & $[-0.2, +0.9]$ & 16\% & $[-0.5, +0.6]$ & 40\% \\
+$D_{6}$ & $[+0.9, +1.9]$ & 0\% & $[+0.6, +1.6]$ & 0\% \\
+$D_{7}$ & $[+1.9, +3.0]$ & 0\% & $[+1.6, +2.6]$ & 0\% \\
+$D_{8}$ & $[+3.0, +4.3]$ & 0\% & $[+2.6, +3.7]$ & 0\% \\
+$D_{9}$ & $[+4.3, +6.3]$ & 0\% & $[+3.7, +5.3]$ & 0\% \\
+$D_{10}$ (Peak) & $[+6.3, +22.9]$ & 0\% & $[+5.3, +17.6]$ & 0\% \\
+\midrule
+\textbf{Historical Total} & $[-25.5, +22.9]$ & \textbf{41.6\%} & $[-25.1, +17.6]$ & \textbf{44.0\%} \\
+\midrule[\heavyrulewidth]
+\multicolumn{5}{l}{\textit{\textbf{Panel B: Out-of-Sample Test Set (2011--2025, $N = 2{,}025$)}}} \\
+\midrule
+$D_{1}$ (Shortfall) & $[-22.9, -5.2]$ & 100\% & $[-25.1, -6.9]$ & 100\% \\
+$D_{2}$ & $[-5.2, -1.9]$ & 100\% & $[-6.9, -4.1]$ & 100\% \\
+$D_{3}$ & $[-1.9, +0.0]$ & 98\% & $[-4.1, -2.2]$ & 100\% \\
+$D_{4}$ & $[+0.0, +1.7]$ & 0\% & $[-2.2, -0.6]$ & 100\% \\
+$D_{5}$ & $[+1.7, +3.1]$ & 0\% & $[-0.6, +0.6]$ & 47\% \\
+$D_{6}$ & $[+3.1, +4.4]$ & 0\% & $[+0.6, +1.7]$ & 0\% \\
+$D_{7}$ & $[+4.4, +5.6]$ & 0\% & $[+1.7, +2.9]$ & 0\% \\
+$D_{8}$ & $[+5.6, +6.8]$ & 0\% & $[+2.9, +4.0]$ & 0\% \\
+$D_{9}$ & $[+6.8, +8.8]$ & 0\% & $[+4.0, +5.6]$ & 0\% \\
+$D_{10}$ (Peak) & $[+8.8, +22.9]$ & 0\% & $[+5.6, +17.6]$ & 0\% \\
+\midrule
+\textbf{Test Total} & $[-22.9, +22.9]$ & \textbf{29.8\%} & $[-25.1, +17.6]$ & \textbf{44.7\%} \\
+\bottomrule
+\end{tabular*}
+\vspace{0.2em}
+{\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025). The baseline expanding-window trend shifts upward in the test set (mean $+2.41$ bu/ac), whereas the full-sample cubic trend remains centered at $-0.06$ bu/ac.}}
+\end{table}
