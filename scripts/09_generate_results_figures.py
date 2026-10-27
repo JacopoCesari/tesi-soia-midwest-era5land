@@ -964,6 +964,7 @@ def generate_table_a1_and_figure_a2():
 def load_baseline():
     df = load_data()
     mapping = {
+        "Naive": "Naive",
         "ElasticNet (+Lag)": "ElasticNet",
         "XGBoost (+Lag)": "XGBoost",
         "LSTM (+Lag)": "LSTM",

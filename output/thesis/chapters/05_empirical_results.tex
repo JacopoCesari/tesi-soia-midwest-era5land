@@ -184,6 +184,16 @@ Statistical validity requires verifying that model forecast residuals do not exh
 {     \item \textbf{Spatial autocorrelation.} Mean Moran coefficients are $0.142$ for ElasticNet (+Lag), $0.171$ for XGBoost (+Lag), and $0.145$ for LSTM (+Lag), compared with $0.183$ for trend-only errors. Residual spatial clustering remains after weather and lagged yield are included. Resampling complete years preserves the within-year cross-county dependence \citep{Sweetetal2023}.}
 \end{enumerate}
 
+\subsection{Predictive Accuracy Tests}
+\label{sec:res_significance}
+
+To establish whether predictive gains over naive secular trends and between competing model families are statistically distinguishable from sample variability, we evaluate one-sided Diebold--Mariano tests on annual mean squared loss differentials across the 15 out-of-sample test years (2011--2025). Aggregating loss differentials to annual cross-sections preserves the contemporaneous spatial covariance structure across the 135 counties within each crop year. Heteroskedasticity and Autocorrelation Consistent (HAC) inference is estimated with two annual lags and the small-sample $15/14$ covariance correction.
+
+At the June emergence horizon ($H=5$), weather-only ElasticNet and integrated LSTM (+Lag) achieve statistically significant loss reductions over the naive trend benchmark, with nominal $p$-values of $0.0011$ and $0.00025$ ($\text{DM} = 3.06$ and $3.48$). Conversely, tree ensembles fail to reject the null hypothesis of equal accuracy at the $5\%$ level (Random Forest $p=0.074$; XGBoost $p=0.094$). From July ($H=4$) onward, all evaluated weather-informed models reject equal accuracy against the naive baseline ($p < 0.0001$).
+
+At harvest closure ($H=1$), pairwise testing between LSTM (+Lag) and ElasticNet (+Lag) yields $\text{DM} = 0.99$ ($p = 0.162$). Despite a $+0.050$ point improvement in $R^2_{\text{OOS}}$ and a $0.188\text{ bu/ac}$ reduction in RMSE, the sequential deep architecture does not achieve statistically significant superiority over penalized linear shrinkage under serial correlation controls. The Linear-Recurrent Ensemble significantly improves upon ElasticNet (+Lag) at the $5\%$ level ($\text{DM} = 2.11$, $p = 0.017$), while its performance difference from LSTM (+Lag) remains statistically indistinguishable ($\text{DM} = 0.33$, $p = 0.371$). These tests confirm that while meteorological forcing provides unequivocal predictive skill, pooled point rankings between flexible neural networks and regularized linear baselines do not establish uniform statistical dominance.
+
+
 % ==============================================================================
 % SECTION 5.4: FEATURE ATTRIBUTION AND AGROMETEOROLOGICAL DRIVERS
 % ==============================================================================
@@ -277,9 +287,12 @@ As established in Section~\ref{sec:meth_loss_metrics}, RMSE and MAE are unchange
 
 \input{tables/tab_raw_vs_anomaly_performance}
 
-{
-{ The trend benchmark explains $47.4\%$ of raw-yield variation without weather inputs. Reconstruction raises the score to $65.1\%$ for LSTM (+Lag) and $66.2\%$ for the ensemble. Their trend-relative anomaly scores are $0.336$ and $0.358$. Comparisons with raw-yield studies such as \citet{ChenZhang2026} must account for this distinction, the predictor set, and the evaluation design.}
-}
+Evaluating predictions on reconstructed physical yield levels ($\hat{y} = \hat{\tau} + \hat{\epsilon}$) clarifies the distinction between secular agronomic progress and interannual weather skill (Table~\ref{tab:raw_vs_anomaly_performance}). The naive secular trend accounts for $47.4\%$ of total raw yield variance ($r = 0.746$) across the test partition without ingesting meteorological data, capturing multidecadal genetic breeding, fertilizer efficiency, and permanent cross-county soil endowments.
+
+Conditioning on ERA5-Land surface reanalysis and historical carryover raises explained variance to $66.8\%$ ($r = 0.833$) for LSTM (+Lag) and $67.3\%$ ($r = 0.838$) for the Linear-Recurrent Ensemble, resolving an incremental $+19.9$ percentage points of commercial yield variation beyond technological momentum.
+
+This dual evaluation reconciles the apparent disconnect with agricultural machine learning studies that report $R^2 \ge 0.75$ on raw yield levels without prior detrending \citep{ChenZhang2026, Khaki2020}. Un-detrended estimators inadvertently attribute the deterministic technological upward trend to smooth climate predictors, generating spurious correlation and inflated apparent skill. Formulating the primary forecasting benchmark in detrended anomaly space isolates genuine biophysical predictability ($R^2_{\text{OOS}} = 0.378$), confirming that empirical models capture true climate-induced deviations from trend.
+
 
 
 

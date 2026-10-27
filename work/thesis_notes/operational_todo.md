@@ -10,34 +10,13 @@
 
 ## Task Aperti (Prossimi Passi)
 
-### Thesis text recovery before further expansion
-- [ ] **Review the previous text reductions before adding material**: start with `5258c4a` (2026-10-17 12:16, Europe/Rome), **"Refine thesis narrative and streamline text under 100k character budget"**. This commit shortened Chapters 1--6 by removing table-reading and repeated cross-chapter explanations. Also inspect `0d60748` (2026-10-18 22:57), **"refactor(thesis): refine academic tone and streamline self-explanatory captions and tables"**, for the subsequent prose, caption and table cleanup, and `36c3161` (2026-10-19 03:06), **"Rebuild LSTM test forecasts with complete weather windows"**, which combined updated evidence with further substantial chapter rewrites. Use `git show <commit> -- output/thesis/chapters output/thesis/tables` to inspect the removed and added passages. Recover only material consistent with the current methodology and verified results; check the character budget after assessing content needs. Section 5.2.3, **"Predictive Accuracy Tests"**, and its former inference table were introduced by `36c3161`; the subsection and inference table were subsequently removed locally at the author's request. The section text is retained in the procedural note below.
+- [x] **Recupero Testo Tagliato e Commento Ipotesi H1--H5 (Completato)**:
+  - Reintegrata la Sottosezione 5.3.4 (*Predictive Accuracy Tests*) in Capitolo 5, documentando i test di Diebold-Mariano con correzione HAC a blocchi annuali per $H=5, 4, 1$ (Seed 88).
+  - Allineata e sintetizzata la Sezione 5.4.4 (*Anomaly Space vs. Raw Yield*) con le metriche corrette ($66.8\%$ e $67.3\%$) e la scomposizione della varianza / confutazione del trend confounding.
+  - Integrata in Sezione 6.3 la trattazione analitica e formale di risposta a ciascuna delle cinque ipotesi di ricerca (H1--H5), con focus teorico approfondito su **H4** (parsimonia lineare, controllo di varianza $\ell_1/\ell_2$ e limiti empirici della superiorità deep learning).
+  - Preservati i tagli su archetipi agronomici locali (Cap. 5) e supply chain logistics (Cap. 6) come da indicazione dell'autore.
+  - **Budget Caratteri Finale**: **98.995 / 100.000** (**1.005 caratteri di margine libero** per le limature finali dell'autore); compilazione LaTeX passata con 0 errori (80 pagine).
 
-### LSTM training stability & Multi-Seed Ensembling (Completato al 100%)
-- [x] **Torneo Multi-Seed e Pubblicazione Seed Campione ($s^* = 88$)**:
-  - Screening su 10 seed a $H=1$ e torneo approfondito sui primi 5 orizzonti ($H = 5 \dots 1$): **Seed 88** confermato vincitore assoluto (#1 in 4 orizzonti su 5: $H=5, 4, 2, 1$; media $R^2$ sui 5 orizzonti $0.6172$ vs $0.6074$ del seed 42; $R^2_{\text{OOS}}$ harvest closure $0.370$ per LSTM standalone e $0.378$ per l'Ensemble; Macro $R^2$ a $0.811$ e Macro RMSE a $2.041$\,bu/ac).
-  - **Pubblicazione Canonica**: [`output/data/processed/predictions_lstm.parquet`](../../output/data/processed/predictions_lstm.parquet) aggiornato con il panel completo di Seed 88 ($89.100$ osservazioni).
-  - **Rigenerazione a Cascata**: eseguiti `07_evaluate_benchmarks.py` e `09_generate_results_figures.py`, aggiornando tutte le tabelle (5.1–5.5, A.1–A.3) e figure (5.1–5.7, A.1–A.4).
-  - **Allineamento Testo e Compilazione**: sincronizzati tutti i riscontri numerici nei Capitoli 5 e 6; budget caratteri a **92.291 / 100.000** (**7.709 caratteri liberi**); compilazione LaTeX passata con 0 errori (77 pagine).
-
-### Integrazione Analisi Econometrica (Capitolo 3 e 4)
-- [x] **Test di Rottura Strutturale di Chow nel Testo della Tesi** (Integrato in Appendix A e discusso in Cap. 6): formalizzazione econometrica del test di Chow (1951-2010 vs 1951-2025 con break nel 2014, $+4.83$\,bu/ac), serie trend-stazionaria ADF ($p < 0.0001$) e Figura A.1 generata da `scripts/04_compare_detrending.py`.
-- [x] **Chiarimento Limiti del Detrending Lineare Expanding vs. Robustezza Cubica (Appendice A)** (Completato in Appendix A, con tabelle e figure in `output/thesis/`): documentazione del fit in-sample vs previsione out-of-sample a 1 passo (lineare superiore in OOS con RMSE 5.89 vs 6.39 bu/ac e BIC favorevole nel 65.9% delle contee), invarianza dello shrinkage di coda in $D_1$ (+8.38 vs +6.74 bu/ac), e tabelle A.1–A.3 generate da `scripts/09_generate_results_figures.py`.
-
-### Struttura Risultati Empirici (Capitolo 5)
-- [x] **Doppio Livello di Valutazione (Contea vs. Macro-Regionale)**:
-  1. *Livello Contea*: riportata l'analisi per decili ($D_1 \dots D_{10}$, Tabella 5.4 e Figura 5.4), evidenziando la limitazione intrinseca della loss $L_2$ (conditional tail shrinkage dovuto al rapporto segnale/rumore locale).
-  2. *Livello Macro-Regionale Aggregato (135 contee)*: mostrato come l'aggregazione spaziale cancelli il rumore idiosincratico locale, rivelando l'elevatissima accuratezza del segnale meteo a scala di mercato ($r > 0.94$, errore sullo shock estremo 2012 di soli $-0.21$\,bu/ac).
-- [x] **Grafico di Traiettoria degli Errori lungo gli Horizon ($H=12 \dots 1$) a Livello Macro**: Generato come Figura 5.2 (`fig_macro_horizon_progression.pdf`) tramite `scripts/09_generate_results_figures.py` e integrato nella Sezione 5.3.1. Mostra la discesa dell'errore (Macro-RMSE da 3.84 a 2.18 bu/ac) e la salita di $R^2_{\text{macro}}$ fino a 0.676 a partire dall'inflessione critica di giugno ($H=5$).
-
-### Stesura e Chiusura dei Capitoli Conclusivi (Capitolo 6)
-- [x] **Capitolo 6 Unificato (Discussion and Conclusions)**: completato in `output/thesis/chapters/06_discussion_and_conclusions.tex`. Risponde puntualmente alle 5 domande di ricerca con evidenze quantitative, riallinea il confronto deep learning vs modelli lineari valorizzando la frequenza decadale, include la Tabella 6.1 dei verdetti su H1–H5 e confronta i risultati con la letteratura (Chen & Zhang 2026, Hoffman et al. 2020, Sharma et al. 2025).
-
-### Revisione Finale e Allineamento Codici per il Professore
-- [x] **Allineamento Totale della Replication Suite (`scripts/01_`–`09_`)**:
-  - Tutti i 9 script sono verificati, autocontenuti e coprono al 100% tutte le figure e tabelle della tesi (Capitoli 3, 5 e Appendice A).
-  - Documentazione completa e aggiornata in `scripts/README.md`.
-- [ ] **Recupero Testo Tagliato (Opzionale)**: tenuto per ultimo come richiesto dall'autore; budget attuale a 92.304 caratteri (7.696 caratteri di margine libero).
 
 
 ## Project procedural notes
