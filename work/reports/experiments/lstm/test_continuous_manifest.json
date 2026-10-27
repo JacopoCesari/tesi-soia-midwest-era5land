@@ -49,5 +49,6 @@
   },
   "test_start": 2011,
   "test_end": 2025,
-  "published_sha256": "106105902194d8072ed8f8ebe42273347b9c489a9b8a6e477e96366c9c62b06a"
+  "published_sha256": "1d0bb1d01c1d57df8965376676643e22f177b6ec473dd0e5469652679e3960fb",
+  "canonical_seed": 88
 }

@@ -13,15 +13,12 @@
 ### Thesis text recovery before further expansion
 - [ ] **Review the previous text reductions before adding material**: start with `5258c4a` (2026-10-17 12:16, Europe/Rome), **"Refine thesis narrative and streamline text under 100k character budget"**. This commit shortened Chapters 1--6 by removing table-reading and repeated cross-chapter explanations. Also inspect `0d60748` (2026-10-18 22:57), **"refactor(thesis): refine academic tone and streamline self-explanatory captions and tables"**, for the subsequent prose, caption and table cleanup, and `36c3161` (2026-10-19 03:06), **"Rebuild LSTM test forecasts with complete weather windows"**, which combined updated evidence with further substantial chapter rewrites. Use `git show <commit> -- output/thesis/chapters output/thesis/tables` to inspect the removed and added passages. Recover only material consistent with the current methodology and verified results; check the character budget after assessing content needs. Section 5.2.3, **"Predictive Accuracy Tests"**, and its former inference table were introduced by `36c3161`; the subsection and inference table were subsequently removed locally at the author's request. The section text is retained in the procedural note below.
 
-### LSTM training stability & Multi-Seed Ensembling (Completato Torneo Top 5)
-- [x] **Torneo Multi-Seed e Selezione Seed Campione ($H = 5 \dots 1$)**:
-  - Screening iniziale a 10 seed su $H=1$: isolata la top 5 (`88`, `2024`, `555`, `101`, `123`) contro la baseline (`42`).
-  - Torneo multi-orizzonte su $H = 5 \dots 1$: **Seed 88** vince in modo schiacciante (#1 in 4 orizzonti su 5: $H=5, 4, 2, 1$; media $R^2$ sui 5 orizzonti pari a $0.6172$ vs $0.6074$ di Seed 42; $R^2$ a chiusura raccolto $H=1$ pari a $0.6726$ vs $0.6483$; RMSE a $4.831$\,bu/ac; Ensemble con ElasticNet a $R^2 = 0.6704$).
-  - **Dati salvati e pronti al 100%**: `test_predictions_seed_88.parquet` ha già **tutti gli 11 orizzonti completati al 100%** ($89.100$ osservazioni). I file intermedi di tutti i seed (`42`, `88`, `2024`, `555`) sono memorizzati in `work/reports/experiments/lstm/`.
-  - **Prossimo passo immediato alla ripresa**:
-    1. Conferma elezione Seed 88 e pubblicazione in `output/data/processed/predictions_lstm.parquet` (istantanea).
-    2. Esecuzione `07_evaluate_benchmarks.py` e `09_generate_results_figures.py` per refresh di tabelle e figure.
-    3. Aggiornamento numerico nel testo di Capitolo 5, verifica budget caratteri (<100.000) e compilazione LaTeX.
+### LSTM training stability & Multi-Seed Ensembling (Completato al 100%)
+- [x] **Torneo Multi-Seed e Pubblicazione Seed Campione ($s^* = 88$)**:
+  - Screening su 10 seed a $H=1$ e torneo approfondito sui primi 5 orizzonti ($H = 5 \dots 1$): **Seed 88** confermato vincitore assoluto (#1 in 4 orizzonti su 5: $H=5, 4, 2, 1$; media $R^2$ sui 5 orizzonti $0.6172$ vs $0.6074$ del seed 42; $R^2_{\text{OOS}}$ harvest closure $0.370$ per LSTM standalone e $0.378$ per l'Ensemble; Macro $R^2$ a $0.811$ e Macro RMSE a $2.041$\,bu/ac).
+  - **Pubblicazione Canonica**: [`output/data/processed/predictions_lstm.parquet`](../../output/data/processed/predictions_lstm.parquet) aggiornato con il panel completo di Seed 88 ($89.100$ osservazioni).
+  - **Rigenerazione a Cascata**: eseguiti `07_evaluate_benchmarks.py` e `09_generate_results_figures.py`, aggiornando tutte le tabelle (5.1–5.5, A.1–A.3) e figure (5.1–5.7, A.1–A.4).
+  - **Allineamento Testo e Compilazione**: sincronizzati tutti i riscontri numerici nei Capitoli 5 e 6; budget caratteri a **92.291 / 100.000** (**7.709 caratteri liberi**); compilazione LaTeX passata con 0 errori (77 pagine).
 
 ### Integrazione Analisi Econometrica (Capitolo 3 e 4)
 - [x] **Test di Rottura Strutturale di Chow nel Testo della Tesi** (Integrato in Appendix A e discusso in Cap. 6): formalizzazione econometrica del test di Chow (1951-2010 vs 1951-2025 con break nel 2014, $+4.83$\,bu/ac), serie trend-stazionaria ADF ($p < 0.0001$) e Figura A.1 generata da `scripts/04_compare_detrending.py`.

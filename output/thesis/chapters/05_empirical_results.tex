@@ -72,7 +72,7 @@ Integrated ElasticNet has the highest individual county-level score from June th
 
 The integrated LSTM gains skill as summer weather accumulates, reaching its highest score at harvest closure. Its 10-day inputs retain within-month timing, an aspect examined by \citet{Yinetal2026}. The primary benchmark compares feasible forecasting specifications: monthly ElasticNet controls the number of tabular coefficients, while the recurrent network shares parameters across sequence steps. This comparison evaluates the complete solutions. The temporal resolution is fixed before the final test evaluation.
 
-{ The equal-weighted ElasticNet--LSTM ensemble has the highest pooled score at the active horizons, reaching $0.358$ at harvest closure. We retain it alongside ElasticNet (+Lag) and LSTM (+Lag) for stress testing.}
+{ The equal-weighted ElasticNet--LSTM ensemble has the highest pooled score at the active horizons, reaching $0.378$ at harvest closure. We retain it alongside ElasticNet (+Lag) and LSTM (+Lag) for stress testing.}
 }
 
 \subsection{Recurrent Temporal Resolution}
@@ -99,11 +99,11 @@ Regional averages summarize whether forecasts capture shared seasonal departures
 \input{tables/tab_yearly_macro_yields}
 
 {
-{ Table~\ref{tab:yearly_macro_yields} shows that integrated forecasts recover substantial regional departures from trend. In 2012, the realized mean anomaly was $-4.07\text{ bu/ac}$. ElasticNet and the ensemble predicted $-3.81$ and $-4.28\text{ bu/ac}$, respectively. Small regional errors can coexist with larger local errors, examined below.}
+{ Table~\ref{tab:yearly_macro_yields} shows that integrated forecasts recover substantial regional departures from trend. In 2012, the realized mean anomaly was $-4.07\text{ bu/ac}$. ElasticNet and the ensemble predicted $-3.81$ and $-3.25\text{ bu/ac}$, respectively. Small regional errors can coexist with larger local errors, examined below.}
 
 { Calibration varies across seasons. Tree forecasts remain compressed in the 2016 and 2021 bumper campaigns, consistent with the limited extrapolation of terminal-leaf predictions. ElasticNet projects larger positive departures in these cases, while also underestimating the observed anomalies.}
 
-{ Across test years, the ensemble reduces regional RMSE from $3.84$ to $2.22\text{ bu/ac}$, a reduction of about $42\%$. LSTM has the lowest regional RMSE point estimate, at $2.185$ bu/ac against $2.221$ for the ensemble. The ensemble retains the lowest pooled county-level error. Correlations with regional anomalies are $0.888$ for the ensemble and $0.928$ for LSTM. After trend reconstruction, correlations with regional yield levels are $0.947$ and $0.960$, respectively. These pairs refer to different target spaces and must remain separately labelled.}
+{ Across test years, the ensemble reduces regional RMSE from $3.84$ to $2.15\text{ bu/ac}$, a reduction of about $44\%$. LSTM has the lowest regional RMSE point estimate, at $2.041\text{ bu/ac}$ against $2.147$ for the ensemble. The ensemble retains the lowest pooled county-level error. Correlations with regional anomalies are $0.880$ for the ensemble and $0.910$ for LSTM. After trend reconstruction, correlations with regional yield levels are $0.944$ and $0.954$, respectively. These pairs refer to different target spaces and must remain separately labelled.}
 
 All models retain negative regional bias, especially in high-yield seasons. The positive mean observed anomaly is consistent with under-projection by the expanding linear trend. Unobserved management and cultivar changes may also contribute, but these data do not identify their separate effects. ElasticNet has the smallest mean bias among the evaluated models. The structural stability of the trend therefore remains relevant to the interpretation of recent forecast errors.
 }
@@ -118,7 +118,7 @@ All models retain negative regional bias, especially in high-yield seasons. The 
 \end{figure}
 
 {
-Figure~\ref{fig:macro_horizon_progression} contrasts macro-regional error trajectories across lead times with the county-level curves in Figure~\ref{fig:r2_horizon_progression}. While county forecasts level off at $R^2_{\mathrm{OOS}} \approx 0.35$, spatial portfolio averaging cancels unobserved idiosyncratic county variance, driving $R^2_{\mathrm{macro}}$ to $0.665$ for the ensemble and $0.676$ for LSTM at harvest closure. Regional skill emerges sharply between June ($H=5$, Macro-RMSE $= 3.24\text{ bu/ac}$) and August ($H=3$, Macro-RMSE $= 2.55\text{ bu/ac}$), matching the pod-filling window when broad-scale moisture deficits dictate aggregate supply.
+Figure~\ref{fig:macro_horizon_progression} contrasts macro-regional error trajectories across lead times with the county-level curves in Figure~\ref{fig:r2_horizon_progression}. While county forecasts reach $R^2_{\mathrm{OOS}} \approx 0.38$, spatial portfolio averaging cancels unobserved idiosyncratic county variance, driving $R^2_{\mathrm{macro}}$ to $0.687$ for the ensemble and $0.726$ for LSTM at harvest closure. Regional skill emerges sharply between June ($H=5$, Macro-RMSE $= 3.12\text{ bu/ac}$) and August ($H=3$, Macro-RMSE $= 2.58\text{ bu/ac}$), matching the pod-filling window when broad-scale moisture deficits dictate aggregate supply.
 }
 
 \subsection{{Forecasts during the 2012 Drought and 2016 Bumper Season}}
@@ -161,10 +161,10 @@ Table~\ref{tab:decile_error_performance} reports mean predictions within deciles
 The multi-horizon decile breakdown in Table~\ref{tab:decile_error_performance} and diagnostic suite in Figure~\ref{fig:decile_calibration_and_residuals} illustrate how physical observations resolve shrinkage and calibrate tail predictions:
 \begin{enumerate}
 {
-{     \item \textbf{Downside tail calibration ($D_1$).} The realized mean anomaly is $-8.82\text{ bu/ac}$. Harvest predictions remain attenuated: LSTM predicts $-2.65\text{ bu/ac}$ and the ensemble $-2.39\text{ bu/ac}$. Both reduce the shortfall error relative to a zero-anomaly forecast, while leaving substantial tail miscalibration.}
+{     \item \textbf{Downside tail calibration ($D_1$).} The realized mean anomaly is $-8.82\text{ bu/ac}$. Harvest predictions remain attenuated: LSTM predicts $-2.18\text{ bu/ac}$ and the ensemble $-2.16\text{ bu/ac}$. Both reduce the shortfall error relative to a zero-anomaly forecast, while leaving substantial tail miscalibration.}
 }
 {     \item \textbf{Central regimes ($D_3$--$D_6$).} Predictions remain closer to zero than realized anomalies. The decile means describe retrospective calibration, not estimated probabilities of belonging to a future tail regime.}
-{     \item \textbf{Bumper-season attenuation ($D_{10}$).} Models underestimate the observed mean of $+11.01\text{ bu/ac}$. ElasticNet projects $+2.86\text{ bu/ac}$, with the ensemble at $+2.59\text{ bu/ac}$. The residual gap remains relevant for operational use.}
+{     \item \textbf{Bumper-season attenuation ($D_{10}$).} Models underestimate the observed mean of $+11.01\text{ bu/ac}$. ElasticNet projects $+2.86\text{ bu/ac}$, with the ensemble at $+2.85\text{ bu/ac}$. The residual gap remains relevant for operational use.}
 {     \item \textbf{Residual distribution and variance.} Figure~\ref{fig:decile_calibration_and_residuals}(b,c) compares standardized residual quantiles and their dispersion across fitted values. Tail departures and changes in dispersion are diagnostic evidence; visual inspection alone does not establish normality or homoscedasticity.}
 \end{enumerate}
 
@@ -180,8 +180,8 @@ The multi-horizon decile breakdown in Table~\ref{tab:decile_error_performance} a
 \label{sec:res_residual_autocorrelation}
 Statistical validity requires verifying that model forecast residuals do not exhibit persistent temporal autocorrelation or uncontrolled spatial clustering. We evaluate serial correlation via county-level temporal $\text{AR}(1)$ coefficients and spatial clustering via cross-sectional Moran's $I$ across the 135 study counties using inverse-distance spatial weights:
 \begin{enumerate}
-{     \item \textbf{Temporal serial persistence.} At $H^*(s)$, mean county AR(1) coefficients are $-0.087$ for ElasticNet (+Lag), $-0.080$ for XGBoost (+Lag), and $-0.034$ for LSTM (+Lag). These small panel means do not rule out serial dependence in individual counties, given only 15 errors per series.}
-{     \item \textbf{Spatial autocorrelation.} Mean Moran coefficients are $0.140$ for ElasticNet (+Lag), $0.163$ for XGBoost (+Lag), and $0.152$ for LSTM (+Lag), compared with $0.183$ for trend-only errors. Residual spatial clustering remains after weather and lagged yield are included. Resampling complete years preserves the within-year cross-county dependence \citep{Sweetetal2023}.}
+{     \item \textbf{Temporal serial persistence.} At $H^*(s)$, mean county AR(1) coefficients are $-0.054$ for ElasticNet (+Lag), $-0.062$ for XGBoost (+Lag), and $-0.058$ for LSTM (+Lag). These small panel means do not rule out serial dependence in individual counties, given only 15 errors per series.}
+{     \item \textbf{Spatial autocorrelation.} Mean Moran coefficients are $0.142$ for ElasticNet (+Lag), $0.171$ for XGBoost (+Lag), and $0.145$ for LSTM (+Lag), compared with $0.183$ for trend-only errors. Residual spatial clustering remains after weather and lagged yield are included. Resampling complete years preserves the within-year cross-county dependence \citep{Sweetetal2023}.}
 \end{enumerate}
 
 % ==============================================================================

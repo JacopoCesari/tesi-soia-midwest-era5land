@@ -73,10 +73,10 @@ Table~\ref{tab:hypotheses_verdicts} summarizes the empirical verdicts for the fi
 \toprule
 \textbf{Hypothesis} & \textbf{Formal Statement} & \textbf{Empirical Evidence} & \textbf{Verdict} \\
 \midrule
-\textbf{H1} & Weather reanalysis features reduce out-of-sample error relative to naive trend baselines. & Weather-only ElasticNet reduces harvest RMSE from $6.12$ to $5.15\text{ bu/ac}$. Predictive skill is statistically significant from June onward ($p=0.0011$); integrated models reach $R^2_{\text{OOS}} = 0.350$. & \textbf{Supported} \\
+\textbf{H1} & Weather reanalysis features reduce out-of-sample error relative to naive trend baselines. & Weather-only ElasticNet reduces harvest RMSE from $6.12$ to $5.15\text{ bu/ac}$. Predictive skill is statistically significant from June onward ($p=0.0011$); integrated models reach $R^2_{\text{OOS}} = 0.378$. & \textbf{Supported} \\
 \textbf{H2} & Predictive skill increases monotonically as harvest approaches ($H \to 1$). & Skill improves broadly across phenological phases, but individual trajectories show intermediate plateaus and harvest-window reversals. Monotonicity fails strictly. & \shortstack{\textbf{Not}\\\textbf{supported}} \\
 \textbf{H3} & Sub-monthly summaries reduce validation error at fixed LSTM architecture. & Model selection confirms that 10-day decad sequences yield lower validation loss than monthly inputs, capturing intra-monthly extremes. & \shortstack{\textbf{Supported}\\\scriptsize{(Selection)}} \\
-\textbf{H4} & Highly parameterized deep models do not systematically outperform regularized linear models. & ElasticNet matches or exceeds tree ensembles on monthly tabular inputs ($R^2=0.320$ vs $0.273$). LSTM achieves a modest point gain ($R^2=0.336$); wholesale deep dominance is rejected. & \textbf{Supported} \\
+\textbf{H4} & Highly parameterized deep models do not systematically outperform regularized linear models. & ElasticNet matches or exceeds tree ensembles on monthly tabular inputs ($R^2=0.320$ vs $0.273$). LSTM achieves a point gain ($R^2=0.370$); wholesale deep dominance is rejected. & \textbf{Supported} \\
 \textbf{H5} & Continuous regression models anticipate extreme regional yield anomalies before harvest. & Severe regional shortfall in 2012 is predicted at $43.53\text{ bu/ac}$ vs $43.55\text{ bu/ac}$ actual. At county decile scale ($D_1$), directional shortfall is captured, but conditional shrinkage attenuates magnitude. & \shortstack{\textbf{Supported}\\\scriptsize{(Qualified)}} \\
 \bottomrule
 \end{tabularx}
