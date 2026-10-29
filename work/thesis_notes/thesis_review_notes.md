@@ -233,7 +233,122 @@
 ---
 
 ## Capitolo 4: Methodology
-*(In attesa di note...)*
+
+### Sezione 4.1: Problem Formulation and Multi-Horizon Forecast Setup (Pagine 23--25)
+- **Nota 26 (Sottosezione 4.1.1: Rimozione avverbio difensivo "strictly"):**
+  - **Problema rilevato:** A riga 24, la frase *"Detrending parameters are estimated strictly on training observations to prevent look-ahead leakage"* contiene l'avverbio enfatico/difensivo *"strictly"*, che appesantisce la frase con un tono da cliché AI.
+  - **Intervento richiesto:** Rimuovere *"strictly"*, lasciando la frase pulita e assertiva:  
+    `Detrending parameters are estimated on training observations to prevent look-ahead leakage.`
+
+- **Nota 27 (Sottosezione 4.1.1: Esplicitazione del criterio di stima OLS via minimizzazione dell'MSE):**
+  - **Problema rilevato:** A riga 24, la frase che introduce l'equazione (4.2) si limita a dire che i parametri del trend vengono stimati sulle campagne storiche senza nominare a parole il criterio statistico di ottimizzazione (la minimizzazione della somma dei quadrati / MSE).
+  - **Intervento richiesto:** Completare la frase prima dei due punti esplicitando il criterio statistico:  
+    `For harvest year $Y$, county-specific linear trend parameters $(\hat{\alpha}_c^{(Y)}, \hat{\beta}_c^{(Y)})$ are fitted over historical campaigns $\mathcal{T}_{\text{train}}(Y) = \{1951, \dots, Y-1\}$ by minimizing the mean squared error:`
+
+- **Nota 28 (Sottosezione 4.1.3: Chiarimento baseline $H=12$, eliminazione elenco ridondante e semplificazione stilistica della persistenza):**
+  - **Problema rilevato:**
+    1. A riga 54, la frase *"The October 31 origin in $Y-1$ ($H=12$) is the zero-anomaly reference."* risulta ambigua, potendo far credere che vengano usate le osservazioni meteo dell'ottobre precedente. In realtà, $H=12$ rappresenta il benchmark "a bocce ferme" alla vigilia dell'annata agraria (31 ottobre di $Y-1$), in cui non si dispone di alcuna informazione meteo ($m=0, P_{\text{met}} = 0$) e la predizione di anomalia è identicamente nulla ($\hat{\epsilon}^{(12)} = 0$), basandosi unicamente sul trend tecnologico secolare ($\hat{y}_{c,Y}^{(12)} = \hat{\tau}_{c,Y}$).
+    2. A riga 61, la frase *"To isolate the marginal value of multi-year agronomic memory against pure meteorological forcing, we formulate an integrated predictor space ingesting historical yield persistence:"* è infarcita di gergo altisonante e pomposo. Il concetto è semplicemente verificare se aggiungere la resa dell'anno prima apporti reale valore predittivo rispetto alle sole variabili meteo correnti.
+    3. A riga 72 (Eq. 4.6), il caso $H=12$ riporta erroneamente `(m = 1, \text{ zero weather})` anziché $m=0$.
+    4. Subito sotto la formula (4.6), le righe 77--81 inseriscono un elenco puntato che ripete pedestremente quanto già detto in apertura di sottosezione e che introduce l'ulteriore refuso fuorviante `Horizon $H = 12$ ($m = 1$, Nov 30)`, creando confusione temporale.
+  - **Intervento richiesto:**
+    1. In apertura di 4.1.3, formalizzare la timeline in modo compatto, lineare e privo di ambiguità:
+       `The crop campaign spans November 1 of year $Y-1$ to October 31 of harvest year $Y$. The pre-season origin at October 31 of $Y-1$ ($H=12$) ingests zero weather predictors ($m=0, P_{\text{met}}=0$), serving as an uninformed benchmark that outputs a zero anomaly ($\hat{\epsilon}_{c,Y}^{(12)} = 0$) and relies entirely on the secular trend ($\hat{y}_{c,Y}^{(12)} = \hat{\tau}_{c,Y}$). Operational horizons $H \in \{11, \dots, 1\}$ correspond to monthly cutoffs from December 31 of $Y-1$ through October 31 of $Y$, ingesting $m = 13 - H \in \{2, \dots, 12\}$ elapsed campaign months.`
+    2. A riga 61, snellire il testo eliminando il gergo artificioso:  
+       `To evaluate whether past yield persistence provides incremental skill over current weather conditions, we specify an integrated feature vector that appends the prior-year detrended yield anomaly ($\epsilon_{c,Y-1}$):`
+    3. A riga 72 (Eq. 4.6), correggere il caso $H=12$ impostando $m=0$:  
+       `P_{\text{geo}} = 2, & \text{for } H = 12 \quad (m = 0, \text{ zero weather})`
+    4. **Eliminare integralmente l'elenco puntato ridondante delle righe 77--81** (`\begin{itemize} ... \end{itemize}`), sostituendolo con una singola frase fluida che raccorda l'espansione delle feature da $P_{11}=36$ a $P_1=206$ (o 207 con il lag) direttamente alla regola di chiusura fenologica dello stato (Eq. 4.7). Questo elimina la contraddizione su `Nov 30`, toglie inutili duplicazioni e risparmia oltre 350 caratteri.
+
+- **Nota 29 (Sottosezione 4.1.3: Chiarimento inequivocabile sulla regola di Harvest Closure $H^*(s)$ per il Minnesota):**
+  - **Problema rilevato:** La definizione dell'orizzonte di chiusura fenologica nell'Equazione (4.7) ($H^*=2$ per il Minnesota e $H^*=1$ per gli altri 5 stati), accompagnata dalla sola frase laconica a riga 92 (*"Freezing inputs at $H^*(s)=2$ for Minnesota reflects early physiological maturity..."*), può ingenerare il grave dubbio che il Minnesota sia scalato di un mese su tutti gli orizzonti dell'anno (ad es. $H=2 \implies H=3$). Nel testo manca l'esplicitazione che da $H=12$ a $H=2$ il calendario è identico al 100% per tutti e che il congelamento interviene solo ed esclusivamente all'ultimo cut-off pre-raccolto ($H=1$).
+  - **Intervento richiesto:** Integrare subito dopo l'Equazione (4.7) una spiegazione cristallina e assertiva:  
+    `Across all preliminary horizons $H \in \{12, \dots, 2\}$, meteorological features are aligned to identical calendar month-ends across all six states (October 31 of $Y-1$ through September 30 of harvest year $Y$). The state-specific closure rule $H^*(s)$ applies exclusively at the final pre-harvest horizon: at October 31 ($H=1$), forecasts for Minnesota are frozen at their September 30 state ($H=2$) to eliminate post-harvest weather noise from already harvested fields, while models for central and southern states ingest October weather.`
+
+- **Nota 30 (Sottosezioni 4.1.2 e 4.1.5: Eliminazione del riferimento spurio al 1995 e allineamento rigoroso al Test Set 2011--2025):**
+  - **Problema rilevato:** A riga 38 (*"With 6,075 observations in the historical pool through 1995..."*) e a riga 107 (*"Separate county-by-county estimation with 45 to 74 historical observations... The baseline 1951--1995 partition provides 6,075 county-years, expanding to 9,990 observations at the final 2025 fold."*) si fa riferimento al range 1951--1995. Questo genera grande confusione: 1985--1995 è la fase di validazione/tuning (Phase 2), mentre la valutazione empirica del capitolo è sul **test set out-of-sample 2011--2025** (Phase 3). Nel test set il primo fold (2011) parte con il training 1951--2010 ($60\text{ anni} \times 135 = 8{,}100\text{ county-years}$), che si espande fino al 2024 ($74\text{ anni} \times 135 = 9{,}990\text{ county-years}$). Le serie per singola contea hanno quindi da 60 a 74 osservazioni (non da 45 a 74). Non ha alcun senso confondere le dimensioni della validazione con quelle del test set in questa sezione introduttiva.
+  - **Intervento richiesto:**
+    1. A riga 38, togliere il riferimento al 1995 e concentrarsi sul problema della dimensionalità:  
+       `Ingesting unconstrained daily weather across 365 days generates approximately 6,205 features per county-year, inducing severe multicollinearity and variance inflation.`
+    2. A riga 107, eliminare il riferimento spurio a 1951--1995 e 45 osservazioni, descrivendo con precisione la partizione di test out-of-sample:  
+       `Separate county-by-county estimation with 60 to 74 historical observations causes parameter collapse ($P_H > T$) against feature vectors with up to 206 variables. Pooling expands sample size to $N_{\text{train}} = 135 \times |\mathcal{T}_{\text{train}}(Y)|$ observations. The initial training partition (1951--2010) provides $8{,}100$ county-years, expanding to $9{,}990$ observations at the final 2025 fold.`  
+    La fase di validazione 1985--1995 viene descritta separatamente e rigorosamente nel posto a essa deputato, ovvero la Sezione 4.4.
+
+
+### Sezione 4.2: Spatial Covariates and Input Representation (Pagine 25--26)
+- **Nota 31 (Sottosezione 4.2.1 e 4.4.2: Eliminazione dell'inutile dicitura "training bounds" per le coordinate geografiche):**
+  - **Problema rilevato:** A riga 128 (*"Coordinates are scaled to $[0, 1]$ using training bounds"*) e a riga 348 (*"Spatial normalization bounds are extracted solely from training counties"*) si applica un'inutile formula difensiva da manuale di machine learning. Poiché il nostro panel bilanciato è composto dalle stesse identiche 135 contee per l'intera finestra storica 1951--2025 (la geografia è immutabile e non cambia nel tempo, né facciamo out-of-sample spaziale su contee non osservate), i limiti $\min$ e $\max$ delle coordinate sono semplicemente gli estremi geografici dell'area di studio. Parlare di "training bounds" insinua nel lettore il dubbio errato che le contee varino tra train e test.
+  - **Intervento richiesto:**
+    1. A riga 128, riformulare in modo pulito e realistico:  
+       `Coordinates are scaled to $[0, 1]$ across the geographic domain of the 135 study counties:`  
+       dove $\min_i$ e $\max_i$ definiscono i confini spaziali fissi del panel.
+    2. A riga 348, eliminare il punto elenco superfluo sulle coordinate: l'isolamento causale rigoroso riguarda le grandezze tempo-variabili (parametri del trend e momenti $\mu, \sigma$ delle variabili meteorologiche).
+
+- **Nota 32 (Sottosezione 4.2.2: Eliminazione integrale della sottosezione fantasma):**
+  - **Problema rilevato:** La Sottosezione 4.2.2 (*"Agrometeorological Predictor Space and Functional Partitioning"*, righe 139--145) consta di sole tre righe che si limitano a rimandare alla Sezione 3.3.2, alla Tabella 3.5 e all'Equazione (4.4). Non introduce alcuna nuova formula, nessun nuovo concetto e nessuna analisi, ripetendo pedestremente quanto già formalizzato in dettaglio in 4.1.2.
+  - **Intervento richiesto:**
+    1. Eliminare integralmente la Sottosezione 4.2.2 e il relativo titoletto;
+    2. Ristrutturare la Sezione 4.2 come sezione compatta a tema unico sulle coordinate spaziali continue:  
+       `\section{Spatial Encoding: Continuous Centroid Coordinates}`  
+       eliminando la frammentazione interna in micro-sottosezioni e risparmiando circa 350 caratteri.
+
+
+### Sezione 4.3: Candidate Forecasting Models and Complexity Ladder (Pagine 26--29)
+- **Nota 33 (Sottosezione 4.3.1: Esplicitazione di $R^2_{\text{OOS}}$ e rimando formale a Diebold-Mariano):**
+  - **Problema rilevato:** A riga 168, la frase *"Positive scores at later horizons indicate lower squared prediction error than this baseline; statistical significance is assessed separately."* usa il termine vago e informale *"scores"*, non chiarendo di quale metrica si tratti ($R^2_{\text{OOS}}$) e lasciando in sospeso come e dove venga valutata la significatività statistica.
+  - **Intervento richiesto:** Sostituire con una formulazione rigorosa e trasparente:  
+    `Positive $R^2_{\text{OOS}}$ values at subsequent horizons indicate that a weather-augmented model achieves a lower mean squared prediction error than this naive benchmark. Whether this error reduction is statistically distinguishable from zero is evaluated through Diebold-Mariano tests (Section~\ref{sec:meth_significance_bootstrap}).`
+
+- **Nota 34 (Riferimento bibliografico: Aggiornamento all'edizione O'Reilly 2025 di Géron con PyTorch):**
+  - **Problema rilevato:** Nel file BibTeX (`references.bib`) e nel testo del Capitolo 4 (righe 198, 271, 393), il manuale metodologico di Géron è citato come `Geron2022` (3ª edizione con TensorFlow/Keras). L'autore richiede espressamente di citare la nuova edizione del **2025** (*Hands-On Machine Learning with Scikit-Learn and PyTorch*, O'Reilly Media), che rispecchia l'effettivo codice PyTorch impiegato per l'addestramento della rete neurale LSTM, l'ottimizzatore AdamW e il gradient clipping nella tesi.
+  - **Intervento richiesto:**
+    1. In `output/thesis/references.bib`: sostituire la chiave `@book{Geron2022, ...}` con la voce aggiornata `@book{Geron2025, author = {G{\'e}ron, Aur{\'e}lien}, title = {Hands-On Machine Learning with Scikit-Learn and PyTorch}, publisher = {O'Reilly Media}, year = {2025}}`.
+    2. In `output/thesis/chapters/04_methodology.tex` (righe 198, 271, 393): sostituire tutte le citazioni `\citep{Geron2022}` con `\citep{Geron2025}`.
+    3. Allineare i commenti in `scripts/06_train_lstm_model.py` e il protocollo in `AGENTS.md`.
+
+- **Nota 35 (Sottosezione 4.3.4: Giustificazione positiva dei 10 giorni, corretta collocazione di AdamW e ricollocazione dell'Ensemble nel Capitolo 5):**
+  - **Problema rilevato:**
+    1. A riga 221 compare una frase dal tono difensivo e negativo da AI (*"No controlled frequency ablation on the final test partition is reported."*). In realtà la scelta della frequenza a 10 giorni è stata validata positivamente durante la fase pilota/tuning storica (1985--1995) confrontandola con passi a 5 e 30 giorni (implementati in `scripts/06_train_lstm_model.py`), identificando nei 10 giorni il miglior compromesso tra risoluzione della durata dello stress termico e stabilità numerica/parsimonia computazionale, per poi congelarla a priori sul test set out-of-sample.
+    2. A riga 271, i dettagli di ottimizzazione dell'LSTM (ottimizzatore AdamW, learning rate $3\times 10^{-4}$, weight decay, gradient clipping a 1, plateau scheduler ed early stopping) compaiono paradossalmente *dopo* il paragrafo sull'Ensemble, spezzando la coerenza logica della descrizione della rete neurale.
+    3. Il `\paragraph{Linear-Recurrent Ensemble}` (righe 261--270) e la relativa riga in Tabella 4.2 risultano fuori luogo nel Capitolo 4: l'ensemble 50/50 tra ElasticNet e LSTM non è un paradigma di base della metodologia della ricerca (che comprende i 4 modelli cardine: Naive, ElasticNet, Alberi ed LSTM), ma costituisce una naturale sintesi empirica ex-post. Presentarlo nel Capitolo 4 anticipa i risultati; collocarlo nel Capitolo 5 (Sezione 5.3) permette di motivarlo rigorosamente sulla base della complementarietà dei residui (ElasticNet vince sui casi medi per parsimonia, LSTM cattura meglio le code estreme).
+  - **Intervento richiesto:**
+    1. A riga 221, sostituire il disclaimer difensivo con la spiegazione scientifica positiva:  
+       `The 10-day decad frequency was selected on historical validation records (1985--1995) against alternative 5-day and 30-day aggregations, optimizing the trade-off between resolving intra-monthly heat-stress persistence and preserving gradient stability, and fixed prior to evaluating the out-of-sample test partition.`
+    2. Spostare il paragrafo sull'ottimizzazione con AdamW (riga 271) direttamente all'interno della sottosezione dell'LSTM, subito dopo la descrizione delle projection heads (Lineare e PReLU).
+    3. Rimuovere `\paragraph{Linear-Recurrent Ensemble}` (righe 261--270) e la riga "Ensemble" dalla Tabella 4.2 del Capitolo 4, risparmiando oltre 600 caratteri. Spostare la formalizzazione e la discussione della combinazione lineare convessa 50/50 direttamente nel **Capitolo 5 (Sezione 5.3)**, presentandola come esercizio di sintesi guidato dall'evidenza empirica dell'ortogonalità degli errori.
+
+
+### Sezione 4.4: Chronological Expanding-Window Validation Protocol (Pagine 29--30)
+- **Nota 36 (Sottosezioni 4.4.1 e 4.4.3: Razionale della finestra di validazione 1985--1995 vs split meccanico 60--20--20 per evitare underfitting sui casi estremi):**
+  - **Problema rilevato:** A riga 313 e a riga 360, la partizione di validazione 1985--1995 viene descritta in modo sbrigativo (*"calibrating hyperparameters against severe historical shocks (1988 drought, 1993 flood)"*). Manca la motivazione metodologica fondamentale che giustifica la scelta di questo specifico intervallo rispetto a una suddivisione burocratica o meccanica (come un canonico 60--20--20 su un decennio con clima mediano/benigno).
+  - **Intervento richiesto:** Integrare a riga 313 (e in 4.4.3) la rigorosa spiegazione econometrica:
+    - Selezionare una finestra climaticamente mediana avrebbe indotto la grid search a privilegiare iperparametri iper-conservativi, appiattendo le previsioni verso la media (*conditional shrinkage*) e causando un gravissimo underfitting sui disastri climatici out-of-sample;
+    - La partizione 1985--1995 incorpora deliberatamente tre dei maggiori shock macro-climatici della storia agricola moderna (la peggior siccità del secolo nel 1988 a $-25.6\%$, la storica alluvione del Mississippi nel 1993 a $-10.5\%$, e il record favorevole del 1994 a $+10.7\%$);
+    - Calibrare i modelli su una gamma empirica così ampia costringe gli algoritmi a preservare la sensibilità alle code distributive senza collassare verso la media storica, preparandoli adeguatamente per il test set moderno (2011--2025).  
+    Testo LaTeX da inserire:  
+    `Rather than adopting a mechanical chronological partition (such as a fixed 60--20--20 split over climatologically benign intervals), Phase 2 (1985--1995) deliberately incorporates three of the most severe macro-climatic shocks in modern agricultural history: the historic 1988 drought ($-25.6\%$), the 1993 Mississippi River flood ($-10.5\%$), and the 1994 record bumper harvest ($+10.7\%$). Exposing candidate architectures to wide empirical variance during hyperparameter tuning prevents algorithms from over-regularizing and collapsing predictions toward historical county means (conditional shrinkage), ensuring that the complexity ladder is calibrated to preserve sensitivity to acute downside shocks before entering the modern 2011--2025 test window.`
+
+
+### Sezione 4.5: Performance Evaluation and Tail-Risk Testing (Pagine 30--32)
+- **Nota 37 (Sottosezione 4.5.3: Eliminazione del block-bootstrap fantasma e semplificazione pulita del test di Diebold-Mariano):**
+  - **Problema rilevato:**
+    1. A riga 452 si introduce un *"complete-year spatial block-bootstrap"* per generare intervalli di confidenza non parametrici per RMSE e $R^2$. Tuttavia, questo bootstrap non è implementato negli script di analisi (`scripts/07_evaluate_benchmarks.py`) né viene mai riportato nelle tabelle o figure del Capitolo 5. L'unica inferenza statistica formale presente nella tesi è il test di Diebold-Mariano (Tabella 5.3). Mantenere il testo del bootstrap costituisce una promessa non mantenuta e genera confusione.
+    2. La spiegazione del test di Diebold-Mariano (righe 454--466) è appesantita da dettagli pedanti, formule contorte e disclaimer difensivi da AI (formula della bandwidth automatica `L = floor(...)`, correzione `T/(T-1)`, frase ermetica *"Monthly horizon labels do not determine annual HAC lag length"*).
+  - **Intervento richiesto:**
+    1. Eliminare integralmente il paragrafo sul block-bootstrap (righe 452--453);
+    2. Ridenominare la sottosezione 4.5.3 in:  
+       `\subsection{Statistical Inference: Pairwise Diebold--Mariano Tests}`
+    3. Riscrittura snella, pulita e pedagogica del test di Diebold-Mariano (Equazioni 4.25 e 4.26):  
+       `To assess whether predictive gains over the naive secular benchmark are statistically significant rather than driven by sample noise, we evaluate Diebold--Mariano test statistics on cross-sectionally averaged annual loss differentials:
+       \begin{equation}
+           d_Y(H) = \frac{1}{C} \sum_{c=1}^C \left[ \left(e_{c,Y}^{\text{baseline}}(H)\right)^2 - \left(e_{c,Y}^{\text{model}}(H)\right)^2 \right]
+       \end{equation}
+       Defining $\bar{d}(H)$ as the mean differential across the $N_{\text{test}} = 15$ evaluation years, the test statistic is:
+       \begin{equation}
+           S_{\text{DM}}(H) = \frac{\bar{d}(H)}{\sqrt{\widehat{\text{Var}}(\bar{d}(H))}}
+       \end{equation}
+       where the variance of the mean differential is estimated using a Newey--West (HAC) covariance estimator to account for potential serial persistence across consecutive campaigns. We report one-sided $p$-values testing the null hypothesis of equal forecast accuracy against the alternative of superior accuracy by the weather-augmented model.`
+    4. Il taglio del bootstrap e delle formule ridondanti risparmia oltre 500 caratteri e rende la sezione immediatamente comprensibile.
 
 ---
 
