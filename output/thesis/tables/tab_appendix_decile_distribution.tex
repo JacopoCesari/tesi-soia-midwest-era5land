@@ -2,11 +2,12 @@
 \centering
 \singlespacing
 \footnotesize
+\setlength{\tabcolsep}{4.5pt}
 \caption{Empirical yield anomaly distributions by decile ($D_1 \dots D_{10}$): Baseline Expanding Linear Trend vs Full-Sample Cubic Trend.}
 \label{tab:appendix_decile_distribution}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc @{}}
+\begin{tabular}{l cc cc}
 \toprule
-& \multicolumn{2}{c}{\textbf{Baseline (Expanding Linear Trend)}} & \multicolumn{2}{c}{\textbf{Robustness (Full-Sample Cubic Trend)}} \\
+& \multicolumn{2}{c}{\textbf{Baseline (Expanding Linear)}} & \multicolumn{2}{c}{\textbf{Robustness (Full-Sample Cubic)}} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 \textbf{Decile} & \textbf{Range (bu/ac)} & \textbf{\% Negative} & \textbf{Range (bu/ac)} & \textbf{\% Negative} \\
 \midrule
@@ -38,7 +39,7 @@ $D_{10}$ (Peak) & $[+8.8, +22.9]$ & 0\% & $[+5.6, +17.6]$ & 0\% \\
 \midrule
 \textbf{Test Total} & $[-22.9, +22.9]$ & \textbf{29.8\%} & $[-25.1, +17.6]$ & \textbf{44.7\%} \\
 \bottomrule
-\end{tabular*}
+\end{tabular}
 \vspace{0.2em}
 {\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025). \% Negative indicates the proportion of county-years with negative anomaly ($\epsilon < 0$). The baseline expanding-window trend shifts upward in the test set (mean $+2.41$ bu/ac), whereas the full-sample cubic trend remains centered at $-0.06$ bu/ac.}}
 \end{table}

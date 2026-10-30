@@ -16,11 +16,11 @@ The empirical analysis rests on two primary data streams spanning the United Sta
 
 We focus on six core states of the United States Corn Belt: Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio. These states represent the primary production center for domestic soybeans, accounting for the highest harvest volumes and acreage density in the country. Crop production across this domain is predominantly rainfed, with commercial irrigation covering less than 5\% of harvested area \citep{Schlenker2009}. Realized yields directly reflect natural weather variability, temperature extremes, and seasonal moisture deficits.
 
-We compile county-level soybean yields (in bushels per acre, $1\text{ bu/ac} \approx 67.25\text{ kg/ha}$) from the USDA NASS Quick Stats database. { To assemble the balanced panel, we require (i) a complete annual record for 1951--2025 without imputation and (ii) high harvested density. Observed yield values are preserved.}
+We compile county-level soybean yields (in bushels per acre, $1\text{ bu/ac} \approx 67.25\text{ kg/ha}$) from the USDA NASS Quick Stats database. To assemble the balanced panel, we require (i) a complete annual record for 1951--2025 without imputation and (ii) high harvested density.
 
-{ We prioritize counties with high harvested density because ERA5-Land weather is aggregated over county polygons. This selection increases the agricultural relevance of county averages, but the polygon weights do not isolate cropland microclimates.}
+We prioritize counties with high harvested density because ERA5-Land weather is aggregated over county polygons. This selection increases the agricultural relevance of county averages, but the polygon weights do not isolate cropland microclimates.
 
-{ The first retained crop year is 1951. Its weather campaign begins in November 1950; the October 31 origin ($H=12$) provides the zero-anomaly reference. ERA5-Land begins in January 1950, leaving the antecedent months required for crop year 1950 unavailable.}
+While ERA5-Land begins in January 1950, constructing the complete 12-month campaign for crop year 1950 would require reanalysis records from November 1949. Consequently, 1951 is the first crop year with complete antecedent weather data.
 
 This protocol isolates a balanced panel of \textbf{135 counties} over 75 years ($135 \times 75 = \mathbf{10{,}125}$ observations). Table~\ref{tab:panel_selection} and Figure~\ref{fig:study_area_map} detail their spatial coverage across the primary agro-climatic subregions of the Corn Belt.
 
@@ -29,7 +29,7 @@ This protocol isolates a balanced panel of \textbf{135 counties} over 75 years (
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.92\textwidth]{figures/fig_study_area_map}
-    \caption{Geographic distribution of the 135 balanced study counties across the six Midwestern states (1951--2025), illustrating balanced coverage across the primary agro-ecological subregions of the Corn and Soybean Belt.}
+    \caption{Geographic distribution of the 135 study counties across the six Midwestern states (1951--2025), illustrating spatial coverage across the primary agro-ecological subregions of the Corn Belt.}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and US Census TIGER/Line data.}}
     \label{fig:study_area_map}
@@ -38,13 +38,9 @@ This protocol isolates a balanced panel of \textbf{135 counties} over 75 years (
 \subsection{Soybean Phenology and Critical Agro-Climatic Sensitivity Windows}
 \label{sec:data_phenology}
 
-Soybean development spans six months from spring sowing to autumn harvest, following four operational growth phases:
-\begin{itemize}
-    \item \textbf{Sowing and Emergence (April--May):} Germination requires soil temperatures consistently above $10^\circ\text{C}$. Persistent spring precipitation and cold seedbeds delay field operations and planting into late May or June, which compresses the vegetative window and lowers potential yield.
-    \item \textbf{Vegetative Growth (June):} Thermal accumulation, quantified via Growing Degree Days ($GDD$), promotes rapid canopy closure and taproot elongation. Soybeans exhibit notable physiological plasticity during this stage; moderate moisture variations are well tolerated as root systems expand downward.
-    \item \textbf{Flowering, Pod Development, and Seed Filling (July--August):} This midsummer window represents the critical biological sensitivity bottleneck \citep{Schlenker2009}. Flowering and pod setting in July are acutely sensitive to heat stress ($T_{\text{max}} > 30^\circ\text{C}$) and high evaporative demand ($VPD > 1.5\text{ kPa}$), which trigger floral abortion. In August, transpirational water demand reaches its seasonal peak; moisture deficits accelerate canopy senescence and impair seed swelling, whereas adequate soil moisture maximizes final seed weight.
-    \item \textbf{Maturation and Harvest (September--October):} Upon reaching physiological maturity in September, dry matter accumulation ceases. Weather conditions during autumn govern field dry-down and combine efficiency; unseasonable early freezes arrest grain filling, while heavy rainfall impedes harvest operations. Crop duration follows a latitudinal gradient of Maturity Groups \citep{Hoffman2020}. Minnesota's northern fringe cultivates early-maturing varieties (Group~I) reaching physiological maturity (R7) by mid-September, with over 80\% combined by early October (USDA NASS). Across the central and southern Corn Belt (Groups~II--IV), maturation and harvest extend through late October.
-\end{itemize}
+Soybean physiological development and yield response exhibit strong temporal heterogeneity across the growing cycle. Meteorological drivers vary fundamentally in sign and magnitude depending on phenological timing: while early vegetative stages tolerate environmental fluctuations through root expansion and canopy plasticity, the summer reproductive window (July--August) constitutes the primary biophysical bottleneck. Heat extremes ($T_{\text{max}} > 30^\circ\text{C}$) and elevated vapor pressure deficit ($VPD > 1.5\text{ kPa}$) during flowering trigger floral abortion and pod drop, whereas moisture deficits during seed filling permanently constrain seed weight. This concentrated sensitivity motivates evaluating forecasting skill across twelve discrete monthly horizons and testing high-frequency 10-day decad representations.
+
+Regional maturity gradients further govern harvest timing across the Corn Belt. Cultivar adoption follows a strict latitudinal progression of Maturity Groups \citep{Hoffman2020}: northern Minnesota relies on early-maturing Group~I varieties that reach physiological maturity (R7) by mid-September, with harvesting largely concluded before October. Across central and southern states (Groups~II--IV), maturation and combining extend through late October. This biological divergence provides the agronomic rationale for implementing a state-specific harvest closure rule ($H^*(s)=2$, September 30 for Minnesota vs $H^*(s)=1$, October 31 for the remaining five states), eliminating uninformative post-harvest weather noise.
 
 \section{Exploratory Data Analysis of County Soybean Yields (1951--2025)}
 \label{sec:data_eda}
@@ -61,30 +57,24 @@ where $\tau_{c,t}$ represents the deterministic secular trend driven by technolo
 
 Our machine learning models in Chapter~4 are trained exclusively to predict the detrended yield anomaly $\epsilon_{c,t}$ (or the detrended baseline $\hat{y}_{c,t}^{\text{detrended}} = \bar{y}_c + \epsilon_{c,t}$), removing the predictable secular trend. In operational validation, we estimate trend parameters strictly on historical training folds to prevent look-ahead bias; here we examine full-sample properties to evaluate trend specifications.
 
-
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.96\textwidth]{figures/fig_yield_trajectory_dual_petrol}
-    \caption{County soybean yield trajectories, secular linear trend, and cross-county dispersion envelopes across 135 Midwestern counties (1950--2025). Shaded envelopes delineate the inner 90\% cross-county dispersion core and historical min--max record boundaries relative to the long-term trend; the solid line traces the annual cross-sectional panel mean.}
+    \caption{County soybean yield trajectories, secular linear trend, and cross-county dispersion envelopes across 135 Midwestern counties (1951--2025). Shaded envelopes delineate the inner 90\% cross-county dispersion core and historical min--max record boundaries relative to the long-term trend; the solid line traces the annual cross-sectional panel mean.}
     \vspace{0.2em}
     {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data.}}
     \label{fig:yield_trajectory}
 \end{figure}
 
-
-{
 Regional mean yields more than doubled over the panel (Table~\ref{tab:decadal_yields}). At the regional annual level, an ordinary least squares (OLS) regression estimates an average gain of $0.484\text{ bu/ac/year}$ and explains $93.23\%$ of variation (Figure~\ref{fig:yield_trajectory}):
-}
 \begin{equation}
     \hat{y}_t = 0.484 \cdot t - 925.46 \quad (t = 1951, \dots, 2025)
     \label{eq:panel_trend}
 \end{equation}
 
-{
 The regional fit combines technological drift with spatial averaging: local departures partly offset across counties. County-specific trends account for heterogeneous productivity growth, including the state differences described in Section~\ref{sec:data_spatial_heterogeneity}. Across the full county panel, pooled explained variance is lower ($R^2=0.8122$). The separate expanding-window comparison below evaluates the predictive adequacy of county-level trend specifications.
 
 Absolute yield dispersion also increases over time, despite a declining coefficient of variation. The annual cross-county spread expands by over $70\%$, and the $90\%$ dispersion envelope widens by more than $50\%$ (Table~\ref{tab:decadal_yields}). Thus, a similar proportional shortfall entails a larger physical loss at modern yield levels. These properties motivate county anomaly forecasting and the subsequent examination of weather sensitivity.
-}
 
 \input{tables/tab_decadal_yields}
 
@@ -92,14 +82,12 @@ Absolute yield dispersion also increases over time, despite a declining coeffici
 
 Table~\ref{tab:detrending_comparison} evaluates alternative county-applicable detrending specifications. In Panel~A (Regional Aggregate Mean, $N=75$), Linear OLS accounts for over 93\% of annual variation with two parameters ($k=2, R^2=0.9323$). While quadratic and cubic polynomials marginally reduce in-sample residual standard error (reaching $R^2=0.9428$ for the cubic specification), they increase parameter complexity. 
 
-{
-Panel~B evaluates out-of-sample forecast accuracy across 4,050 expanding-window county-year evaluations restricted to the pre-test period (1981--2010), strictly preventing data snooping into the subsequent machine-learning test set (2011--2025). County-specific linear OLS achieves the lowest out-of-sample RMSE, at $5.767\text{ bu/ac}$ (compared to $6.145\text{ bu/ac}$ for quadratic and $6.618\text{ bu/ac}$ for cubic), and is preferred by BIC in $89/135$ counties over quadratic ($65.9\%$) and in $84/135$ counties overall ($62.2\%$). Higher-order polynomials increase forecast error outside the sample despite their closer in-sample fit. The reported Augmented Dickey-Fuller test rejects a unit root in the detrended series ($p<0.001$); this result does not establish strict stationarity.
-}
+Panel~B evaluates out-of-sample forecast accuracy across 4,050 expanding-window county-year evaluations restricted to the pre-test period (1981--2010), strictly preventing data snooping into the subsequent machine-learning test set (2011--2025). County-specific linear OLS achieves the lowest out-of-sample RMSE, at $5.767\text{ bu/ac}$ (compared to $6.145\text{ bu/ac}$ for quadratic and $6.618\text{ bu/ac}$ for cubic), and is preferred by BIC in $89/135$ counties over quadratic ($65.9\%$) and in $84/135$ counties overall ($62.2\%$). Higher-order polynomials increase forecast error outside the sample despite their closer in-sample fit. To respect temporal causality and prevent look-ahead bias, model selection must be anchored to this pre-test era, during which structural break tests show no parameter instability (Chow test $p = 0.093$). Full-sample properties across 1951--2025 (where a post-2014 technological shift emerges) and alternative flexible trends are examined in Appendix~\ref{chap:appendix_detrending} as robustness stress tests. The Augmented Dickey-Fuller test firmly rejects the null hypothesis of a unit root in the detrended series ($p < 0.001$), confirming that the yield anomalies are stationary ($I(0)$).
 
 \subsection{Spatial Heterogeneity and Regional Productivity Divergence}
 \label{sec:data_spatial_heterogeneity}
 
-While secular growth is positive throughout the Midwest, regional baseline productivity varies substantially across states (Figure~\ref{fig:state_yield_distributions}). Iowa (historical mean $39.73\text{ bu/ac}$; slope $+0.495\text{ bu/ac/year}$) and Illinois (mean $38.35\text{ bu/ac}$; slope $+0.491\text{ bu/ac/year}$) form the highest-yielding core of the panel, favored by deep soils and reliable thermal regimes. Indiana ($39.52\text{ bu/ac}$) and Ohio ($36.88\text{ bu/ac}$) demonstrate comparable baseline productivity with lower cross-county variance.
+While secular growth is positive throughout the Midwest, historical productivity distributions exhibit marked spatial heterogeneity across states (Figure~\ref{fig:state_yield_distributions}). Baselines vary substantially in cross-sectional intercepts $\alpha_c$: Iowa (historical mean $39.73\text{ bu/ac}$) and Illinois ($38.35\text{ bu/ac}$) define the highest-yielding core, whereas Missouri records the lowest historical baseline ($29.04\text{ bu/ac}$). This pronounced cross-sectional spread formally justifies estimating individual fixed effects and county-specific detrending parameters rather than a uniform pooled intercept.
 
 \begin{figure}[htbp]
     \centering
@@ -110,7 +98,7 @@ While secular growth is positive throughout the Midwest, regional baseline produ
     \label{fig:state_yield_distributions}
 \end{figure}
 
-In contrast, Minnesota displays a lower historical mean ($35.10\text{ bu/ac}$) but the fastest linear acceleration in the panel ($+0.509\text{ bu/ac/year}$). This rapid growth reflects the northward commercial adoption of cold-tolerant varieties with shorter maturity groups. At the southern margin, Missouri records the lowest historical yield ($29.04\text{ bu/ac}$) and lowest slope ($+0.386\text{ bu/ac/year}$), reflecting frequent exposure to midsummer heat and drought.
+Furthermore, technological growth trajectories vary across regions: linear trend slopes $\beta_c$ range from $+0.509\text{ bu/ac/year}$ in Minnesota to $+0.386\text{ bu/ac/year}$ in Missouri, confirming the econometric requirement to estimate heterogeneous slopes at county level. Finally, cross-county dispersion displays distinct regional patterns: Indiana and Ohio show narrow within-state variance around their historical means ($39.52$ and $36.88\text{ bu/ac}$), whereas Illinois and Minnesota exhibit wide internal variance, highlighting the need to evaluate forecasting accuracy across disaggregated local scales.
 
 \subsection{Macro-Climatic Historical Yield Shocks and Biological Asymmetry}
 \label{sec:data_yield_shocks}
@@ -119,10 +107,7 @@ The 75-year panel contains severe macro-climatic shock campaigns that serve as o
 
 \input{tables/tab_yield_shocks}
 
-The empirical distribution of yield anomalies exhibits pronounced \textbf{biological asymmetry} (Table~\ref{tab:yield_shocks}). Favorable harvest campaigns cluster tightly near $+10\%$, constrained by the biophysical ceiling of radiation use efficiency. In contrast, severe abiotic stressors possess no physiological floor short of complete failure, generating an elongated negative tail exceeding $-25\%$ with notable negative skewness ($-1.12$, Jarque-Bera $p < 0.001$). 
-
-
-While major shortfalls are primarily associated with midsummer drought and heat, the historical record also contains losses from unseasonal frost and excessive wetness. We analyze these daily mechanisms in Section~\ref{sec:data_climate_eda}. Because synoptic weather shocks span multi-state regions, cross-county yield correlations exceed $0.75$, necessitating strict expanding-window temporal validation to prevent spatial information leakage \citep{Sweetetal2023}.
+The empirical distribution of yield anomalies exhibits pronounced \textbf{biological asymmetry} (Table~\ref{tab:yield_shocks}). Favorable harvest campaigns cluster tightly near $+10\%$, constrained by the biophysical ceiling of radiation use efficiency. In contrast, severe abiotic stressors possess no physiological floor short of complete failure, generating an elongated negative tail exceeding $-25\%$ with notable negative skewness ($-1.12$, Jarque-Bera $p < 0.001$).
 
 % ==============================================================================
 % PART 2: SURFACE WEATHER DATA AND AGRO-CLIMATIC SENSITIVITY
@@ -136,9 +121,9 @@ While major shortfalls are primarily associated with midsummer drought and heat,
 
 We derive meteorological inputs from ECMWF ERA5-Land, which provides continuous hourly surface weather fields at a $0.1^\circ \times 0.1^\circ$ resolution ($\approx 9\text{ km}$) from 1950 to 2025.
 
-The hourly ECMWF ERA5-Land reanalysis provides a comprehensive suite of atmospheric and land-surface fields. From this broader catalogue, raw variables such as surface pressure ($SP$) and 10-meter horizontal wind vectors ($u_{10}, v_{10}$) serve strictly as intermediate thermodynamic inputs to compute standardized FAO-56 Penman-Monteith reference evapotranspiration ($ET_0$, Eq.~\eqref{eq:penman_monteith}) and vapor pressure deficit ($VPD$, Eq.~\eqref{eq:vpd}). Deep soil horizons beyond mature soybean taproot depths ($SM_4 > 1\text{ m}$), soil temperatures (strongly collinear with ambient air temperatures), and snowpack dynamics are excluded a priori to prevent dimensionality inflation and avoid introducing uninformative predictors during the summer vegetative cycle.
+The hourly ECMWF ERA5-Land reanalysis provides a comprehensive suite of atmospheric and land-surface fields. From this broader catalogue, raw variables such as surface pressure ($SP$) and 10-meter horizontal wind vectors ($u_{10}, v_{10}$) serve strictly as intermediate thermodynamic inputs to compute standardized FAO-56 Penman-Monteith reference evapotranspiration ($ET_0$, Eq.~\eqref{eq:penman_monteith}) and vapor pressure deficit ($VPD$, Eq.~\eqref{eq:vpd}). Deep soil horizons beyond mature soybean taproot depths ($SM_4 > 1\text{ m}$), soil temperatures, and snowpack dynamics are excluded a priori to prevent dimensionality inflation and avoid introducing uninformative predictors during the summer vegetative cycle.
 
-{ Model inputs contain \textbf{17 daily agrometeorological indicators} (Table~\ref{tab:weather_variables}): nine primary surface fields and eight derived indicators. The derived set includes two binary heat-day indicators and the separate excess-temperature measure $EDD_{30}$.}
+Model inputs contain \textbf{17 daily agrometeorological indicators} (Table~\ref{tab:weather_variables}): nine primary surface fields and eight derived indicators. The derived set includes two binary heat-day indicators and the separate excess-temperature measure $EDD_{30}$.
 
 \input{tables/tab_weather_variables}
 
@@ -166,17 +151,21 @@ where $R_n$ is net surface radiation ($\text{MJ}/\text{m}^2/\text{day}$), $G \ap
     \label{eq:climatic_balance}
 \end{equation}
 
-\paragraph{Thermal Pacing and Extreme Heat Days ($GDD, HD_{30}, HD_{35}$).} We track phenological progression through Growing Degree Days ($GDD$, base $10^\circ\text{C}$, cap $30^\circ\text{C}$):
+\paragraph{Thermal Pacing and Extreme Heat Exposure ($GDD, HD_{30}, HD_{35}, EDD_{30}$).} We track phenological progression through Growing Degree Days ($GDD$, base $10^\circ\text{C}$, cap $30^\circ\text{C}$):
 \begin{equation}
     GDD = \max\left(0, \, \frac{\min(T_{\text{max}}, 30) + \max(T_{\text{min}}, 10)}{2} - 10\right)
     \label{eq:gdd}
 \end{equation}
-To capture non-linear thermal damage thresholds \citep{Schlenker2009}, we quantify extreme heat exposure via daily exceedances:
+To capture non-linear thermal damage thresholds \citep{Schlenker2009}, we quantify extreme heat exposure via daily binary exceedance counts:
 \begin{equation}
-    {HD_{30} = \mathbb{I}(T_{\text{max}} \ge 30), \quad HD_{35} = \mathbb{I}(T_{\text{max}} \ge 35)}
+    HD_{30} = \mathbb{I}(T_{\text{max}} \ge 30^\circ\text{C}), \quad HD_{35} = \mathbb{I}(T_{\text{max}} \ge 35^\circ\text{C})
     \label{eq:heat_days}
 \end{equation}
-{ These binary indicators count threshold exceedance days when summed. The separate measure $EDD_{30}=\max(0,T_{\text{max}}-30)$ records daily exceedance intensity in degree-days. Temperatures in these expressions are in degrees Celsius.}
+In addition to frequency counts, thermal damage intensity is captured by Extreme Degree Days accumulating degrees above the $30^\circ\text{C}$ threshold:
+\begin{equation}
+    EDD_{30} = \max\left(0, \, T_{\text{max}} - 30\right)
+    \label{eq:edd30}
+\end{equation}
 
 \paragraph{Integrated Root-Zone Soil Moisture ($SM_{\text{root}}$).} We aggregate volumetric soil moisture across discrete depth horizons into an integrated column accessible to mature soybean taproots ($0$--$100\text{ cm}$):
 \begin{equation}
@@ -195,7 +184,7 @@ To map gridded weather fields into administrative county polygons, we compute ex
 \end{equation}
 where $\text{Area}(c \cap g)$ is the planar intersection area between county polygon $c$ and grid cell $g$, and $\mathcal{G}_c$ denotes the set of intersecting grid cells.
 
-As illustrated in Figure~\ref{fig:era5_spatial_structure}, this area-weighted polygon integration replaces naive centroid sampling, preserving the total precipitation volume, radiation, and atmospheric mass falling within each county polygon without spatial distortion.
+As illustrated in Figure~\ref{fig:era5_spatial_structure}, area-weighted polygon integration preserves the continuous precipitation volume, radiative flux, and atmospheric mass within each county polygon without geometric distortion.
 
 \begin{figure}[htbp]
     \centering
@@ -209,21 +198,17 @@ As illustrated in Figure~\ref{fig:era5_spatial_structure}, this area-weighted po
 \subsection{Temporal Aggregation and Crop Campaign Structure}
 \label{sec:data_temporal_aggregation}
 
-{ We spatially integrate hourly ERA5-Land fields across county polygons via Equation~\eqref{eq:spatial_weight} and aggregate them into daily meteorological series. For crop year $Y$, model inputs cover November 1 of $Y-1$ through October 31 of $Y$, comprising 365 or 366 days. Each fitted horizon uses only the dates observed through its month-end cutoff. Calendar-month tabular aggregation and continuous recurrent windows both retain all available days.}
+We spatially integrate hourly ERA5-Land fields across county polygons via Equation~\eqref{eq:spatial_weight} and aggregate them into daily meteorological series. For crop year $Y$, model inputs cover November 1 of $Y-1$ through October 31 of $Y$, comprising 365 or 366 days. Each fitted horizon uses only the dates observed through its month-end cutoff. Calendar-month tabular aggregation and continuous recurrent windows both retain all available days.
 
 \section{Exploratory Agro-Climatic Analysis and Yield Sensitivity}
 \label{sec:data_climate_eda}
 
-{
 We examine seasonal weather trajectories, spatial contrasts, and monthly associations with detrended yield anomalies across the 75-year panel.
-}
 
 \subsection{Intra-Seasonal Agro-Climatic Trajectories: Cumulative and Dynamic Shock Archetypes}
 \label{sec:data_intra_seasonal_extremes}
 
-{
-Cumulative exposures and daily environmental states describe different aspects of crop stress. Figure~\ref{fig:intra_seasonal_extremes} traces seasonal thermal and hydrological accumulation from April through October. Figure~\ref{fig:weather_shocks_footprint} shows 15-day centred rolling profiles of $VPD$, root-zone soil moisture, and maximum temperature. These descriptive profiles contrast the 2012 drought and 1993 flood with the 2016 and 1994 bumper seasons against the 75-year climatological envelope. Centred smoothing is used here for retrospective visualization.
-}
+Cumulative exposures and daily environmental states describe complementary dimensions of crop stress. Figure~\ref{fig:intra_seasonal_extremes} traces seasonal thermal and hydrological accumulation from April through October. Figure~\ref{fig:weather_shocks_footprint} shows 15-day centred rolling profiles of $VPD$, root-zone soil moisture, and maximum temperature. These descriptive profiles contrast the 2012 drought and 1993 flood with the 2016 and 1994 bumper seasons against the 75-year climatological envelope.
 
 \begin{figure}[htbp]
     \centering
@@ -252,24 +237,12 @@ Cumulative exposures and daily environmental states describe different aspects o
     \label{fig:spatial_shock_comparison}
 \end{figure}
 
-{
-Together, the trajectories and spatial contrasts in Figures~\ref{fig:intra_seasonal_extremes}--\ref{fig:spatial_shock_comparison} distinguish three weather regimes:
-}
-
-\paragraph{Midsummer Flash Drought and Compound Stress (2012).}
-{
-During the 2012 shortfall ($-11.7\%$), July heat exposure increased as rainfall fell behind evaporative demand. Rolling $VPD$ exceeded $1.8\text{ kPa}$, maximum temperatures exceeded $33^\circ\text{C}$, and root-zone moisture approached $0.18\text{ m}^3/\text{m}^3$ in central Iowa and Illinois. These coincident stresses occurred during flowering and pod setting, consistent with the reproductive vulnerability discussed in Chapter~\ref{chap:literature_review}.
-}
-
-\paragraph{Pluvial Inundation and Soil Saturation (1993).}
-{
-The 1993 flood ($-10.5\%$) represents moisture excess. Precipitation exceeded $880\text{ mm}$, producing a positive climatic water balance while $VPD$ remained below $0.7\text{ kPa}$. Root-zone moisture approached $0.38\text{ m}^3/\text{m}^3$ through summer. Persistent wetness and low radiation can impair root aeration, photosynthesis, and nitrogen fixation. The contrast with 2012 illustrates that both water deficits and excesses accompany negative yield departures.
-}
-
-\paragraph{Agro-Climatic Optima and Bumper Harvests (2016 and 1994).}
-{
-The positive anomalies in 2016 and 1994 coincide with moderate heat and adequate moisture. Rolling maximum temperatures remained between $25^\circ\text{C}$ and $28^\circ\text{C}$, with $VPD$ near $0.75$--$0.90\text{ kPa}$. August rainfall in 2016 replenished root-zone moisture across the central Corn Belt. In 1994, a near-neutral cumulative water balance followed the previous year's flood. These profiles contrast sustained moisture availability during seed filling with the two stress regimes.
-}
+The empirical trajectories in Figures~\ref{fig:intra_seasonal_extremes}--\ref{fig:spatial_shock_comparison} establish three statistical properties of agro-climatic shocks:
+\begin{enumerate}
+    \item \textbf{Non-Linearity and Concavity of Hydrological Response:} The 2012 drought ($-11.7\%$) and the 1993 flood ($-10.5\%$) produced nearly identical yield collapses despite opposite hydrological extremes. In 2012, cumulative water balance $\sum (P - ET_0)$ plunged to $-300\text{ mm}$ alongside an acute spike in heat days, whereas in 1993, excessive rainfall generated a surplus of $+400\text{ mm}$ with zero extreme heat. This statistical symmetry confirms that crop response to water availability is non-linear and concave: a standard monotonic linear model cannot penalize both severe deficits and extreme waterlogging, motivating non-parametric tree ensembles and threshold features.
+    \item \textbf{Compound Shock Dynamics and Multicollinearity:} In 2012, atmospheric evaporative demand and thermal stress surged simultaneously: rolling $VPD$ exceeded $1.8\text{ kPa}$, $T_{\text{max}}$ exceeded $33^\circ\text{C}$, and root-zone soil moisture dropped below $0.18\text{ m}^3/\text{m}^3$ for four consecutive weeks across central Iowa and Illinois (Figure~\ref{fig:weather_shocks_footprint}). This persistent co-occurrence illustrates high multivariate collinearity among climate predictors, requiring regularized shrinkage (ElasticNet) and sequential tracking (LSTM).
+    \item \textbf{Synoptic Regional Scale and Spatial Autocorrelation:} Figure~\ref{fig:spatial_shock_comparison} shows that the 2012 flash drought affected a contiguous multi-state corridor (Illinois, Indiana, Missouri, and southern Iowa), whereas Minnesota was largely spared. The broad spatial footprint of atmospheric anomalies induces strong cross-county correlation, requiring expanding-window cross-validation over complete calendar years to prevent spatial information leakage.
+\end{enumerate}
 
 \subsection{Phenological Climate-Yield Sensitivity and Lead-Time Dynamics}
 \label{sec:data_pheno_sensitivity}
@@ -285,9 +258,6 @@ To quantify how the statistical dependence between atmospheric forcing and final
     \label{fig:climate_yield_sensitivity}
 \end{figure}
 
-{
-Monthly associations are weak around planting and peak during reproductive growth. August yield anomalies correlate positively with soil moisture and precipitation, and negatively with $VPD$ and maximum temperature. Correlations weaken during maturation. These bivariate profiles describe seasonal dependence; they do not establish conditional forecasting skill, which is evaluated out-of-sample in Chapter~\ref{chap:empirical_results}.
-}
+The correlation structure exhibits marked seasonal heteroskedasticity. During pre-planting and emergence (April--May), correlation coefficients remain weak and close to zero ($|r| < 0.10$). Predictive signal concentrates heavily during midsummer reproductive growth (July--August), where correlations reach $r \approx -0.45$ for $VPD$ and $T_{\text{max}}$, and $r \approx +0.40$ for precipitation and root-zone soil moisture. As crops reach physiological maturity in September, correlations weaken sharply.
 
-We formalize these twelve predictive horizons, feature engineering workflows, model architectures, and expanding-window validation protocols in Chapter~4.
-
+While these bivariate profiles demonstrate the concentration of climate sensitivity during reproductive growth, pairwise correlations capture only marginal associations and ignore compound multivariate interactions. The convergence of hydrological concavity (Figure~\ref{fig:intra_seasonal_extremes}), persistent stress duration (Figure~\ref{fig:weather_shocks_footprint}), synoptic spatial coherence (Figure~\ref{fig:spatial_shock_comparison}), and phenological concentration (Figure~\ref{fig:climate_yield_sensitivity}) provides the empirical foundation for the multi-horizon predictive framework formalized in Chapter~4.

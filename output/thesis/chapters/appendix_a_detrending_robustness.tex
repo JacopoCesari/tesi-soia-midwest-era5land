@@ -116,7 +116,7 @@ In the 2011--2025 test period (Panel B), the expanding linear trend exhibits est
 
 We re-trained and evaluated all predictive models across the 2011--2025 test folds using the full-sample cubic detrended anomalies as targets and predictors.
 
-\subsection{Decile Calibration and $L_2$ Conditional Tail Shrinkage}
+\subsection{Decile Calibration and \texorpdfstring{$L_2$}{L2} Conditional Tail Shrinkage}
 Table~\ref{tab:appendix_decile_error_performance} and Figure~\ref{fig:decile_calib_comp} compare out-of-sample decile predictions across key lead times ($H=5, 3, 1^*$).
 
 \input{tables/tab_appendix_decile_error_performance.tex}
@@ -132,7 +132,7 @@ Table~\ref{tab:appendix_decile_error_performance} and Figure~\ref{fig:decile_cal
 
 The comparison yields two fundamental empirical insights:
 \begin{enumerate}
-    \item \textbf{Persistence of Extreme Shortfall Under-Prediction ($D_1$):} In the bottom decile ($D_1$, severe shortfall), the observed mean anomaly under the cubic trend is $-10.18\text{ bu/ac}$. The model average predicts $-1.80\text{ bu/ac}$ (and Ensemble $-1.81\text{ bu/ac}$), leaving a positive residual of $\boldsymbol{+8.38}\text{ bu/ac}$. Under the baseline expanding linear trend, observed $D_1$ is $-8.82\text{ bu/ac}$ and models predict $-2.08\text{ bu/ac}$ (residual $\boldsymbol{+6.74}\text{ bu/ac}$).
+    \item \textbf{Persistence of Extreme Shortfall Under-Prediction ($D_1$):} In the bottom decile ($D_1$, severe shortfall), the observed mean anomaly under the cubic trend is $-10.18\text{ bu/ac}$. The Ensemble predicts $-1.81\text{ bu/ac}$, leaving a positive residual of $\boldsymbol{+8.38}\text{ bu/ac}$. Under the baseline expanding linear trend, observed $D_1$ is $-8.82\text{ bu/ac}$ and the Ensemble predicts $-2.16\text{ bu/ac}$ (residual $\boldsymbol{+6.66}\text{ bu/ac}$).
     \item \textbf{Mathematical Confirmation of $L_2$ Conditional Shrinkage:} Because weather explains approximately $32\%$ of county-level anomaly variance, minimizing squared loss ($L_2$) mathematically forces point predictions toward the conditional mean ($\mathbb{E}[Y \mid X]$). The fact that tail under-prediction is equally pronounced (or slightly larger) under the oracle cubic trend confirms that tail attenuation is NOT caused by trend estimation lag. It is a structural property of conditional-mean regression under imperfectly observed weather inputs.
 \end{enumerate}
 
@@ -163,7 +163,7 @@ Table~\ref{tab:appendix_yearly_raw_yields} presents regional mean yield forecast
 
 Aggregating predictions to the regional portfolio scale confirms two key operational properties:
 \begin{itemize}
-    \item \textbf{Elimination of Secular Drift:} The full-sample cubic trend eliminates secular test bias (bias $+0.06\text{ bu/ac}$ vs $-2.41\text{ bu/ac}$ under baseline), reducing the Ensemble's macro-regional MAE from $1.87$ to $\boldsymbol{1.46}\text{ bu/ac}$ ($1.40\text{ bu/ac}$ for the model average).
+    \item \textbf{Elimination of Secular Drift:} The full-sample cubic trend eliminates secular test bias (bias $+0.06\text{ bu/ac}$ vs $-2.41\text{ bu/ac}$ under baseline), reducing the Ensemble's macro-regional MAE from $1.87$ to $\boldsymbol{1.46}\text{ bu/ac}$.
     \item \textbf{Fidelity During Extreme Drought (2012):} In the historic 2012 drought (actual yield $43.55\text{ bu/ac}$), the secular trend projects a normal harvest ($47.62\text{ bu/ac}$ Base, $49.11\text{ bu/ac}$ Full). The Ensemble accurately captures the collapse under both specifications: $\boldsymbol{43.53}\text{ bu/ac}$ (error $-0.02\text{ bu/ac}$) under Base, and $\boldsymbol{43.71}\text{ bu/ac}$ (error $+0.16\text{ bu/ac}$) under Full.
 \end{itemize}
 

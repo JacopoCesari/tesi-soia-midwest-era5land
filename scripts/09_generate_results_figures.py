@@ -59,9 +59,9 @@ TEST_YEARS = list(range(2011, 2026))
 HORIZONS = list(range(11, 0, -1))
 
 MONTH_LABELS = {
-    11: "Dec Y-1\n(H=11)", 10: "Jan Y\n(H=10)", 9: "Feb Y\n(H=9)", 8: "Mar Y\n(H=8)",
-    7: "Apr Y\n(H=7)", 6: "May Y\n(H=6)", 5: "Jun Y\n(H=5)", 4: "Jul Y\n(H=4)",
-    3: "Aug Y\n(H=3)", 2: "Sep Y\n(H=2)", 1: "Oct Y\n(H=1)"
+    11: "Dec\n(H=11)", 10: "Jan\n(H=10)", 9: "Feb\n(H=9)", 8: "Mar\n(H=8)",
+    7: "Apr\n(H=7)", 6: "May\n(H=6)", 5: "Jun\n(H=5)", 4: "Jul\n(H=4)",
+    3: "Aug\n(H=3)", 2: "Sep\n(H=2)", 1: "Oct / $H^*(s)$\n(H=1)"
 }
 
 COLORS = {
@@ -104,6 +104,17 @@ def plot_figure_5_1(preds):
 
     ax1.plot(x_pos, np.zeros(len(HORIZONS)), label="Naive Secular Trend", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
 
+    legend_labels_51 = {
+        "ElasticNet": "ElasticNet (Weather-Only)",
+        "RandomForest": "Random Forest (Weather-Only)",
+        "XGBoost": "XGBoost (Weather-Only)",
+        "LSTM (Weather-Only)": "LSTM (Weather-Only)",
+        "ElasticNet (+Lag)": "ElasticNet",
+        "RandomForest (+Lag)": "Random Forest",
+        "XGBoost (+Lag)": "XGBoost",
+        "LSTM (+Lag)": "LSTM",
+        "Ensemble (ENet + LSTM)": "Ensemble",
+    }
     models_to_plot = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "ElasticNet (+Lag)", "RandomForest (+Lag)", "XGBoost (+Lag)", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
     for m in models_to_plot:
         sub_m = preds[preds["model"] == m]
@@ -123,8 +134,9 @@ def plot_figure_5_1(preds):
 
         ls = "--" if "+Lag" in m else ("-." if "Ensemble" in m else "-")
         lw = 2.2 if "Ensemble" in m else 1.8
-        ax1.plot(x_pos, r2_vals, label=m, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
-        ax2.plot(x_pos, rmse_vals, label=m, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        lbl = legend_labels_51.get(m, m)
+        ax1.plot(x_pos, r2_vals, label=lbl, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        ax2.plot(x_pos, rmse_vals, label=lbl, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
 
     ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
     ax1.set_ylabel(r"Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$")
@@ -202,8 +214,9 @@ def plot_macro_horizon_progression(preds):
         ls = "--" if "+Lag" in m else ("-." if "Ensemble" in m else "-")
         lw = 2.2 if "Ensemble" in m else 1.8
         color_val = COLORS.get(m, "#333333")
-        ax1.plot(x_pos, r2_vals, label=m, color=color_val, linestyle=ls, marker="o", markersize=5, linewidth=lw)
-        ax2.plot(x_pos, rmse_vals, label=m, color=color_val, linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        lbl = m.replace(" (+Lag)", "").replace(" (ENet + LSTM)", "")
+        ax1.plot(x_pos, r2_vals, label=lbl, color=color_val, linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        ax2.plot(x_pos, rmse_vals, label=lbl, color=color_val, linestyle=ls, marker="o", markersize=5, linewidth=lw)
 
     ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
     ax1.set_ylabel(r"Macro-Regional Explained Variance ($R^2_{\mathrm{macro}}$)")
@@ -910,11 +923,12 @@ def generate_table_a1_and_figure_a2():
         r"\centering",
         r"\singlespacing",
         r"\footnotesize",
+        r"\setlength{\tabcolsep}{4.5pt}",
         r"\caption{Empirical yield anomaly distributions by decile ($D_1 \dots D_{10}$): Baseline Expanding Linear Trend vs Full-Sample Cubic Trend.}",
         r"\label{tab:appendix_decile_distribution}",
-        r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc @{}}",
+        r"\begin{tabular}{l cc cc}",
         r"\toprule",
-        r"& \multicolumn{2}{c}{\textbf{Baseline (Expanding Linear Trend)}} & \multicolumn{2}{c}{\textbf{Robustness (Full-Sample Cubic Trend)}} \\",
+        r"& \multicolumn{2}{c}{\textbf{Baseline (Expanding Linear)}} & \multicolumn{2}{c}{\textbf{Robustness (Full-Sample Cubic)}} \\",
         r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}",
         r"\textbf{Decile} & \textbf{Range (bu/ac)} & \textbf{\% Negative} & \textbf{Range (bu/ac)} & \textbf{\% Negative} \\",
         r"\midrule",
@@ -960,7 +974,7 @@ def generate_table_a1_and_figure_a2():
     
     tex.extend([
         r"\bottomrule",
-        r"\end{tabular*}",
+        r"\end{tabular}",
         r"\vspace{0.2em}",
         r"{\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025). \% Negative indicates the proportion of county-years with negative anomaly ($\epsilon < 0$). The baseline expanding-window trend shifts upward in the test set (mean $+2.41$ bu/ac), whereas the full-sample cubic trend remains centered at $-0.06$ bu/ac.}}",
         r"\end{table}",

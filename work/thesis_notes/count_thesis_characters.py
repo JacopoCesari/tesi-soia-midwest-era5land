@@ -107,8 +107,14 @@ def clean_latex(text, citations=None, references=None):
                 raise ValueError(f"Unsupported prose inclusion: {path}")
             output.append(" ")
         elif name in {"citet", "citep", "citealt", "citealp", "cite"}:
-            if command.endswith("*") or text[position:position + 1] == "[":
-                raise ValueError("Unsupported citation options; expand their visible text explicitly")
+            prenote, postnote = "", ""
+            if text[position:position + 1] == "[":
+                opt1, position = read_group(text, position, "[", "]")
+                if text[position:position + 1] == "[":
+                    opt2, position = read_group(text, position, "[", "]")
+                    prenote, postnote = opt1.strip() + " ", ", " + opt2.strip()
+                else:
+                    postnote = ", " + opt1.strip()
             keys, position = read_group(text, position)
             labels = []
             for key in keys.split(","):
@@ -120,7 +126,7 @@ def clean_latex(text, citations=None, references=None):
                     labels.append(f"{author} ({year})")
                 else:
                     labels.append(f"{author}{' ' if name == 'citealt' else ', '}{year}")
-            rendered = "; ".join(labels)
+            rendered = f"{prenote}{'; '.join(labels)}{postnote}".strip()
             output.append(f"({rendered})" if name in {"citep", "cite"} else rendered)
         elif name in {"ref", "eqref"}:
             key, position = read_group(text, position)

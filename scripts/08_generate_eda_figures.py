@@ -102,11 +102,11 @@ def generate_figure_3_1(df_counties, gdf_all):
                     fontweight="bold", color="#252525", alpha=0.6, ha="center")
 
     legend_elements = [
-        Patch(facecolor="#02818a", edgecolor="#01464c", label="Balanced Panel Counties (N=135)"),
+        Patch(facecolor="#02818a", edgecolor="#01464c", label="Study Counties (N=135)"),
         Patch(facecolor="#f5f5f5", edgecolor="#d9d9d9", label="Other Regional Counties"),
     ]
     ax.legend(handles=legend_elements, loc="upper right", frameon=True, facecolor="white", edgecolor="#cccccc", fontsize=9.5)
-    ax.set_title("Geographic Distribution of Balanced Study Counties (1951–2025)", fontsize=12.5, fontweight="bold", pad=12)
+    ax.set_title("Geographic Distribution of Study Counties (1951–2025)", fontsize=12.5, fontweight="bold", pad=12)
     ax.axis("off")
 
     plt.tight_layout()
@@ -217,7 +217,7 @@ def generate_figure_3_2(df_yield):
                     arrowprops=dict(arrowstyle="->", color=COLOR_ARROW, lw=0.9, shrinkB=4, connectionstyle="arc3,rad=0.10"), zorder=9)
 
     ax.set_title(
-        "County Soybean Yield Trajectories & Dispersion Dynamics (1950–2025)\n"
+        "County Soybean Yield Trajectories & Dispersion Dynamics (1951–2025)\n"
         "Reference Line: Linear Trend | Envelope: Dual Envelope (Min–Max Records + 90% Dispersion Core)",
         fontsize=12, fontweight="bold", pad=12
     )
