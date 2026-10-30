@@ -2,13 +2,13 @@
 \chapter{Robustness Analysis: Structural Breaks and Alternative Detrending Specifications}
 \label{chap:appendix_detrending}
 
-This appendix presents an econometric sensitivity analysis of the target detrending framework. We evaluate the structural stability of the multi-decadal soybean yield series, test for technological regime shifts, and assess whether the substantive findings of the thesis (lead-time skill emergence, algorithm rankings, decile tail shrinkage, and macro-regional predictability) remain invariant under an alternative full-sample cubic trend specification.
+This appendix presents a sensitivity analysis of the target detrending framework. We evaluate the structural stability of the multi-decadal soybean yield series, test for technological regime shifts, and assess whether the substantive findings of the thesis (lead-time skill emergence, algorithm rankings, decile tail shrinkage, and macro-regional predictability) remain invariant under an alternative full-sample cubic trend specification.
 
 % ==============================================================================
-% SECTION A.1: PURPOSE AND ECONOMETRIC CONTEXT
+% SECTION A.1: PURPOSE AND METHODOLOGICAL CONTEXT
 % ==============================================================================
 
-\section{Purpose and Econometric Context}
+\section{Purpose and Methodological Context}
 \label{sec:app_context}
 
 In agricultural yield modeling, removing secular technological progress is essential to isolate inter-annual weather sensitivity. Throughout Chapters~\ref{chap:data_and_study_area} through \ref{chap:empirical_results}, our primary continuous target is the yield anomaly $\epsilon_{c, t} = y_{c, t} - \hat{\tau}_{c, t}^{(Y)}$, where the technological trend $\hat{\tau}_{c, t}^{(Y)}$ is estimated via county-specific linear Ordinary Least Squares (OLS) restricted strictly to historical training observations ($t < Y$). This causal expanding-window protocol prevents look-ahead bias and simulates real-time operational forecasting.
@@ -22,14 +22,14 @@ However, two methodological concerns warrant rigorous sensitivity testing:
 To resolve these questions, we test for structural breaks across the 75-year panel and re-evaluate the entire multi-horizon machine learning suite under an oracle full-sample cubic trend specification.
 
 % ==============================================================================
-% SECTION A.2: ECONOMETRIC EVALUATION OF STRUCTURAL BREAKS
+% SECTION A.2: STATISTICAL EVALUATION OF STRUCTURAL BREAKS
 % ==============================================================================
 
-\section{Econometric Evaluation of Structural Breaks}
+\section{Statistical Evaluation of Structural Breaks}
 \label{sec:app_chow_test}
 
 \subsection{Stationarity and Test Formulation}
-We first verify trend-stationarity on the regional mean yield trajectory ($N = 75$, 1951--2025). The Augmented Dickey-Fuller (ADF) test with constant and linear trend yields a test statistic of $-6.284$ ($p < 0.0001$), firmly rejecting the unit-root null hypothesis. The series is trend-stationary $I(0)$, confirming the econometric validity of deterministic trend regression and Chow breakpoint tests.
+We first verify trend-stationarity on the regional mean yield trajectory ($N = 75$, 1951--2025). The Augmented Dickey-Fuller (ADF) test with constant and linear trend yields a test statistic of $-6.284$ ($p < 0.0001$), firmly rejecting the unit-root null hypothesis. The series is trend-stationary $I(0)$, confirming the statistical validity of deterministic trend regression and Chow breakpoint tests.
 
 To identify potential regime shifts without imposing an arbitrary break date, we apply a sequential Chow test \citep{James2023} across all candidate break years $T^* \in [1966, 2021]$, trimming 15 initial observations for degrees-of-freedom stability. For each candidate year $T^*$, we define a level indicator $D_t = \mathbf{1}(t \ge T^*)$ and a post-break trend variable $\tilde{t} = (t - T^*) \mathbf{1}(t \ge T^*)$. The restricted model assumes parameter constancy across all 75 years:
 \begin{equation}
@@ -60,7 +60,7 @@ Figure~\ref{fig:chow_break} presents the sequential Chow test trajectories and t
     {\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025).}}
 \end{figure}
 
-The econometric analysis establishes two distinct temporal regimes:
+The statistical analysis establishes two distinct temporal regimes:
 \begin{itemize}
     \item \textbf{Pre-Test Period Stability (1951--2010):} Across the 30 evaluation years preceding the machine learning test window, the Chow test does not reject parameter constancy. The maximum $F$-statistic is $F_{\max} = 2.85$, well below the 5\% critical threshold ($F_{\text{crit}} = 4.01$, $p = 0.093$). This proves that ex-ante, prior to observing the 2011--2025 test window, there was no statistical evidence of a structural break, justifying the linear expanding-window specification.
     \item \textbf{Full-Sample 2014 Level Shift (1951--2025):} Evaluated across the full 75-year panel, the sequential test reveals a sharp, statistically significant breakpoint at \textbf{2014} ($F = 21.96$, $p < 0.0001$, critical threshold $3.97$). The estimated instantaneous level jump is $\hat{\delta} = \boldsymbol{+4.83}\text{ bu/ac}$ ($t = 4.69$, $\Delta\text{BIC} = -15.64$). In contrast, the change in trend slope post-2014 is statistically insignificant ($p = 0.74$).
@@ -161,7 +161,7 @@ Table~\ref{tab:appendix_yearly_raw_yields} presents regional mean yield forecast
 
 \input{tables/tab_appendix_yearly_raw_yields.tex}
 
-Aggregating predictions to the regional portfolio scale confirms two key operational properties:
+Aggregating predictions to the regional aggregate scale confirms two key operational properties:
 \begin{itemize}
     \item \textbf{Elimination of Secular Drift:} The full-sample cubic trend eliminates secular test bias (bias $+0.06\text{ bu/ac}$ vs $-2.41\text{ bu/ac}$ under baseline), reducing the Ensemble's macro-regional MAE from $1.87$ to $\boldsymbol{1.46}\text{ bu/ac}$.
     \item \textbf{Fidelity During Extreme Drought (2012):} In the historic 2012 drought (actual yield $43.55\text{ bu/ac}$), the secular trend projects a normal harvest ($47.62\text{ bu/ac}$ Base, $49.11\text{ bu/ac}$ Full). The Ensemble accurately captures the collapse under both specifications: $\boldsymbol{43.53}\text{ bu/ac}$ (error $-0.02\text{ bu/ac}$) under Base, and $\boldsymbol{43.71}\text{ bu/ac}$ (error $+0.16\text{ bu/ac}$) under Full.
@@ -176,7 +176,7 @@ Aggregating predictions to the regional portfolio scale confirms two key operati
 
 The empirical sensitivity analysis establishes three conclusions:
 \begin{enumerate}
-    \item The causal expanding-window linear OLS specification adopted in the main text is econometrically justified ex-ante: structural break tests confirm parameter constancy during the pre-test era ($p = 0.093$), and Linear OLS minimizes out-of-sample error across $4{,}050$ historical folds.
+    \item The causal expanding-window linear OLS specification adopted in the main text is statistically justified ex-ante: structural break tests confirm parameter constancy during the pre-test era ($p = 0.093$), and Linear OLS minimizes out-of-sample error across $4{,}050$ historical folds.
     \item The post-2014 technological level shift ($+4.83\text{ bu/ac}$) accounts for the modest positive bias observed in test-period anomalies, but cannot be calibrated in real time without look-ahead bias.
     \item Re-evaluating the entire forecasting pipeline under the oracle cubic trend demonstrates that all substantive findings of the thesis---the timing of lead-time skill emergence, algorithm rankings, decile tail shrinkage, and regional shock forecasting---are invariant to the detrending specification.
 \end{enumerate}

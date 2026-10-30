@@ -2,7 +2,7 @@
 \chapter{Methodology}
 \label{chap:methodology}
 
-Building on the 75-year panel characterized in Chapter~\ref{chap:data_and_study_area}, this chapter formalizes the statistical learning framework for multi-horizon soybean yield anomaly forecasting across the Midwestern Corn Belt. The predictive architecture pursues two objectives: determining the operational lead time where meteorological predictors yield significant skill over secular trend baselines, and evaluating whether non-linear algorithmic complexity improves performance under strict out-of-sample expanding-window validation.
+Building on the 75-year panel characterized in Chapter~\ref{chap:data_and_study_area}, this chapter formalizes the statistical learning framework for multi-horizon soybean yield anomaly forecasting across the Midwestern Corn Belt. The predictive architecture pursues two objectives: determining the operational lead time where meteorological predictors yield significant skill over the naive trend benchmark, and evaluating whether non-linear algorithmic complexity improves performance under strict out-of-sample expanding-window validation.
 
 % ==============================================================================
 % SECTION 4.1: PROBLEM FORMULATION AND MULTI-HORIZON FORECAST SETUP
@@ -51,7 +51,7 @@ where $\mathcal{K}_{\text{flux}} = \{P, SSRD, ET_0, P-ET_0, GDD, HD_{30}, HD_{35
 \subsection{Crop Campaign Timeline and Multi-Horizon Feature Expansion}
 \label{sec:meth_timeline_horizons}
 
-The crop campaign spans November 1 of year $Y-1$ to October 31 of harvest year $Y$. The pre-season origin at October 31 of $Y-1$ ($H=12$) ingests zero weather predictors ($m=0, P_{\text{met}}=0$), serving as an uninformed benchmark that outputs a zero anomaly ($\hat{\epsilon}_{c,Y}^{(12)} = 0$) and relies entirely on the secular trend ($\hat{y}_{c,Y}^{(12)} = \hat{\tau}_{c,Y}$). Operational horizons $H \in \{11, \dots, 1\}$ correspond to monthly cutoffs from December 31 of $Y-1$ through October 31 of $Y$, ingesting $m = 13 - H \in \{2, \dots, 12\}$ elapsed campaign months.
+The crop campaign spans November 1 of year $Y-1$ to October 31 of harvest year $Y$. The pre-season origin at October 31 of $Y-1$ ($H=12$) ingests zero weather predictors ($m=0, P_{\text{met}}=0$), serving as an uninformed benchmark that outputs a zero anomaly ($\hat{\epsilon}_{c,Y}^{(12)} = 0$) and relies entirely on the trend projection ($\hat{y}_{c,Y}^{(12)} = \hat{\tau}_{c,Y}$). Operational horizons $H \in \{11, \dots, 1\}$ correspond to monthly cutoffs from December 31 of $Y-1$ through October 31 of $Y$, ingesting $m = 13 - H \in \{2, \dots, 12\}$ elapsed campaign months.
 
 At forecast horizon $H$, the pure meteorological feature vector $\mathbf{x}_{c,Y}^{(H)}$ concatenates normalized spatial coordinates $(\tilde{\text{Lat}}_c, \tilde{\text{Lon}}_c)$ (Section~\ref{sec:meth_spatial_covariates}) with elapsed monthly weather summaries:
 \begin{equation}
@@ -226,7 +226,7 @@ We evaluate two projection head architectures mapping context vector $\mathbf{c}
     The linear specification uses two recurrent layers with 128 hidden units, dropout of 0.4, and batches of 25. Its integrated version appends lagged yield to form $[\mathbf{c}_{\text{ctx}}^T,\epsilon_{c,Y-1}]^T$. The lag therefore enters the prediction head separately from the 19-channel weather and coordinate sequence.
 \end{enumerate}
 
-Network parameters are optimized with AdamW at an initial learning rate of $3\times10^{-4}$ and weight decay of $10^{-4}$ \citep{Geron2025}. Gradient norms are clipped at one. Training runs for at most 40 epochs. A plateau scheduler halves the learning rate after two epochs without improvement, down to $10^{-6}$. Early stopping retains the best weights after five epochs without improvement. For each test year, the preceding three historical years provide the inner stopping partition; older observations train the network. Table~\ref{tab:model_summary} summarizes the forecasting portfolio.
+Network parameters are optimized with AdamW at an initial learning rate of $3\times10^{-4}$ and weight decay of $10^{-4}$ \citep{Geron2025}. Gradient norms are clipped at one. Training runs for at most 40 epochs. A plateau scheduler halves the learning rate after two epochs without improvement, down to $10^{-6}$. Early stopping retains the best weights after five epochs without improvement. For each test year, the preceding three historical years provide the inner stopping partition; older observations train the network. Table~\ref{tab:model_summary} summarizes the forecasting suite.
 
 \begin{table}[htbp]
 \centering
@@ -267,7 +267,7 @@ Rigorous out-of-sample evaluation requires preventing information leakage across
 Random observation splits leak spatial weather signals across contiguous counties \citep{Sweetetal2023}. We enforce a three-phase chronological expanding-window partition (Table~\ref{tab:validation_phases}):
 \begin{enumerate}
     \item \textbf{Phase 1: Historical Baseline Training (1951--1984):} 34 years ($4{,}590$ observations) establishing base climatology, secular trends, and initial model weights.
-    \item \textbf{Phase 2: Hyperparameter Validation (1985--1995):} Rather than adopting a mechanical chronological partition (such as a fixed 60--20--20 split over climatologically benign intervals), Phase 2 (1985--1995) deliberately incorporates three of the most severe macro-climatic shocks in modern agricultural history: the historic 1988 drought ($-25.6\%$), the 1993 Mississippi River flood ($-10.5\%$), and the 1994 record bumper harvest ($+10.7\%$). Exposing candidate architectures to wide empirical variance during hyperparameter tuning prevents algorithms from over-regularizing and collapsing predictions toward historical county means (conditional shrinkage), ensuring that the complexity ladder is calibrated to preserve sensitivity to acute downside shocks before entering the modern 2011--2025 test window.
+    \item \textbf{Phase 2: Hyperparameter Validation (1985--1995):} Phase 2 (1985--1995) deliberately incorporates three of the most severe macro-climatic shocks in modern agricultural history: the historic 1988 drought ($-25.6\%$), the 1993 Mississippi River flood ($-10.5\%$), and the 1994 record bumper harvest ($+10.7\%$). Exposing candidate architectures to wide empirical variance during hyperparameter tuning prevents algorithms from over-regularizing and collapsing predictions toward historical county means (conditional shrinkage), ensuring that the complexity ladder is calibrated to preserve sensitivity to acute downside shocks before entering the modern 2011--2025 test window.
     \item \textbf{Phase 3: Out-of-Sample Expanding-Window Testing (2011--2025):} 15 modern harvest campaigns, providing $2{,}025$ county-year evaluations per horizon. Training expands across $\{1951, \dots, Y-1\}$ prior to each test year, incorporating historical data sequentially. This evaluates held-out years strictly out-of-sample across contemporary drought extremes (2012, 2023), planting disruptions (2019), and record bumper harvests (2016, 2021).
 \end{enumerate}
 
@@ -398,14 +398,14 @@ tracking how predictive accuracy and directional bias evolve during extreme shor
 To evaluate model resilience during extreme disasters without arbitrary discretization bins, predictions are stress-tested across benchmark historical shock cohorts in the 2011--2025 test window:
 \begin{itemize}
     \item \textbf{Adverse Shock Cohorts (Shortfall Campaigns):} The 2012 midsummer flash drought ($-11.7\%$ regional anomaly), the 2019 widespread planting crisis, and the 2023 late-summer flash drought.
-    \item \textbf{Favorable Shock Cohorts (Bumper Campaigns):} The modern bumper harvests of 2016 ($+10.8\%$) and 2021 ($+9.8\%$).
+    \item \textbf{Favorable Shock Cohorts (Bumper Campaigns):} The modern bumper harvests of 2016 ($+10.8\%$) and 2021 ($+10.8\%$).
 \end{itemize}
 This protocol evaluates whether flexible regression estimators capture physical shock amplitudes or exhibit conditional shrinkage toward the historical mean.
 
 \subsection{Statistical Inference: Pairwise Diebold--Mariano Tests}
 \label{sec:meth_significance_bootstrap}
 
-To assess whether predictive gains over the naive secular benchmark are statistically significant rather than driven by sample noise, we evaluate Diebold--Mariano test statistics on cross-sectionally averaged annual loss differentials:
+To assess whether predictive gains over the naive baseline are statistically significant and distinguishable from sample noise, we evaluate \citet{DieboldMariano1995} test statistics on cross-sectionally averaged annual loss differentials:
 \begin{equation}
     d_Y(H) = \frac{1}{C} \sum_{c=1}^C \left[ \left(e_{c,Y}^{\text{baseline}}(H)\right)^2 - \left(e_{c,Y}^{\text{model}}(H)\right)^2 \right]
     \label{eq:dm_differential}

@@ -31,6 +31,7 @@ warnings.filterwarnings('ignore')
 
 import geopandas as gpd
 from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -104,18 +105,12 @@ def plot_figure_5_1(preds):
 
     ax1.plot(x_pos, np.zeros(len(HORIZONS)), label="Naive Secular Trend", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
 
-    legend_labels_51 = {
-        "ElasticNet": "ElasticNet (Weather-Only)",
-        "RandomForest": "Random Forest (Weather-Only)",
-        "XGBoost": "XGBoost (Weather-Only)",
-        "LSTM (Weather-Only)": "LSTM (Weather-Only)",
-        "ElasticNet (+Lag)": "ElasticNet",
-        "RandomForest (+Lag)": "Random Forest",
-        "XGBoost (+Lag)": "XGBoost",
-        "LSTM (+Lag)": "LSTM",
-        "Ensemble (ENet + LSTM)": "Ensemble",
-    }
-    models_to_plot = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "ElasticNet (+Lag)", "RandomForest (+Lag)", "XGBoost (+Lag)", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
+    from matplotlib.lines import Line2D
+
+    models_to_plot = [
+        "ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "Ensemble (Weather-Only)",
+        "ElasticNet (+Lag)", "RandomForest (+Lag)", "XGBoost (+Lag)", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"
+    ]
     for m in models_to_plot:
         sub_m = preds[preds["model"] == m]
         if sub_m.empty:
@@ -132,25 +127,45 @@ def plot_figure_5_1(preds):
                 r2_vals.append(1.0 - ss_res / ss_tot if ss_tot > 0 else np.nan)
                 rmse_vals.append(np.sqrt(np.mean((yt - yp) ** 2)))
 
-        ls = "--" if "+Lag" in m else ("-." if "Ensemble" in m else "-")
+        is_lag = "+Lag" in m or m == "Ensemble (ENet + LSTM)"
+        ls = "--" if is_lag else "-"
         lw = 2.2 if "Ensemble" in m else 1.8
-        lbl = legend_labels_51.get(m, m)
-        ax1.plot(x_pos, r2_vals, label=lbl, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
-        ax2.plot(x_pos, rmse_vals, label=lbl, color=COLORS[m], linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        color_val = COLORS[m]
+        ax1.plot(x_pos, r2_vals, color=color_val, linestyle=ls, marker="o", markersize=4.5, linewidth=lw)
+        ax2.plot(x_pos, rmse_vals, color=color_val, linestyle=ls, marker="o", markersize=4.5, linewidth=lw)
 
     ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
     ax1.set_ylabel(r"Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$")
     ax1.set_title(r"(a) Multi-Horizon Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)", loc="left", fontweight="bold", fontsize=11)
     ax1.set_ylim(-0.35, 0.45)
-    ax1.legend(loc="upper left", frameon=True, fontsize=8.0, ncol=2)
 
     reference = preds[(preds["model"] == "Naive") & (preds["H"] == 1)]
     naive_rmse = np.sqrt(np.mean(reference["y_true_anomaly"] ** 2))
-    ax2.plot(x_pos, np.full(len(HORIZONS), naive_rmse), label=f"Naive Baseline ({naive_rmse:.2f} bu/ac)", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
+    ax2.plot(x_pos, np.full(len(HORIZONS), naive_rmse), color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
     ax2.set_ylabel("Out-of-Sample RMSE (bu/acre)")
     ax2.set_title("(b) Forecast Error Magnitude (RMSE)", loc="left", fontweight="bold", fontsize=11)
     ax2.set_ylim(min(4.80, min(ax2.get_ylim())), max(7.20, max(ax2.get_ylim())))
-    ax2.legend(loc="upper right", frameon=True, fontsize=8.0, ncol=2)
+
+    model_legend_elements = [
+        Line2D([0], [0], color=COLORS["Naive"], linestyle="-", marker="s", markersize=5, label="Naive Baseline"),
+        Line2D([0], [0], color=COLORS["ElasticNet"], lw=1.8, label="ElasticNet"),
+        Line2D([0], [0], color=COLORS["RandomForest"], lw=1.8, label="Random Forest"),
+        Line2D([0], [0], color=COLORS["XGBoost"], lw=1.8, label="XGBoost"),
+        Line2D([0], [0], color=COLORS["LSTM"], lw=1.8, label="LSTM"),
+        Line2D([0], [0], color=COLORS["Ensemble"], lw=2.2, label="Ensemble (ENet+LSTM)"),
+    ]
+    style_legend_elements = [
+        Line2D([0], [0], color="#555555", linestyle="-", lw=1.8, label="Weather-Only"),
+        Line2D([0], [0], color="#555555", linestyle="--", lw=1.8, label="Integrated (+Lag)"),
+    ]
+
+    leg1 = ax1.legend(handles=model_legend_elements, loc="upper left", frameon=True, fontsize=8.2, ncol=2)
+    ax1.add_artist(leg1)
+    ax1.legend(handles=style_legend_elements, loc="lower right", frameon=True, fontsize=8.0)
+
+    leg2 = ax2.legend(handles=model_legend_elements, loc="upper right", frameon=True, fontsize=8.2, ncol=2)
+    ax2.add_artist(leg2)
+    ax2.legend(handles=style_legend_elements, loc="lower left", frameon=True, fontsize=8.0)
 
     for ax in (ax1, ax2):
         ax.set_xticks(x_pos)
@@ -165,24 +180,25 @@ def plot_figure_5_1(preds):
 
 
 # ==============================================================================
-# MACRO-REGIONAL HORIZON PROGRESSION (PORTFOLIO MEAN OVER 135 COUNTIES)
+# ==============================================================================
+# MACRO-REGIONAL PORTFOLIO PROGRESSION & 15-YEAR CALIBRATION SCATTER
 # ==============================================================================
 def plot_macro_horizon_progression(preds):
-    print("Generating Figure: Macro-regional portfolio progression across horizons...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.0, 5.4), sharex=True)
+    print("Generating Figure: Macro-regional portfolio progression and 1:1 calibration scatter...")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.5))
     x_pos = np.arange(len(HORIZONS))
 
-    for ax in (ax1, ax2):
-        ax.axvspan(-0.5, 5.5, color="#f2f4f8", alpha=0.75)
-        ax.axvspan(5.5, 10.5, color="#fdfbf2", alpha=0.85)
-        ax.axvline(5.5, color="#c0392b", linestyle=":", linewidth=1.5, alpha=0.85)
+    # ---------------------------------------------------------
+    # Panel (a): Progression across horizons (Macro RMSE)
+    # ---------------------------------------------------------
+    ax1.axvspan(-0.5, 5.5, color="#f2f4f8", alpha=0.75)
+    ax1.axvspan(5.5, 10.5, color="#fdfbf2", alpha=0.85)
+    ax1.axvline(5.5, color="#c0392b", linestyle=":", linewidth=1.5, alpha=0.85)
 
-    ax1.plot(x_pos, np.zeros(len(HORIZONS)), label="Naive Secular Trend", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
-
-    # Reference naive macro RMSE
     yearly_naive = preds[preds["H"] == 1].groupby(["year", "county_fips"])["y_true_anomaly"].first().groupby("year").mean()
     naive_rmse = float(np.sqrt(np.mean(yearly_naive.values ** 2)))
-    ax2.plot(x_pos, np.full(len(HORIZONS), naive_rmse), label=f"Naive Trend ({naive_rmse:.2f} bu/ac)", color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
+    ax1.plot(x_pos, np.full(len(HORIZONS), naive_rmse), label=f"Naive Trend ({naive_rmse:.2f} bu/ac)",
+             color=COLORS["Naive"], linestyle="-", marker="s", markersize=5)
 
     models_to_plot = [
         "ElasticNet (+Lag)",
@@ -196,110 +212,99 @@ def plot_macro_horizon_progression(preds):
         sub_m = preds[preds["model"] == m]
         if sub_m.empty:
             continue
-        r2_vals, rmse_vals = [], []
+        rmse_vals = []
         for h in HORIZONS:
             sh = sub_m[sub_m["H"] == h]
             if sh.empty:
-                r2_vals.append(np.nan)
                 rmse_vals.append(np.nan)
             else:
                 yearly = sh.groupby("year")[["y_true_anomaly", "y_pred_anomaly"]].mean()
                 yt = yearly["y_true_anomaly"].values
                 yp = yearly["y_pred_anomaly"].values
-                ss_res = np.sum((yt - yp) ** 2)
-                ss_tot = np.sum(yt ** 2)
-                r2_vals.append(1.0 - ss_res / ss_tot if ss_tot > 0 else np.nan)
                 rmse_vals.append(np.sqrt(np.mean((yt - yp) ** 2)))
 
         ls = "--" if "+Lag" in m else ("-." if "Ensemble" in m else "-")
-        lw = 2.2 if "Ensemble" in m else 1.8
+        lw = 2.2 if "LSTM" in m or "Ensemble" in m else 1.8
         color_val = COLORS.get(m, "#333333")
         lbl = m.replace(" (+Lag)", "").replace(" (ENet + LSTM)", "")
-        ax1.plot(x_pos, r2_vals, label=lbl, color=color_val, linestyle=ls, marker="o", markersize=5, linewidth=lw)
-        ax2.plot(x_pos, rmse_vals, label=lbl, color=color_val, linestyle=ls, marker="o", markersize=5, linewidth=lw)
+        ax1.plot(x_pos, rmse_vals, label=lbl, color=color_val, linestyle=ls, marker="o", markersize=5, linewidth=lw)
 
-    ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
-    ax1.set_ylabel(r"Macro-Regional Explained Variance ($R^2_{\mathrm{macro}}$)")
-    ax1.set_title(r"(a) Macro-Regional Anomaly Skill ($R^2_{\mathrm{macro}}$)", loc="left", fontweight="bold", fontsize=11)
-    ax1.set_ylim(-0.75, 0.75)
-    ax1.legend(loc="lower left", frameon=True, fontsize=8.0, ncol=2)
+    ax1.set_ylabel("Macro-Regional RMSE (bu/acre)", fontsize=10.5)
+    ax1.set_title(r"(a) Error progression across forecast horizons", loc="left", fontweight="bold", fontsize=11)
+    ax1.set_ylim(1.8, 5.2)
+    ax1.set_xticks(x_pos)
+    ax1.set_xticklabels([MONTH_LABELS[h] for h in HORIZONS])
+    ax1.set_xlabel("Forecast Horizon & Campaign Month", fontsize=10.0)
+    ax1.legend(loc="upper right", frameon=True, fontsize=8.2, ncol=2)
+    ax1.grid(True, linestyle="--", alpha=0.4)
 
-    ax2.set_ylabel("Macro-Regional RMSE (bu/acre)")
-    ax2.set_title(r"(b) Macro-Regional Error Magnitude (RMSE)", loc="left", fontweight="bold", fontsize=11)
-    ax2.set_ylim(1.8, 5.2)
-    ax2.legend(loc="upper right", frameon=True, fontsize=8.0, ncol=2)
+    # ---------------------------------------------------------
+    # Panel (b): 15-Year Portfolio Calibration Scatter (1:1 Parity)
+    # ---------------------------------------------------------
+    sub_lstm = preds[(preds["model"] == "LSTM (+Lag)") & (preds["H"] == 1)]
+    yearly_lstm = sub_lstm.groupby("year")[["y_true_anomaly", "y_pred_anomaly"]].mean().reset_index()
 
-    for ax in (ax1, ax2):
-        ax.set_xticks(x_pos)
-        ax.set_xticklabels([MONTH_LABELS[h] for h in HORIZONS])
-        ax.set_xlabel("Forecast Horizon & Campaign Month")
-        ax.grid(True, linestyle="--", alpha=0.4)
-
-    plt.tight_layout()
-    fig.savefig(FIGURES_DIR / "fig_macro_horizon_progression.pdf")
-    fig.savefig(FIGURES_DIR / "fig_macro_horizon_progression.png")
-    plt.close(fig)
-
-
-def plot_macro_portfolio_scatter(preds):
-    print("Generating Figure 5.7: Macro-regional portfolio 15-year scatter along 45-degree line...")
-    sub = preds[(preds["model"] == "Ensemble (ENet + LSTM)") & (preds["H"] == 1)]
-    yearly = sub.groupby("year")[["y_true_anomaly", "y_pred_anomaly"]].mean().reset_index()
-
-    yt = yearly["y_true_anomaly"].values
-    yp = yearly["y_pred_anomaly"].values
-    years = yearly["year"].values
+    yt = yearly_lstm["y_true_anomaly"].values
+    yp = yearly_lstm["y_pred_anomaly"].values
+    years = yearly_lstm["year"].values
 
     ss_res = np.sum((yt - yp) ** 2)
     ss_tot = np.sum(yt ** 2)
-    r2 = 1.0 - ss_res / ss_tot
-    rmse = np.sqrt(np.mean((yt - yp) ** 2))
+    r2_val = 1.0 - ss_res / ss_tot
+    rmse_val = np.sqrt(np.mean((yt - yp) ** 2))
     r_corr, _ = pearsonr(yt, yp)
 
-    fig, ax = plt.subplots(figsize=(6.8, 6.2))
+    lims = [-6.5, 9.5]
+    ax2.plot(lims, lims, color="#222222", linestyle="--", linewidth=1.3, label=r"1:1 Parity ($\beta = 1.00$)", zorder=2)
+    ax2.axhline(0, color="#cccccc", linestyle=":", linewidth=0.8)
+    ax2.axvline(0, color="#cccccc", linestyle=":", linewidth=0.8)
 
-    # Reference 45 degree line
-    lims = [-9.0, 9.0]
-    ax.plot(lims, lims, color="#555555", linestyle="--", linewidth=1.2, label=r"Ideal 1:1 Parity ($y = \hat{y}$)")
-    ax.axhline(0, color="#cccccc", linestyle=":", linewidth=0.8)
-    ax.axvline(0, color="#cccccc", linestyle=":", linewidth=0.8)
+    models_panel_b = [
+        ("ElasticNet (+Lag)", "ElasticNet", COLORS["ElasticNet"]),
+        ("RandomForest (+Lag)", "Random Forest", COLORS["RandomForest"]),
+        ("XGBoost (+Lag)", "XGBoost", COLORS["XGBoost"]),
+        ("LSTM (+Lag)", "LSTM", COLORS["LSTM (+Lag)"]),
+        ("Ensemble (ENet + LSTM)", "Ensemble", COLORS["Ensemble (ENet + LSTM)"]),
+    ]
 
-    # Scatter points
-    ax.scatter(yt, yp, color="#16a085", s=75, edgecolor="#0e6251", linewidth=1.3, zorder=4, label="Ensemble Portfolio Realizations")
+    sub_h1 = preds[preds["H"] == 1]
+    x_grid = np.linspace(-4.5, 7.8, 50)
 
-    # Annotate points with year
-    for yr, x, y in zip(years, yt, yp):
-        offset_x = 0.25 if yr != 2012 else 0.3
-        offset_y = -0.35 if yr in [2012, 2024] else 0.22
-        weight = "bold" if yr in [2012, 2016] else "normal"
-        color = "#c0392b" if yr == 2012 else ("#27ae60" if yr == 2016 else "#333333")
-        ax.annotate(str(yr), (x, y), xytext=(x + offset_x, y + offset_y),
-                    fontsize=8.5, fontweight=weight, color=color)
+    for m_key, m_lbl, col in models_panel_b:
+        sub_m = sub_h1[sub_h1["model"] == m_key]
+        if sub_m.empty:
+            continue
+        yearly = sub_m.groupby("year")[["y_true_anomaly", "y_pred_anomaly"]].mean().reset_index()
+        xt = yearly["y_true_anomaly"].values
+        yp = yearly["y_pred_anomaly"].values
+        slope, intercept, r_val, p_val, std_err = stats.linregress(xt, yp)
 
-    # Metric box
-    textstr = "\n".join([
-        r"$\mathbf{Macro-Regional\ Performance}$",
-        rf"$R^2 = {r2:.3f}$",
-        rf"$\mathrm{{RMSE}} = {rmse:.2f}\ \mathrm{{bu/ac}}$",
-        rf"$\mathrm{{Pearson}}\ r = {r_corr:.3f}$",
-        rf"$N = {len(years)}\ \mathrm{{annual\ seasons}}$"
-    ])
-    props = dict(boxstyle="round,pad=0.5", facecolor="#f8f9fa", edgecolor="#b0bec5", alpha=0.9)
-    ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=9.2,
-            verticalalignment="top", bbox=props)
+        # Uniform circular points matching model color, semi-transparent to minimize clutter
+        alpha_val = 0.70 if "LSTM" in m_key or "Ensemble" in m_key else 0.45
+        ax2.scatter(xt, yp, color=col, marker="o", s=22, alpha=alpha_val, edgecolors="none", zorder=4)
 
-    ax.set_xlim(lims)
-    ax.set_ylim(lims)
-    ax.set_aspect("equal")
-    ax.set_xlabel(r"Realized Macro-Regional Yield Anomaly $\bar{y}_t$ (bu/acre)", fontsize=10.5)
-    ax.set_ylabel(r"Predicted Macro-Regional Yield Anomaly $\bar{\hat{y}}_t$ (bu/acre)", fontsize=10.5)
-    ax.set_title(r"Commercial Portfolio Aggregation at Harvest Closure ($H^*(s)$)", fontsize=11.5, fontweight="bold", pad=10)
-    ax.grid(True, linestyle="--", alpha=0.4)
-    ax.legend(loc="lower right", frameon=True, fontsize=8.8)
+        # Thin clean lines: solid for individual models, dashed only for Ensemble
+        ls = "--" if "Ensemble" in m_key else "-"
+        lw = 1.4 if "Ensemble" in m_key or "LSTM" in m_key else 1.1
+        ax2.plot(x_grid, slope * x_grid + intercept, color=col, linestyle=ls, linewidth=lw,
+                 label=f"{m_lbl} (slope: {slope:.2f}, $r={r_val:.2f}$)", zorder=3)
+
+    # Annotate only key shock years on the x-axis / background
+    ax2.annotate("2012 Drought", (-4.07, -5.8), fontsize=8.2, fontweight="bold", color="#c0392b", ha="center")
+    ax2.annotate("2016 Bumper", (7.34, -5.8), fontsize=8.2, fontweight="bold", color="#27ae60", ha="center")
+
+    ax2.set_xlim(lims)
+    ax2.set_ylim([-6.2, 8.8])
+    ax2.set_aspect("equal")
+    ax2.set_xlabel(r"Observed Macro-Regional Anomaly $\bar{y}_t$ (bu/acre)", fontsize=10.5)
+    ax2.set_ylabel(r"Predicted Macro-Regional Anomaly $\bar{\hat{y}}_t$ (bu/acre)", fontsize=10.5)
+    ax2.set_title(r"(b) Model calibration slopes at harvest closure ($H^*(s)$)", loc="left", fontweight="bold", fontsize=11)
+    ax2.grid(True, linestyle="--", alpha=0.4)
+    ax2.legend(loc="upper left", frameon=True, fontsize=7.8)
 
     plt.tight_layout()
-    fig.savefig(FIGURES_DIR / "fig_macro_portfolio_scatter.pdf")
-    fig.savefig(FIGURES_DIR / "fig_macro_portfolio_scatter.png", dpi=300)
+    fig.savefig(FIGURES_DIR / "fig_macro_horizon_progression.pdf")
+    fig.savefig(FIGURES_DIR / "fig_macro_horizon_progression.png", dpi=300)
     plt.close(fig)
 
 
@@ -328,15 +333,30 @@ def plot_figure_5_2(preds):
             if sub_m.empty:
                 continue
             biases = [sub_m[sub_m["H"] == h]["y_pred_anomaly"].mean() - sub_m[sub_m["H"] == h]["y_true_anomaly"].mean() for h in active_h]
-            ax1.plot(x_pos, biases, label=f"{m_lbl} ({name})", color=col, linestyle=ls, marker="o", markersize=4.8, linewidth=1.8)
+            ax1.plot(x_pos, biases, color=col, linestyle=ls, marker="o", markersize=4.8, linewidth=1.8)
 
-    ax1.axhline(0, color="black", linestyle=":", linewidth=1.2, label="Zero Bias")
+    ax1.axhline(0, color="black", linestyle=":", linewidth=1.2)
     ax1.set_ylabel(r"Mean Anomaly Bias ($\bar{\hat{\epsilon}} - \bar{\epsilon}$, bu/acre)")
     ax1.set_title("(a) Regional forecast bias", loc="left", fontweight="bold", fontsize=11)
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels([r"$H^*(s)$" if h == 1 else f"H={h}" for h in active_h])
     ax1.set_xlabel("Forecast Horizon")
-    ax1.legend(loc="lower left", frameon=True, fontsize=7.8, ncol=2)
+
+    # Clean separate legends like Figure 5.1: Models by color, Shock Regimes by line style
+    model_leg_a = [
+        Line2D([0], [0], color=COLORS["ElasticNet"], lw=1.8, label="ElasticNet"),
+        Line2D([0], [0], color=COLORS["XGBoost"], lw=1.8, label="XGBoost"),
+        Line2D([0], [0], color=COLORS["LSTM (+Lag)"], lw=1.8, label="LSTM"),
+        Line2D([0], [0], color=COLORS["Ensemble (ENet + LSTM)"], lw=2.0, label="Ensemble"),
+    ]
+    regime_leg_a = [
+        Line2D([0], [0], color="#444444", linestyle="-", lw=1.8, label="2012 Drought"),
+        Line2D([0], [0], color="#444444", linestyle="--", lw=1.8, label="2016 Bumper"),
+        Line2D([0], [0], color="black", linestyle=":", lw=1.2, label="Zero Bias"),
+    ]
+    leg_models = ax1.legend(handles=model_leg_a, loc="upper left", frameon=True, fontsize=8.2, ncol=2)
+    ax1.add_artist(leg_models)
+    ax1.legend(handles=regime_leg_a, loc="lower left", frameon=True, fontsize=8.0)
     ax1.grid(True, linestyle="--", alpha=0.4)
 
     # Panel (b): Scatter of Predicted vs Observed 2012 Drought Anomalies with OLS Trendlines
@@ -847,7 +867,6 @@ def main():
 
     plot_figure_5_1(preds)
     plot_macro_horizon_progression(preds)
-    plot_macro_portfolio_scatter(preds)
     plot_figure_5_2(preds)
     plot_figure_5_3(preds)
 

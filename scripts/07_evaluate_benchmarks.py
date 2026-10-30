@@ -222,11 +222,15 @@ def regional_report(predictions, scope):
         error = annual.y_pred_anomaly - annual.y_true_anomaly
         raw_true = annual.y_true_anomaly + annual.trend
         raw_pred = annual.y_pred_anomaly + annual.trend
+        ss_res = np.sum(error**2)
+        ss_tot = np.sum(annual.y_true_anomaly**2)
+        r2_macro = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
         for year, values in annual.iterrows():
             rows.append({"scope": scope, "model": model, "year": year,
                          "observed": values.y_true_anomaly, "predicted": values.y_pred_anomaly,
                          "trend": values.trend, "RMSE": np.sqrt(np.mean(error**2)),
                          "MAE": np.mean(abs(error)), "Bias": error.mean(),
+                         "R2_macro": r2_macro,
                          "r_anomaly": np.nan if annual.y_pred_anomaly.std() == 0 else annual.y_true_anomaly.corr(annual.y_pred_anomaly),
                          "r_level": raw_true.corr(raw_pred)})
     return pd.DataFrame(rows)
@@ -303,9 +307,11 @@ def write_table(filename, caption, label, headers, rows, notes=""):
                 cells[0] = r"\textbf{" + cells[0] + "}"
                 numeric = [(i, float(value)) for i, value in enumerate(cells) if i >= 2 and value != "---"]
                 if numeric:
-                    best = max(value for _, value in numeric) if index == 18 else min(abs(value) for _, value in numeric)
+                    maximize = cells[0].find("Pearson") != -1 or cells[0].find("R^2") != -1
+                    best = max(value for _, value in numeric) if maximize else min(abs(value) for _, value in numeric)
                     for i, value in numeric:
-                        if abs((value if index == 18 else abs(value))-best) < 1e-9:
+                        val_check = value if maximize else abs(value)
+                        if abs(val_check - best) < 1e-9:
                             cells[i] = r"\textbf{" + cells[i] + "}"
         lines.append(" & ".join(cells) + r" \\")
     lines.extend([r"\bottomrule", r"\end{tabular*}", r"\vspace{0.2em}",
@@ -332,9 +338,14 @@ def write_evidence_tables(predictions, metrics, inference, regional):
     for year in observed.sort_values().index:
         values=reg[reg.year.eq(year)].set_index("model").predicted
         rows.append([str(year),f"{observed[year]:+.2f}",*[f"{values[m]:+.2f}" for m in PRIMARY_MODELS]])
-    for field in ["RMSE","MAE","Bias","r_anomaly"]:
+    for field in ["RMSE","MAE","Bias","R2_macro","r_anomaly"]:
         values=reg.groupby("model")[field].first()
-        title = r"Pearson $r$ (anomaly)" if field == "r_anomaly" else field + " (bu/ac)"
+        if field == "r_anomaly":
+            title = r"Pearson $r$ (anomaly)"
+        elif field == "R2_macro":
+            title = r"$R^2_{\rm macro}$"
+        else:
+            title = field + " (bu/ac)"
         rows.append([title,"---",*["---" if not np.isfinite(values[m]) else f"{values[m]:.3f}" for m in PRIMARY_MODELS]])
     write_table("tab_yearly_macro_yields.tex", r"Regional mean yield anomalies (bu/ac) and forecast accuracy at harvest closure (2011--2025).",
                 "tab:yearly_macro_yields", ["Year", "Observed", "Naive", "ENet", "RF", "XGB", "LSTM", "Ens"], rows,

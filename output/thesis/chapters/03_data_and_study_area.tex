@@ -87,7 +87,7 @@ Panel~B evaluates out-of-sample forecast accuracy across 4,050 expanding-window 
 \subsection{Spatial Heterogeneity and Regional Productivity Divergence}
 \label{sec:data_spatial_heterogeneity}
 
-While secular growth is positive throughout the Midwest, historical productivity distributions exhibit marked spatial heterogeneity across states (Figure~\ref{fig:state_yield_distributions}). Baselines vary substantially in cross-sectional intercepts $\alpha_c$: Iowa (historical mean $39.73\text{ bu/ac}$) and Illinois ($38.35\text{ bu/ac}$) define the highest-yielding core, whereas Missouri records the lowest historical baseline ($29.04\text{ bu/ac}$). This pronounced cross-sectional spread formally justifies estimating individual fixed effects and county-specific detrending parameters rather than a uniform pooled intercept.
+While secular growth is positive throughout the Midwest, historical productivity distributions exhibit marked spatial heterogeneity across states (Figure~\ref{fig:state_yield_distributions}). Baselines vary substantially in cross-sectional intercepts $\alpha_c$: Iowa (historical mean $39.73\text{ bu/ac}$) and Illinois ($38.35\text{ bu/ac}$) define the highest-yielding core, whereas Missouri records the lowest historical baseline ($29.04\text{ bu/ac}$). This pronounced cross-sectional spread formally justifies estimating individual fixed effects and county-specific detrending parameters, precluding a uniform pooled intercept.
 
 \begin{figure}[htbp]
     \centering
@@ -98,7 +98,7 @@ While secular growth is positive throughout the Midwest, historical productivity
     \label{fig:state_yield_distributions}
 \end{figure}
 
-Furthermore, technological growth trajectories vary across regions: linear trend slopes $\beta_c$ range from $+0.509\text{ bu/ac/year}$ in Minnesota to $+0.386\text{ bu/ac/year}$ in Missouri, confirming the econometric requirement to estimate heterogeneous slopes at county level. Finally, cross-county dispersion displays distinct regional patterns: Indiana and Ohio show narrow within-state variance around their historical means ($39.52$ and $36.88\text{ bu/ac}$), whereas Illinois and Minnesota exhibit wide internal variance, highlighting the need to evaluate forecasting accuracy across disaggregated local scales.
+Furthermore, technological growth trajectories vary across regions: linear trend slopes $\beta_c$ range from $+0.509\text{ bu/ac/year}$ in Minnesota to $+0.386\text{ bu/ac/year}$ in Missouri, confirming the statistical requirement to estimate heterogeneous slopes at county level. Finally, cross-county dispersion displays distinct regional patterns: Indiana and Ohio show narrow within-state variance around their historical means ($39.52$ and $36.88\text{ bu/ac}$), whereas Illinois and Minnesota exhibit wide internal variance, highlighting the need to evaluate forecasting accuracy across disaggregated local scales.
 
 \subsection{Macro-Climatic Historical Yield Shocks and Biological Asymmetry}
 \label{sec:data_yield_shocks}

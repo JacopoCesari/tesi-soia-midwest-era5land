@@ -1,29 +1,30 @@
-\documentclass[12pt,a4paper,oneside]{report}
+\documentclass[12pt,a4paper]{report}
 
 % ------------------------------------------------------------------------------
-% Packages & Layout Configuration (Standard academic thesis template; formal departmental guidelines to be verified before final submission)
+% Packages & Layout Configuration (Aligned with Departmental Thesis Template)
 % ------------------------------------------------------------------------------
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}
 
 % Margins: 2.5 cm on all sides
-\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage[margin=2.5cm]{geometry}
 
-% Line spacing: 1.5
+% Line spacing: 1.5 (per Vademecum p. 4)
 \usepackage{setspace}
 \onehalfspacing
 
 % Colors and typography
 \usepackage{xcolor}
-\usepackage{microtype}
-\usepackage{amsmath, amssymb}
+\usepackage{amsmath, amsfonts, amssymb}
 \usepackage{graphicx}
-\usepackage{booktabs, array, multirow}
+\usepackage{booktabs, multirow, array}
 \usepackage{tabularx}
 
-% Bibliography with author-year citation (natbib / apalike author-year style)
-\usepackage[round, authoryear]{natbib}
+% Helper command for marking text/revisions (as provided in template)
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+
+% Bibliography with natbib and author-year citations
+\usepackage{natbib}
 
 % Hyperlinks (clean formal style)
 \usepackage[colorlinks=true, allcolors=black, citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
@@ -50,27 +51,40 @@
 \hypersetup{pageanchor=false}
 \begin{titlepage}
     \begin{center}
-        {\large \textbf{ALMA MATER STUDIORUM -- UNIVERSIT\`A DI BOLOGNA}} \\[2.5cm]
+        {\Large{\bf ALMA MATER STUDIORUM -- UNIVERSIT\`A DI BOLOGNA}} \\
+        \vspace{0.5cm}
+        \rule[0.1mm]{15cm}{0.1mm}\\
+        {\Large DEPARTMENT OF STATISTICAL SCIENCES\\ ``PAOLO FORTUNATI''} \\
+        \vspace{0.3cm}
+        {\Large SECOND CYCLE DEGREE IN STATISTICAL SCIENCES} \\
+        \vspace{0.2cm}
+        {\large Curriculum Data Science}
         
-        {\large Master's Degree Thesis} \\[1.5cm]
+        \vspace{25mm}
         
-        {\LARGE \textbf{Progressive Lead-Time Forecasting of Agricultural Yields from Weather Data:}} \\[0.5cm]
-        {\Large \textbf{Evidence from County-Level U.S. Soybean Yields}} \\[3.0cm]
-        
-        \begin{minipage}[t]{0.45\textwidth}
-            \raggedright
-            \textbf{Supervisor:} \\
-            Prof. Luca Trapin
-        \end{minipage}
-        \hfill
-        \begin{minipage}[t]{0.45\textwidth}
-            \raggedleft
-            \textbf{Candidate:} \\
-            Jacopo Cesari
-        \end{minipage} \\[3.0cm]
-        
-        \vfill
-        {\large Academic Year 2025/2026}
+        {\LARGE{\bf Progressive Lead-Time Forecasting of Agricultural Yields from Weather Data:}} \\[0.4cm]
+        {\Large{\bf Evidence from County-Level U.S. Soybean Yields}}
+    \end{center}
+    
+    \vspace{30mm}
+    \par
+    \noindent
+    \begin{minipage}[t]{0.47\textwidth}
+        {\large{\bf Presented by:\\
+        Jacopo Cesari \\
+        Matricola: 0001037307}}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.47\textwidth}\raggedleft
+        {\large{\bf Supervisor:\\
+        Prof. Luca Trapin}}
+    \end{minipage}
+    
+    \vspace{25mm}
+    \begin{center}
+        {\large{\bf GRADUATION SESSION: MARCH 2026}} \\
+        \vspace{8mm}
+        {\large{\bf ACADEMIC YEAR: 2025/2026}}
     \end{center}
 \end{titlepage}
 
@@ -95,16 +109,16 @@
 \include{chapters/06_discussion_and_conclusions}
 
 % ------------------------------------------------------------------------------
+% Bibliography
+% ------------------------------------------------------------------------------
+\clearpage
+\bibliographystyle{myplainnat}
+\bibliography{references}
+
+% ------------------------------------------------------------------------------
 % Appendices
 % ------------------------------------------------------------------------------
 \appendix
 \include{chapters/appendix_a_detrending_robustness}
-
-% ------------------------------------------------------------------------------
-% Bibliography
-% ------------------------------------------------------------------------------
-\clearpage
-\bibliographystyle{apalike}
-\bibliography{references}
 
 \end{document}
