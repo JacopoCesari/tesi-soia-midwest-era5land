@@ -1,0 +1,182 @@
+% !TeX root = ../main.tex
+\chapter{Robustness Analysis: Structural Breaks and Alternative Detrending Specifications}
+\label{chap:appendix_detrending}
+
+This appendix presents a sensitivity analysis of the target detrending framework. We evaluate the structural stability of the multi-decadal soybean yield series, test for technological regime shifts, and assess whether the substantive findings of the thesis (lead-time skill emergence, algorithm rankings, decile tail shrinkage, and macro-regional predictability) remain invariant under an alternative full-sample cubic trend specification.
+
+% ==============================================================================
+% SECTION A.1: PURPOSE AND METHODOLOGICAL CONTEXT
+% ==============================================================================
+
+\section{Purpose and Methodological Context}
+\label{sec:app_context}
+
+In agricultural yield modeling, removing secular technological progress is essential to isolate inter-annual weather sensitivity. Throughout Chapters~\ref{chap:data_and_study_area} through \ref{chap:empirical_results}, our primary continuous target is the yield anomaly $\epsilon_{c, t} = y_{c, t} - \hat{\tau}_{c, t}^{(Y)}$, where the technological trend $\hat{\tau}_{c, t}^{(Y)}$ is estimated via county-specific linear Ordinary Least Squares (OLS) restricted strictly to historical training observations ($t < Y$). This causal expanding-window protocol prevents look-ahead bias and simulates real-time operational forecasting.
+
+However, two methodological concerns warrant rigorous sensitivity testing:
+\begin{enumerate}
+    \item \textbf{Estimation Inertia and Technological Acceleration:} Linear expanding-window models weigh all historical observations from 1951 onward equally. If technological innovation accelerated during the recent test period (2011--2025), expanding trend estimates could lag behind actual yield plateaus, introducing a positive mean bias into test anomalies.
+    \item \textbf{Robustness of Empirical Conclusions:} A critical question is whether the tail attenuation observed in bottom-decile shortfall predictions ($D_1$) or the parity between regularized linear and machine learning models is an artifact of the expanding linear trend specification.
+\end{enumerate}
+
+To resolve these questions, we test for structural breaks across the 75-year panel and re-evaluate the entire multi-horizon machine learning suite under an oracle full-sample cubic trend specification.
+
+% ==============================================================================
+% SECTION A.2: STATISTICAL EVALUATION OF STRUCTURAL BREAKS
+% ==============================================================================
+
+\section{Statistical Evaluation of Structural Breaks}
+\label{sec:app_chow_test}
+
+\subsection{Stationarity and Test Formulation}
+We first verify trend-stationarity on the regional mean yield trajectory ($N = 75$, 1951--2025). The Augmented Dickey-Fuller (ADF) test with constant and linear trend yields a test statistic of $-6.284$ ($p < 0.0001$), firmly rejecting the unit-root null hypothesis. The series is trend-stationary $I(0)$, confirming the statistical validity of deterministic trend regression and Chow breakpoint tests.
+
+To identify potential regime shifts without imposing an arbitrary break date, we apply a sequential Chow test \citep{James2023} across all candidate break years $T^* \in [1966, 2021]$, trimming 15 initial observations for degrees-of-freedom stability. For each candidate year $T^*$, we define a level indicator $D_t = \mathbf{1}(t \ge T^*)$ and a post-break trend variable $\tilde{t} = (t - T^*) \mathbf{1}(t \ge T^*)$. The restricted model assumes parameter constancy across all 75 years:
+\begin{equation}
+    y_t = \beta_0 + \beta_1 t + u_t, \quad t = 1, \dots, n.
+    \label{eq:chow_restricted}
+\end{equation}
+The unrestricted model evaluates: (i) an intercept level shift ($D_t$), (ii) a slope trend shift ($\tilde{t}$), or (iii) a combined shift ($D_t$ and $\tilde{t}$):
+\begin{equation}
+    y_t = \beta_0 + \beta_1 t + \delta D_t + \gamma \tilde{t} + v_t.
+    \label{eq:chow_unrestricted}
+\end{equation}
+The test statistic follows an $F$-distribution under the null hypothesis of parameter constancy ($\delta = \gamma = 0$):
+\begin{equation}
+    F = \frac{(RSS_R - RSS_{UR}) / q}{RSS_{UR} / (n - k_{UR})},
+    \label{eq:chow_f_stat}
+\end{equation}
+where $RSS_R$ and $RSS_{UR}$ denote the residual sums of squares from the restricted and unrestricted specifications, $q$ is the number of restrictions ($q=1$ for level or trend shifts; $q=2$ for combined shifts), and $k_{UR}$ is the parameter count of the unrestricted model.
+
+\subsection{Empirical Breakpoint Findings}
+Figure~\ref{fig:chow_break} presents the sequential Chow test trajectories and the estimated breakpoint model.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/fig_chow_structural_break.pdf}
+    \caption{Sequential Chow structural break test across candidate years (1966--2021): (a) $F$-statistic trajectory for level, trend, and combined breaks; (b) observed regional soybean yield and fitted 2014 level-shift model.}
+    \label{fig:chow_break}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025).}}
+\end{figure}
+
+The statistical analysis establishes two distinct temporal regimes:
+\begin{itemize}
+    \item \textbf{Pre-Test Period Stability (1951--2010):} Across the 30 evaluation years preceding the machine learning test window, the Chow test does not reject parameter constancy. The maximum $F$-statistic is $F_{\max} = 2.85$, well below the 5\% critical threshold ($F_{\text{crit}} = 4.01$, $p = 0.093$). This proves that ex-ante, prior to observing the 2011--2025 test window, there was no statistical evidence of a structural break, justifying the linear expanding-window specification.
+    \item \textbf{Full-Sample 2014 Level Shift (1951--2025):} Evaluated across the full 75-year panel, the sequential test reveals a sharp, statistically significant breakpoint at \textbf{2014} ($F = 21.96$, $p < 0.0001$, critical threshold $3.97$). The estimated instantaneous level jump is $\hat{\delta} = \boldsymbol{+4.83}\text{ bu/ac}$ ($t = 4.69$, $\Delta\text{BIC} = -15.64$). In contrast, the change in trend slope post-2014 is statistically insignificant ($p = 0.74$).
+\end{itemize}
+
+Agronomically, this 2014 breakpoint aligns with documented commercial milestones: the rapid market penetration of second-generation genetically modified soybean varieties (e.g., Intacta and Roundup Ready 2 Yield) and large-scale investments in pattern drainage tile networks across the Corn Belt during 2013--2015. However, incorporating this shift into real-time forecasting during 2014--2016 would be methodologically illegitimate, requiring either look-ahead knowledge of the break year or estimation on a microscopic post-break sample ($N \le 2$).
+
+% ==============================================================================
+% SECTION A.3: CANDIDATE DETRENDING SPECIFICATIONS AND FIT-GENERALIZATION TRADE-OFFS
+% ==============================================================================
+
+\section{Candidate Detrending Specifications and Trade-offs}
+\label{sec:app_candidate_specs}
+
+To assess alternative parametric formulations, we compare Linear OLS ($k=2$), Quadratic Polynomial ($k=3$), and Cubic Polynomial ($k=4$) specifications. As reported in Table~\ref{tab:detrending_comparison} (Chapter~\ref{chap:data_and_study_area}):
+\begin{itemize}
+    \item \textbf{Out-of-Sample Pre-Test Accuracy (1981--2010):} Linear OLS minimizes expanding-window 1-step-ahead forecast error across the $4{,}050$ pre-test evaluations ($5.77\text{ bu/ac}$ vs $6.14\text{ bu/ac}$ for Quadratic and $6.62\text{ bu/ac}$ for Cubic). The Bayesian Information Criterion (BIC) favors Linear OLS in $65.9\%$ of counties. Higher-order polynomials suffer from boundary instability and overfitting to multi-year weather droughts (such as 1983 and 1988).
+    \item \textbf{In-Sample Full-Sample Fit (1951--2025):} Evaluated on the complete historical sample ($10{,}125$ observations), the Cubic Polynomial achieves the highest in-sample fit ($R^2 = 0.831$ at county level and $0.943$ on the regional aggregate, compared to $0.812$ and $0.932$ for Linear OLS).
+\end{itemize}
+
+Because the county-specific Cubic Polynomial achieves maximum in-sample fit by flexing upward to capture the post-2014 technology shift, it represents the ideal \textbf{oracle benchmark} to stress-test the machine learning pipeline and verify whether empirical conclusions are sensitive to trend specification.
+
+% ==============================================================================
+% SECTION A.4: IMPACT ON TARGET ANOMALY DISTRIBUTIONS
+% ==============================================================================
+
+\section{Impact on Target Anomaly Distributions}
+\label{sec:app_distribution_impact}
+
+Table~\ref{tab:appendix_decile_distribution} and Figure~\ref{fig:decile_dist_comp} compare the empirical anomaly distributions between the Baseline Expanding Linear Trend and the Full-Sample Cubic Trend.
+
+\input{tables/tab_appendix_decile_distribution.tex}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_decile_distribution_comparison.pdf}
+    \caption{Empirical anomaly distributions under Baseline Expanding Linear vs Full-Sample Cubic detrending: (a) probability density across the 75-year panel; (b) probability density across the 2011--2025 test period; (c) mean decile anomaly across the 75-year panel; (d) mean decile anomaly across the 2011--2025 test period.}
+    \label{fig:decile_dist_comp}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025).}}
+\end{figure}
+
+Across the complete 75-year panel (Panel A), both specifications display zero mean and the characteristic negative skewness of rainfed crop yields, with negative anomalies comprising $41.6\%$ to $44.0\%$ of observations.
+
+In the 2011--2025 test period (Panel B), the expanding linear trend exhibits estimation inertia: test-set anomalies shift upward to a positive mean of $+2.41\text{ bu/ac}$, reducing the proportion of negative anomalies to $29.8\%$. In contrast, the full-sample cubic trend absorbs the 2014 level break, maintaining a centered test-set mean of $-0.06\text{ bu/ac}$ and a negative anomaly proportion of $44.7\%$, closely replicating the long-term historical baseline.
+
+% ==============================================================================
+% SECTION A.5: INVARIANCE OF MACHINE LEARNING FORECASTING PERFORMANCE
+% ==============================================================================
+
+\section{Invariance of Machine Learning Forecasting Performance}
+\label{sec:app_ml_invariance}
+
+We re-trained and evaluated all predictive models across the 2011--2025 test folds using the full-sample cubic detrended anomalies as targets and predictors.
+
+\subsection{Decile Calibration and \texorpdfstring{$L_2$}{L2} Conditional Tail Shrinkage}
+Table~\ref{tab:appendix_decile_error_performance} and Figure~\ref{fig:decile_calib_comp} compare out-of-sample decile predictions across key lead times ($H=5, 3, 1^*$).
+
+\input{tables/tab_appendix_decile_error_performance.tex}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_decile_calibration_and_residuals_comparison.pdf}
+    \caption{Decile calibration and error diagnostics at harvest closure ($H=1^*$, 2011--2025): (a) observed vs predicted anomaly calibration curves; (b) mean signed error $\bar{\hat{\epsilon}} - \bar{\epsilon}$ across deciles $D_1 \dots D_{10}$.}
+    \label{fig:decile_calib_comp}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data ($2{,}025$ test evaluations per horizon).}}
+\end{figure}
+
+The comparison yields two fundamental empirical insights:
+\begin{enumerate}
+    \item \textbf{Persistence of Extreme Shortfall Under-Prediction ($D_1$):} In the bottom decile ($D_1$, severe shortfall), the observed mean anomaly under the cubic trend is $-10.18\text{ bu/ac}$. The Ensemble predicts $-1.81\text{ bu/ac}$, leaving a positive residual of $\boldsymbol{+8.38}\text{ bu/ac}$. Under the baseline expanding linear trend, observed $D_1$ is $-8.82\text{ bu/ac}$ and the Ensemble predicts $-2.16\text{ bu/ac}$ (residual $\boldsymbol{+6.66}\text{ bu/ac}$).
+    \item \textbf{Mathematical Confirmation of $L_2$ Conditional Shrinkage:} Because weather explains approximately $32\%$ of county-level anomaly variance, minimizing squared loss ($L_2$) mathematically forces point predictions toward the conditional mean ($\mathbb{E}[Y \mid X]$). The fact that tail under-prediction is equally pronounced (or slightly larger) under the oracle cubic trend confirms that tail attenuation is NOT caused by trend estimation lag. It is a structural property of conditional-mean regression under imperfectly observed weather inputs.
+\end{enumerate}
+
+\subsection{Lead-Time Skill Progression and Model Hierarchy}
+Figure~\ref{fig:r2_progression_comp} displays the out-of-sample $R^2$ and RMSE trajectories across all twelve monthly horizons ($H=11 \dots 1$).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/fig_r2_horizon_progression_comparison.pdf}
+    \caption{Out-of-sample predictive performance across twelve monthly lead times ($H=11 \dots 1$, 2011--2025): (a) explained variance $R^2_{\text{OOS}}$; (b) forecast error RMSE. Comparison between Baseline Expanding Trend and Full-Sample Cubic Trend.}
+    \label{fig:r2_progression_comp}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data ($2{,}025$ test evaluations per horizon).}}
+\end{figure}
+
+The qualitative progression and relative model rankings are identical under both trend specifications:
+\begin{itemize}
+    \item Early horizons ($H=11 \dots 6$) contain no predictive skill ($R^2_{\text{OOS}} \le 0$).
+    \item Useful predictive signal emerges in August ($H=3$) as reproductive weather accumulates.
+    \item ElasticNet matches or outperforms tree ensembles on tabular features across all horizons.
+    \item The sequential LSTM and Ensemble consistently achieve the highest accuracy at harvest closure.
+\end{itemize}
+
+\subsection{Macro-Regional Aggregation and Extreme Shock Capture}
+Table~\ref{tab:appendix_yearly_raw_yields} presents regional mean yield forecasts at harvest closure ($H=1^*$) across all 15 test years, ordered by realized cubic anomaly severity.
+
+\input{tables/tab_appendix_yearly_raw_yields.tex}
+
+Aggregating predictions to the regional aggregate scale confirms two key operational properties:
+\begin{itemize}
+    \item \textbf{Elimination of Secular Drift:} The full-sample cubic trend eliminates secular test bias (bias $+0.06\text{ bu/ac}$ vs $-2.41\text{ bu/ac}$ under baseline), reducing the Ensemble's macro-regional MAE from $1.87$ to $\boldsymbol{1.46}\text{ bu/ac}$.
+    \item \textbf{Fidelity During Extreme Drought (2012):} In the historic 2012 drought (actual yield $43.55\text{ bu/ac}$), the secular trend projects a normal harvest ($47.62\text{ bu/ac}$ Base, $49.11\text{ bu/ac}$ Full). The Ensemble accurately captures the collapse under both specifications: $\boldsymbol{43.53}\text{ bu/ac}$ (error $-0.02\text{ bu/ac}$) under Base, and $\boldsymbol{43.71}\text{ bu/ac}$ (error $+0.16\text{ bu/ac}$) under Full.
+\end{itemize}
+
+% ==============================================================================
+% SECTION A.6: METHODOLOGICAL SYNTHESIS
+% ==============================================================================
+
+\section{Methodological Synthesis}
+\label{sec:app_synthesis}
+
+The empirical sensitivity analysis establishes three conclusions:
+\begin{enumerate}
+    \item The causal expanding-window linear OLS specification adopted in the main text is statistically justified ex-ante: structural break tests confirm parameter constancy during the pre-test era ($p = 0.093$), and Linear OLS minimizes out-of-sample error across $4{,}050$ historical folds.
+    \item The post-2014 technological level shift ($+4.83\text{ bu/ac}$) accounts for the modest positive bias observed in test-period anomalies, but cannot be calibrated in real time without look-ahead bias.
+    \item Re-evaluating the entire forecasting pipeline under the oracle cubic trend demonstrates that all substantive findings of the thesis---the timing of lead-time skill emergence, algorithm rankings, decile tail shrinkage, and regional shock forecasting---are invariant to the detrending specification.
+\end{enumerate}

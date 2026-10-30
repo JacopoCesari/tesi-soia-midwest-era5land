@@ -42,6 +42,23 @@ from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 
 
+# Matplotlib Styling setup (aligned with 08_generate_eda_figures.py and LaTeX thesis layout)
+plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
+plt.rcParams.update({
+    'font.family': 'serif',
+    'font.size': 10,
+    'axes.labelsize': 10,
+    'axes.titlesize': 11,
+    'axes.titleweight': 'bold',
+    'xtick.labelsize': 9,
+    'ytick.labelsize': 9,
+    'legend.fontsize': 8.8,
+    'figure.titlesize': 12,
+    'figure.dpi': 300,
+    'savefig.dpi': 300,
+    'savefig.bbox': 'tight'
+})
+
 ROOT = Path(__file__).resolve().parent.parent
 PROCESSED_DIR = ROOT / "output" / "data" / "processed"
 FEATURES_H01_PATH = PROCESSED_DIR / "model_datasets" / "features_H01.parquet"
@@ -95,7 +112,7 @@ def load_data():
 # ==============================================================================
 def plot_figure_5_1(preds):
     print("Generating Figure 5.1: R2 and RMSE progression across horizons...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.0, 5.4), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.2, 5.0), sharex=True)
     x_pos = np.arange(len(HORIZONS))
 
     for ax in (ax1, ax2):
@@ -185,7 +202,7 @@ def plot_figure_5_1(preds):
 # ==============================================================================
 def plot_macro_horizon_progression(preds):
     print("Generating Figure: Macro-regional portfolio progression and 1:1 calibration scatter...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.2, 5.5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.2, 5.0))
     x_pos = np.arange(len(HORIZONS))
 
     # ---------------------------------------------------------
@@ -314,7 +331,7 @@ def plot_macro_horizon_progression(preds):
 # ==============================================================================
 def plot_figure_5_2(preds):
     print("Generating Figure 5.2: Shock bias profiles and scatter resolution...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.8, 5.2))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.2, 5.0))
     active_h = [5, 4, 3, 2, 1]
     x_pos = np.arange(len(active_h))
 
@@ -1234,7 +1251,7 @@ def generate_table_a2_and_figure_a3():
     ref_c["decile"] = pd.qcut(ref_c["y_true_anomaly"], 10, labels=range(1, 11))
     sc_h1 = pd.merge(sc_h1, ref_c[["year", "county_fips", "decile"]], on=["year", "county_fips"])
     
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.0, 4.6))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 4.8))
     deciles = np.arange(1, 11)
     
     models_plot = [

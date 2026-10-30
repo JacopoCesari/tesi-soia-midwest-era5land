@@ -32,6 +32,23 @@ from statsmodels.tsa.stattools import adfuller
 
 warnings.filterwarnings("ignore")
 
+# Matplotlib Styling setup (aligned with thesis layout)
+plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
+plt.rcParams.update({
+    'font.family': 'serif',
+    'font.size': 10,
+    'axes.labelsize': 10,
+    'axes.titlesize': 11,
+    'axes.titleweight': 'bold',
+    'xtick.labelsize': 9,
+    'ytick.labelsize': 9,
+    'legend.fontsize': 8.8,
+    'figure.titlesize': 12,
+    'figure.dpi': 300,
+    'savefig.dpi': 300,
+    'savefig.bbox': 'tight'
+})
+
 ROOT = Path(__file__).resolve().parent.parent
 YIELD_CSV = ROOT / "data" / "target" / "soybean_yield_1951_2025.csv"
 TAB_OUT = ROOT / "output" / "thesis" / "tables" / "tab_detrending_comparison.tex"
@@ -329,7 +346,7 @@ def generate_chow_test_figure(df_yield):
     X_opt["level_break"] = np.where(annual["year"] >= opt_yr_level, 1, 0)
     m_opt = sm.OLS(annual["yield"], X_opt).fit()
 
-    fig, axes = plt.subplots(1, 2, figsize=(13.0, 5.0))
+    fig, axes = plt.subplots(1, 2, figsize=(13.5, 4.8))
     years = annual["year"].values
     pred_linear = model_restricted.predict(X_base)
     pred_break = m_opt.predict(X_opt)

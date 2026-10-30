@@ -1,0 +1,51 @@
+% !TeX root = ../main.tex
+\chapter{Introduction}
+\label{chap:introduction}
+
+\section{Problem, Practical Value, and Motivation}
+\label{sec:intro_problem}
+
+Agricultural yield becomes observable at harvest, after many operational and commercial commitments have been executed. Earlier forecasts provide essential decision support for risk management in agrifood supply chains. The operational value of an agricultural forecast depends directly on its lead time: pre-sowing projections support acreage allocation, input procurement, and long-term storage planning, whereas in-season updates inform regional sourcing adjustments, freight commitments, and hedging strategies. We evaluate predictive skill across three criteria: accuracy across the full yield distribution, the operational timing at which genuine predictive signal emerges, and the stability of predictive gains across successive monthly updates from the pre-season origin to harvest eve ($H=12 \dots 1$).
+
+Within global crop markets, soybean (\textit{Glycine max}) represents a vital commodity underpinning domestic livestock feed rations and international trade flows, with the Midwestern Corn Belt serving as the primary production engine \citep{Schlenker2009}. Harvest surprises in this region carry severe, asymmetric economic costs. Regional crop shortfalls, typically driven by summer heatwaves or moisture deficits, generate acute procurement bottlenecks and sharp price spikes for grain crushers, feed millers, and export terminals. Empirically, across the 1960--2025 record, each 10\% negative departure from secular yield trend is associated with an average 7.5\% increase in annual commodity prices ($p = 0.014$), with intra-seasonal futures rallies on the Chicago Board of Trade (CBOT) frequently exceeding 30--60\% during acute summer droughts. Conversely, unexpectedly bumper harvests compress local storage capacity, create barge and rail bottlenecks along the Mississippi corridor, and exert downward pressure on regional cash basis levels.
+
+We focus specifically on county-level yield anomalies (in bushels per acre), which isolate climate sensitivity from secular technology and cross-county acreage shifts. Aggregate production totals depend on land allocation decisions, while commercial prices reflect global carryover stocks and international trade flows. These supply-chain repercussions establish the practical motivation for county-level yield anomaly forecasting.
+
+\section{Research Question and Target Formulations}
+\label{sec:intro_research_question}
+
+A fundamental empirical challenge in agricultural forecasting is that raw county yields are heavily dominated by secular technological progress, including genetic breeding, synthetic fertilizers, chemical pest control, and farm mechanization. To isolate how much and when observed surface weather explains realized crop output, we must first decouple interannual weather sensitivity from the underlying secular technological trajectory.
+
+The central research question asks: \textit{At what lead times prior to harvest does observed surface weather add statistically significant and stable out-of-sample predictive skill for county-level soybean yield anomalies, and how does this skill vary across model families and temporal aggregations?}
+
+To address this question, we structure our predictive framework around two complementary evaluation dimensions:
+\begin{itemize}
+    \item \textbf{Continuous Anomaly Forecasting (Regression):} We estimate continuous models predicting county-level yield anomalies, isolating weather-induced departures from secular technological trends fitted strictly on historical training folds. Absolute yield levels are subsequently reconstructed by adding predicted anomalies to the estimated secular trend.
+    \item \textbf{Downside Tail-Risk Stress Testing:} In agricultural supply chains, forecast errors are economically asymmetric: standard quadratic loss near historical averages is manageable, whereas failing to anticipate extreme adverse shortfalls causes severe contractual defaults and market disruptions. We stress-test continuous regression models specifically on extreme negative anomalies (the bottom decile $D_1$) to assess whether empirical estimators capture severe climate shocks or suffer from excessive shrinkage toward historical means.
+\end{itemize}
+
+We structure our investigation around five core research questions and formal hypotheses (H1--H5, derived in Chapter~\ref{chap:literature_review}): evaluating incremental weather skill over secular trends, mapping lead-time persistence across horizons ($H=12 \dots 1$), assessing sub-monthly temporal aggregation, comparing linear parsimony against non-linear tree and deep learning architectures, and stress-testing the anticipation of downside tail risks.
+
+\section{Methodological Contributions and Scope Boundaries}
+\label{sec:intro_contributions}
+
+The literature on empirical crop modeling encompasses diverse approaches to predicting county-level soybean yields from environmental data. Recent studies have advanced the field from complementary perspectives: \citet{Vijverberg2023} identified pre-sowing climate precursors for extreme yield events; \citet{Yinetal2026} demonstrated the influence of sub-monthly temporal aggregation on modern architectures over recent decades; and the multidecadal benchmark by \citet{ChenZhang2026} examined in-season deep learning across monthly growing-season updates.
+
+However, existing empirical studies examine these dimensions in isolation, focusing on specific phenological windows, individual model classes, or restricted historical intervals. We synthesize these empirical branches into a unified benchmarking framework.
+
+We address these gaps through two primary methodological contributions:
+\begin{enumerate}
+    \item \textbf{Systematic 12-Month Lead-Time Mapping Without Forecast Inputs ($H=12 \dots 1$):} We establish the empirical boundaries of weather-driven predictability across twelve standardized monthly cutoffs from the preceding autumn through harvest eve, tracking precisely when observed atmospheric states transition from dormant noise into reliable predictive skill. To guarantee causal realism and avoid look-ahead bias, our operational setup relies strictly on cumulative reanalysis observations available up to each forecast origin without numerical weather predictions, eliminating forecast drift and calibration artifacts while isolating the empirical contribution of observed weather.
+    \item \textbf{Comparison of Forecasting Specifications:} We compare regularized linear models, tree ensembles (Random Forest, XGBoost), and recurrent architectures (LSTM) on the selected county panel. The final benchmark evaluates monthly tabular models and a 10-day LSTM. The recurrent frequency and head-specific parameters are fixed before the final test evaluation.
+\end{enumerate}
+
+We evaluate this framework on soybean across a balanced panel of 135 counties in six core Midwestern states (Illinois, Indiana, Iowa, Minnesota, Missouri, and Ohio) over 1951--2025 ($10{,}125$ county-year observations). This geographic and temporal delimitation provides an unbroken historical record that avoids artificial data imputation.
+
+We interpret feature importance strictly as empirical predictive association, without claiming structural causal identification.
+
+Weather-only models provide the initial benchmark. We then test the incremental contribution of lagged yield anomalies and retain integrated specifications supported by that comparison. Reported scores distinguish the two information sets; lagged anomalies are detrended on training data and included only when available at the forecast origin.
+
+\section{Structure of the Study}
+\label{sec:intro_structure}
+
+Chapter~\ref{chap:literature_review} reviews the literature and derives H1--H5. Chapter~\ref{chap:data_and_study_area} describes the data and exploratory analysis. Chapter~\ref{chap:methodology} presents the methodology. Chapter~\ref{chap:empirical_results} reports the empirical results, and Chapter~\ref{chap:discussion_conclusions} synthesizes findings, evaluates hypotheses, and concludes the study. Appendix~\ref{chap:appendix_detrending} provides sensitivity analyses on structural breaks and detrending specifications.

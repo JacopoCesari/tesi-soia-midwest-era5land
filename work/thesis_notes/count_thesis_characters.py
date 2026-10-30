@@ -156,8 +156,15 @@ def load_rendered_references(thesis_dir):
     for match in re.finditer(r"\\bibitem\[", bibliography):
         label, position = read_group(bibliography, match.end() - 1, "[", "]")
         key, _ = read_group(bibliography, position)
-        author, year = label.rsplit(",", 1)
-        citations[key] = (clean_latex(author), clean_latex(year))
+        # Handle natbib format "Author(Year)..." or standard "Author, Year"
+        if "(" in label and label.endswith(")"):
+            author_part, year_part = label[:-1].split("(", 1)
+            citations[key] = (clean_latex(author_part), clean_latex(year_part))
+        elif "," in label:
+            author, year = label.rsplit(",", 1)
+            citations[key] = (clean_latex(author), clean_latex(year))
+        else:
+            citations[key] = (clean_latex(label), "")
     references = {}
     for path in [thesis_dir / "main.aux", *sorted((thesis_dir / "chapters").glob("*.aux"))]:
         source = path.read_text(encoding="utf-8")

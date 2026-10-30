@@ -217,9 +217,8 @@ def generate_figure_3_2(df_yield):
                     arrowprops=dict(arrowstyle="->", color=COLOR_ARROW, lw=0.9, shrinkB=4, connectionstyle="arc3,rad=0.10"), zorder=9)
 
     ax.set_title(
-        "County Soybean Yield Trajectories & Dispersion Dynamics (1951–2025)\n"
-        "Reference Line: Linear Trend | Envelope: Dual Envelope (Min–Max Records + 90% Dispersion Core)",
-        fontsize=12, fontweight="bold", pad=12
+        "County Soybean Yield Trajectories and Dispersion Dynamics (1951–2025)",
+        fontsize=11.5, fontweight="bold", pad=10
     )
     ax.set_xlabel("Crop Year", fontsize=11, fontweight="bold")
     ax.set_ylabel("Soybean Yield (bu/acre)", fontsize=11, fontweight="bold")
@@ -883,10 +882,10 @@ def generate_figure_3_8(df_yield):
     x = np.arange(len(months))
     w = 0.20
 
-    ax.bar(x - 1.5 * w, corrs["tmax"], w, label=r"Max Temperature ($T_{\max}$)", color="#d95f02", alpha=0.9)
-    ax.bar(x - 0.5 * w, corrs["vpd"], w, label=r"Vapor Pressure Deficit ($VPD$)", color="#e7298a", alpha=0.85)
-    ax.bar(x + 0.5 * w, corrs["precip"], w, label=r"Precipitation ($P$)", color="#2b83ba", alpha=0.9)
-    ax.bar(x + 1.5 * w, corrs["sm"], w, label=r"Root-Zone Soil Moisture ($SM_{\mathrm{root}}$)", color="#1b9e77", alpha=0.9)
+    ax.bar(x - 1.5 * w, corrs["tmax"], w, label=r"Max Temperature ($T_{\max}$)", color="#e7298a", alpha=0.90)
+    ax.bar(x - 0.5 * w, corrs["vpd"], w, label=r"Vapor Pressure Deficit ($VPD$)", color="#e66101", alpha=0.90)
+    ax.bar(x + 0.5 * w, corrs["precip"], w, label=r"Precipitation ($P$)", color="#1f78b4", alpha=0.90)
+    ax.bar(x + 1.5 * w, corrs["sm"], w, label=r"Root-Zone Soil Moisture ($SM_{\mathrm{root}}$)", color="#8c510a", alpha=0.90)
 
     ax.axhline(0, color="black", lw=1.0)
     ax.set_ylabel("Pearson Correlation ($r$) with Yield Anomaly")

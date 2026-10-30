@@ -1,0 +1,27 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Statistical and diagnostic comparison of candidate detrending models across the 75-year panel (1951--2025).}
+\label{tab:detrending_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l c c c c c c c c}
+\toprule
+\textbf{Specification} & \textbf{Params} & \textbf{$R^2$} & \textbf{Adj. $R^2$} & \textbf{RSE} & \textbf{AIC} & \textbf{BIC} & \textbf{ADF $p$} & \textbf{OOS RMSE} \\
+ & ($k$) & & & (bu/ac) & & & & (bu/ac) \\
+\midrule
+\multicolumn{9}{l}{\textit{\textbf{Panel A: Regional Aggregate Mean Yield Trajectory ($N = 75$)}}} \\[0.5ex]
+\textbf{Linear OLS} & 2 & 0.9323 & 0.9313 & 2.87 & 372.7 & 377.4 & < 0.001 & \textbf{3.277} \\
+Quadratic Polynomial & 3 & 0.9398 & 0.9382 & 2.72 & 365.8 & 372.8 & < 0.001 & 3.506 \\
+Cubic Polynomial & 4 & 0.9428 & 0.9404 & 2.67 & 364.1 & 373.4 & < 0.001 & 3.839 \\
+\midrule
+\multicolumn{9}{l}{\textit{\textbf{Panel B: County-Level Generalization ($135\text{ Counties} \times 30\text{ Pre-Test Years} = 4{,}050\text{ Forecasts}$)}}} \\[0.5ex]
+Linear OLS (County-Specific) & 2 & 0.8169 & 0.8096 & 5.12 & --- & --- & < 0.001 & \textbf{5.767} \\
+Quadratic (County-Specific) & 3 & 0.8274 & 0.8196 & 4.98 & --- & --- & < 0.001 & 6.145 \\
+Cubic (County-Specific) & 4 & 0.8335 & 0.8239 & 4.92 & --- & --- & < 0.001 & 6.618 \\
+\bottomrule
+\end{tabular}%
+}
+\vspace{1ex}
+\raggedright
+\scriptsize{\textit{Notes:} $k$ denotes parameter count. In-sample fit metrics ($R^2$, Adj. $R^2$, RSE, AIC, BIC, ADF $p$) are estimated across the complete 75-year historical panel ($1951$--$2025$, $10{,}125$ county-year observations). OOS RMSE evaluates 1-step-ahead out-of-sample forecast accuracy across 30 expanding windows restricted to the pre-test period ($1981$--$2010$, $4{,}050$ county-year forecasts, base training initiated on $1951$--$1980$), strictly preventing data snooping into the primary machine-learning test set ($2011$--$2025$). In Panel B, BIC strictly favors Linear OLS in 62.2\% of counties (84/135). Linear OLS minimizes out-of-sample forecast error, eliminating the endpoint instability and overfitting inherent in higher-order polynomial specifications. \textit{Source:} Author's calculation on USDA NASS yield panel (1951--2025).}
+\end{table}

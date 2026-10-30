@@ -1,0 +1,242 @@
+% !TeX root = ../main.tex
+\chapter{Empirical Results}
+\label{chap:empirical_results}
+
+Evaluations are calculated on the expanding test partition spanning harvest years 2011--2025 ($N_{\text{test}} = 15$ campaigns, $M_{\text{test}} = 2{,}025$ county-year evaluations per lead time), with model hyperparameters fixed on the 1985--1995 validation partition across all twelve forecast horizons ($H = 12 \dots 1$).
+
+% ==============================================================================
+% SECTION 5.1: LEAD-TIME DYNAMICS & PROGRESSION ACROSS HORIZONS
+% ==============================================================================
+
+\section{Lead-Time Dynamics and Progression across Horizons}
+\label{sec:res_horizon_progression}
+
+At $H=12$ forecasts predict a zero yield anomaly ($\hat{\epsilon}_{c,Y} = 0$) by construction, projecting solely the county-specific linear technological trend $\hat{\tau}_{c,Y}$. The out-of-sample root mean squared error of this naive benchmark defines the baseline error reference across the 2011--2025 test panel:
+\begin{equation}
+    \text{RMSE}_{\text{naive}} = \sqrt{\frac{1}{M_{\text{test}}} \sum_{Y=2011}^{2025} \sum_{c=1}^C \epsilon_{c,Y}^2} = 6.12\text{ bu/ac}, \quad R^2_{\text{OOS}}(H=12) \equiv 0.00
+    \label{eq:rmse_naive_reference}
+\end{equation}
+This baseline provides the normalizing denominator in Equation~\eqref{eq:r2_oos}. Positive $R^2_{\text{OOS}}$ values at subsequent horizons ($H = 11 \dots 1$) consequently quantify the incremental predictive skill contributed by observed agrometeorological conditions beyond the trend baseline.
+
+Table~\ref{tab:horizon_performance} compares candidate models across the twelve forecast horizons under two information sets: a pure meteorological feature space and an integrated specification incorporating the prior-year detrended yield anomaly ($\epsilon_{c,Y-1}$). At the final horizon ($H=1$), all specifications implement harvest closure $H^*(s)$, freezing the information set on September 30 for Minnesota (Maturity Group I) and October 31 for the remaining states to eliminate post-harvest atmospheric noise. Consistent with the validation tuning in Section~\ref{sec:meth_lstm}, the weather-only LSTM employs a PReLU projection head, while the integrated architecture uses a linear projection head.
+
+\input{tables/tab_horizon_performance}
+
+The empirical performance matrix in Table~\ref{tab:horizon_performance} and corresponding trajectories in Figure~\ref{fig:r2_horizon_progression} track predictive skill across the production cycle at county level ($M_{\text{test}} = 2{,}025$ out-of-sample county-year evaluations). County-level evaluation measures local predictive accuracy directly, without the variance reduction that occurs when averaging across counties. Across the twelve monthly horizons, performance follows three distinct chronological regimes:
+
+Before May ($H = 11 \dots 7$, Dec--Apr), weather-only models do not improve upon the naive baseline. These monthly forecast origins precede the primary planting window documented by \citet{Hoffman2020}. Integrated ElasticNet remains close to the baseline ($R^2_{\text{OOS}} \approx 0.00$), while flexible non-linear estimators generate negative scores, reflecting variance inflation and overfitting on uninformative antecedent noise.
+
+With the inclusion of May planting-window observations ($H = 6$, May 31), initial predictive skill begins to emerge across candidate architectures: pure meteorological XGBoost crosses into positive territory at $R^2_{\text{OOS}} = +0.01$ (rising to $+0.05$ with prior-year carryover). This marks the operational inflection point where environmental observations first surpass the naive baseline.
+
+Predictive accuracy accelerates as reproductive weather accumulates across summer ($H = 5 \dots 1$, Jun--Oct). Substantial performance gains concentrate during flowering (July, $H=4$) and pod filling (August, $H=3$), when moisture deficits and thermal stress directly dictate seed mass. Across all candidate architectures, skill reaches a plateau proximate to physiological maturity, with marginal increments between September and October.
+
+Incorporating prior-year detrended yield memory ($\epsilon_{t-1}$) provides a consistent, incremental improvement of approximately $+0.03$ points in $R^2_{\text{OOS}}$ across all model families at harvest closure (ElasticNet rises from $0.29$ to $0.32$, LSTM from $0.34$ to $0.37$, and the ensemble from $0.35$ to $0.38$). In contrast to previous studies that report massive variance gains from autoregressive lags on raw yields \citep{ChenZhang2026}, our controlled detrending isolates genuine multi-year agronomic memory---such as deep soil moisture carryover and crop rotational inertia---from historical technological drift.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_r2_horizon_progression.pdf}
+    \caption{Progression of out-of-sample predictive performance across monthly lead times ($H = 11 \dots 1$) for weather-only (solid lines) and lag-integrated (dashed lines) specifications at county level (2011--2025): (a) $R^2_{\text{OOS}}$; (b) RMSE (bu/ac).}
+    \label{fig:r2_horizon_progression}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025.}}
+\end{figure}
+
+% ==============================================================================
+% SECTION 5.2: COMPARATIVE MODEL PERFORMANCE ACROSS ACTIVE HORIZONS
+% ==============================================================================
+
+\section{Comparative Model Performance across Active Horizons}
+\label{sec:res_active_horizons}
+
+Across the active growing season ($H = 5 \dots 1$, June--October), out-of-sample forecast accuracy reveals three core empirical insights on model complexity and inductive biases:
+
+First, penalized linear regression (ElasticNet) achieves the highest individual accuracy during vegetative growth and flowering ($H = 5 \dots 3$, June to August), reaching $R^2_{\text{OOS}} = 0.30$ ($0.28$ weather-only). When the physical signal is only partially accumulated, regularized shrinkage restricts estimation variance on high-dimensional climate inputs \citep{James2023}. Non-linear tree ensembles (Random Forest and XGBoost) do not improve upon ElasticNet on monthly tabular features, yielding lower out-of-sample scores ($R^2_{\text{OOS}} \le 0.28$).
+
+Second, the recurrent neural network (LSTM) accelerates skill as reproductive weather accumulates, matching ElasticNet in August ($H=3, R^2_{\text{OOS}} = 0.29$--$0.30$) and surpassing it from September onward ($H=2$, reaching $R^2_{\text{OOS}} = 0.33$, and $H=1$, reaching $0.37$ with lag vs $0.34$ weather-only). While monthly tabular models aggregate daily weather into 30-day blocks, the LSTM processes 10-day decad sequences, capturing the timing and duration of temperature and moisture stress during pod filling without increasing feature dimensionality.
+
+Third, the equal-weighted convex ensemble (50\% ElasticNet + 50\% LSTM) consistently achieves champion performance across active horizons, culminating in $R^2_{\text{OOS}} = 0.38$ at harvest closure ($0.35$ under weather-only forcing). This synergy stems from the empirical orthogonality of model forecast residuals ($r < 0.70$), combining the variance stability of linear shrinkage with the sequence sensitivity of recurrent networks.
+
+Having established the empirical gain of prior-year detrended yield carryover ($\epsilon_{t-1}$), all subsequent stress tests, macro-regional evaluations, and diagnostic attributions focus on the lag-integrated model specifications (referred to simply as ElasticNet, Random Forest, XGBoost, LSTM, and Ensemble).
+
+% ==============================================================================
+% SECTION 5.3: INFERENTIAL SIGNIFICANCE AND TAIL-RISK STRESS TESTING
+% ==============================================================================
+
+\section{Inferential Significance and Tail-Risk Stress Testing}
+\label{sec:res_significance_tail_risk}
+
+\subsection{Pairwise Predictive Superiority: Diebold--Mariano Tests}
+\label{sec:res_significance}
+
+To establish whether predictive gains over the naive baseline and between competing model families are statistically distinguishable from sample variability, we evaluate one-sided \citet{DieboldMariano1995} tests on annual mean squared loss differentials across the 15 out-of-sample test years (2011--2025). Following the protocol formalized in Section~\ref{sec:meth_significance_bootstrap}, squared loss differentials are first averaged across the 135 counties within each crop year to account for contemporaneous spatial correlation, and test statistics are estimated with Newey--West HAC standard errors.
+
+At the June emergence horizon ($H=5$), weather-only ElasticNet and integrated LSTM achieve statistically significant loss reductions over the naive trend benchmark, with nominal $p$-values of $0.0011$ and $0.00025$ ($\text{DM} = 3.06$ and $3.48$). Conversely, tree ensembles fail to reject the null hypothesis of equal accuracy at the $5\%$ level (Random Forest $p=0.074$; XGBoost $p=0.094$). From July ($H=4$) onward, all evaluated weather-informed models reject equal accuracy against the naive baseline ($p < 0.0001$).
+
+At harvest closure ($H=1$), pairwise testing between LSTM and ElasticNet yields $\text{DM} = 0.99$ ($p = 0.162$). Despite a $+0.050$ point improvement in $R^2_{\text{OOS}}$ and a $0.188\text{ bu/ac}$ reduction in RMSE, the sequential deep architecture does not achieve statistically significant superiority over penalized linear shrinkage under serial correlation controls. The Linear-Recurrent Ensemble significantly improves upon ElasticNet at the $5\%$ level ($\text{DM} = 2.11$, $p = 0.017$), while its performance difference from LSTM remains statistically indistinguishable ($\text{DM} = 0.33$, $p = 0.371$). These tests confirm that while meteorological forcing provides unequivocal predictive skill, pooled point rankings between flexible neural networks and regularized linear baselines do not establish uniform statistical dominance.
+
+\subsection{County-Level Decile Calibration and Residual Diagnostics}
+\label{sec:res_decile_diagnostics}
+
+Table~\ref{tab:decile_error_performance} reports mean predictions within deciles of realized anomalies at the June, August, and harvest-closure cutoffs, assessing tail calibration across the full test panel.
+
+\input{tables/tab_decile_error_performance}
+
+The decile breakdown in Table~\ref{tab:decile_error_performance} and diagnostic suite in Figure~\ref{fig:decile_calibration_and_residuals} evaluate how effectively meteorological observations calibrate predictions across the yield distribution. Grouping predictions by realized anomaly deciles reveals a structural trade-off between conditional variance reduction and tail-risk sensitivity under squared-error loss.
+
+Across distribution extremes, model predictions exhibit systematic conditional shrinkage. For both severe downside shocks ($D_1$, realized mean $-8.82\text{ bu/ac}$) and bumper harvests ($D_{10}$, realized mean $+11.01\text{ bu/ac}$), predictions consistently compress toward the zero-anomaly baseline. At harvest closure, LSTM and the ensemble predict $-2.18$ and $-2.16\text{ bu/ac}$ in $D_1$, and $+2.85\text{ bu/ac}$ in $D_{10}$. This attenuation reflects standard $L_2$ conditional-mean shrinkage: because extreme agricultural shocks involve unobserved local factors such as subsurface drainage, seed genetics, and localized pest pressure, estimators trained under mean squared error naturally shrink predictions toward zero to avoid excessive variance penalties. The models correctly anticipate the physical sign and direction of the stress, substantially reducing quadratic loss relative to the naive benchmark.
+
+Conversely, across intermediate regimes ($D_2$--$D_9$), predicted values scale monotonically with realized anomalies as reproductive weather accumulates between June ($H=5$) and harvest ($H=1$). Residual Q-Q plots in Figure~\ref{fig:decile_calibration_and_residuals}(b) confirm that forecast departures remain symmetric around zero, with homoskedastic error dispersion across fitted values (panel c).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_decile_calibration_and_residuals.pdf}
+    \caption{Residual and calibration diagnostics at harvest closure horizon $H^*(s)$: decile calibration across anomaly quantiles ($D_1 \dots D_{10}$), residual Q-Q distribution, and residual variance across fitted values.}
+    \label{fig:decile_calibration_and_residuals}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, out-of-sample test evaluations.}}
+\end{figure}
+
+Beyond tail calibration, evaluating the spatiotemporal independence of out-of-sample residuals validates model specification. At harvest closure, mean county AR(1) coefficients remain close to zero ($-0.054$ for ElasticNet, $-0.062$ for XGBoost, and $-0.058$ for LSTM). These near-zero values confirm that detrending and one-year anomaly lags absorb interannual memory, leaving no unresolved autoregressive persistence across the 15-year test window.
+
+Concurrently, spatial diagnostic tests reveal residual geographic clustering. In the naive baseline, forecast errors exhibit significant spatial clustering with a mean Moran coefficient of $0.183$. Conditioning on ERA5-Land weather features absorbs large-scale atmospheric patterns, reducing Moran's $I$ to $0.142$ in ElasticNet and $0.145$ in LSTM ($0.171$ in XGBoost). However, the index does not collapse to zero: a moderate positive spatial correlation persists. This residual clustering demonstrates that while gridded reanalysis captures macro-regional weather fronts, contiguous counties share unmodelled spatial determinants---such as contiguous soil associations, regional aquifer access, and common agricultural management practices---that induce correlated local errors.
+
+\subsection{Historical Shock Regimes: 2012 Drought versus 2016 Bumper Season}
+\label{sec:res_conditional_performance}
+
+To evaluate how early in the growing season systemic shocks become detectable at county level, Table~\ref{tab:tail_risk_performance} breaks down out-of-sample forecast errors across active campaign months ($H = 5 \dots 1$) for the two defining macro-climatic shock years of the test era: the 2012 flash drought (severe adverse shock, panel anomaly $-11.7\%$, mean realized anomaly $-4.07\text{ bu/ac}$) and the 2016 bumper harvest (severe favorable shock, expanding-window test anomaly $+14.8\%$ relative to historical trend, mean realized anomaly $+7.34\text{ bu/ac}$).
+
+\input{tables/tab_tail_risk_performance}
+
+Tracking error trajectories across growing months in Table~\ref{tab:tail_risk_performance} reveals an informative empirical pattern across lead times. Across active campaign months, the lowest RMSE for champion specifications in these specific shock campaigns occurs at $H=2$ (September 30). In the 2012 drought, the ensemble attains its lowest error of $5.51\text{ bu/ac}$ at $H=2$, before recording $5.66\text{ bu/ac}$ at $H=1$ (with ElasticNet moving from $5.79$ to $5.84\text{ bu/ac}$). In the 2016 bumper season, ElasticNet reaches an RMSE of $4.22\text{ bu/ac}$ at $H=2$, compared to $4.32\text{ bu/ac}$ at $H=1$.
+
+Empirically, this localized leveling off between late September and late October reflects the underlying biophysical calendar of the crop. By the end of September ($H=2$), physiological maturity (R7--R8) is largely completed across the major soybean-producing counties of the Corn Belt, meaning that subsequent October weather primarily governs field dry-down and harvest logistics without further biological yield accumulation. While the final harvest closure horizon $H=1$ provides the complete full-campaign environmental record across all states, the predictive models have already assimilated the dominant environmental signals by early autumn, yielding stable performance with minor sample-specific fluctuations across the final month.
+
+In terms of lead-time shock detection, substantial error contraction occurs well ahead of harvest. In 2012, errors drop sharply between June ($H=5, 6.16\text{ bu/ac}$) and August ($H=3, 5.58\text{ bu/ac}$), confirming that the signature of the flash drought is already captured by late August. Similarly, in 2016, favorable conditions throughout July and August enable ElasticNet to contract its error from $8.19\text{ bu/ac}$ in June to $5.13\text{ bu/ac}$ in August and $4.22\text{ bu/ac}$ in September.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_shock_bias_profiles.pdf}
+    \caption{Lead-time bias convergence and county-level prediction resolution across active forecast horizons ($H = 5 \dots 1$), contrasting regional mean anomaly bias trajectories with county-level scatter dynamics during the 2012 flash drought.}
+    \label{fig:shock_bias_profiles}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, out-of-sample test evaluations.}}
+\end{figure}
+
+Figure~\ref{fig:shock_bias_profiles}(a) tracks regional bias convergence during the two shock campaigns, showing how directional bias contracts toward zero as reproductive weather unfolds. Panel (b) illustrates county prediction scatter during the 2012 drought: while predictions accurately track the downward shift, county-level scatter remains more compressed than realized departures. This compression reflects conditional-mean shrinkage under squared-error loss when localized microclimatic and agronomic drivers remain unobserved.
+
+% ==============================================================================
+% SECTION 5.4: AGROMETEOROLOGICAL ATTRIBUTION AND SPATIAL HETEROGENEITY
+% ==============================================================================
+
+\section{Agrometeorological Drivers and Attribution Across Scales}
+\label{sec:res_feature_attribution}
+
+\subsection{Attribution Methodology and Surrogate Recurrent Mapping}
+\label{sec:res_shap_attribution}
+
+We evaluate agrometeorological sensitivities across model paradigms using Grouped Permutation Feature Importance \citep[GPFI;][]{Sweetetal2023} across 19 predictor groups: 17 weather indicators, lagged yield, and jointly permuted spatial coordinates on the 2011--2025 out-of-sample test panel. For each physical indicator $j$, all constituent monthly features across the full campaign ($m \in \{\text{Nov}, \dots, \text{Oct}\}$) are permuted jointly across test instances ($\pi_j$). Grouping across all campaign months preserves the seasonal correlation profile while breaking the association with realized yield anomalies. Predictive degradation is quantified by out-of-sample explained variance loss:
+\begin{equation}
+    \Delta R^2_{\text{OOS}}(j) = \max\left(0, \, R^2_{\text{OOS}}(\text{base}) - R^2_{\text{OOS}}(\pi_j)\right)
+    \label{eq:pfi_metric}
+\end{equation}
+where the non-negativity constraint neutralizes sampling noise from uninformative features.
+
+Because baseline predictive accuracy differs across candidate architectures, absolute variance losses are normalized into a Relative Information Share (\%):
+\begin{equation}
+    s_j = \frac{\Delta R^2_{\text{OOS}}(j)}{\sum_{k=1}^{19} \Delta R^2_{\text{OOS}}(k)} \times 100\%
+    \label{eq:pfi_share}
+\end{equation}
+Normalizing into relative information shares allows direct comparison of attentional distributions across model families.
+
+For the sequential LSTM, permuting input channels across three-dimensional sequence tensors ($N \times 36 \times 19$) severely disrupts recurrent hidden state dynamics and entails prohibitive computational cost. We therefore implement a Global Surrogate Model \citep{Sweetetal2023}: a gradient-boosted tree ensemble (XGBoost) trained to replicate the predictions of the LSTM in anomaly space. The surrogate achieves near-perfect fidelity ($R^2 = 0.9968$ for $H=1$ and $R^2 = 0.9998$ for $H=2$, with $\text{RMSE} < 0.18\text{ bu/ac}$), legitimizing its use for post-hoc agrometeorological attribution.
+
+Figure~\ref{fig:feature_attribution_benchmark} reports the Relative Information Share across all 19 predictor groups for ElasticNet, XGBoost, and the LSTM surrogate at harvest closure horizon $H^*(s)$, while Figure~\ref{fig:shap_horizon_stack} aggregates these individual shares into five coherent macro-agronomic domains.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.98\textwidth]{figures/fig54_pfi_faceted_bars.pdf}
+    \caption{Grouped Permutation Feature Importance (GPFI) across 19 predictor groups at harvest closure $H^*(s)$ for benchmark models (2011--2025). Relative Information Share measures percentage contribution to total $\Delta R^2_{\text{OOS}}$ degradation.}
+    \label{fig:feature_attribution_benchmark}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, out-of-sample test evaluations 2011--2025.}}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.98\textwidth]{figures/fig55_pfi_domain_bars.pdf}
+    \caption{Relative information share by physical domain at harvest closure horizon $H^*(s)$ across benchmark architectures (2011--2025 test panel), evaluated via Grouped Permutation Feature Importance (GPFI).}
+    \label{fig:shap_horizon_stack}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, out-of-sample test evaluations 2011--2025.}}
+\end{figure}
+
+Because atmospheric demand and hydrological supply variables are highly collinear, individual architectures select substitute proxies reflecting their inductive biases:
+\begin{itemize}
+    \item \textbf{XGBoost} operates as an acute thermal-stress sensor: it is dominated by Atmospheric Demand and Heat ($28.9\%$, driven by non-linear thresholds of $VPD$ at $18.9\%$) and Thermal Regimes ($34.6\%$), while assigning minimal weight to multi-year yield memory ($4.1\%$).
+    \item \textbf{ElasticNet} distributes predictive weights across Thermal Regimes ($43.0\%$), Atmospheric Demand ($25.6\%$), and Soil Moisture ($20.9\%$), selecting dewpoint temperature ($T_{\text{dew}}$, $27.9\%$) as a parsimonious linear proxy for surface moisture.
+    \item \textbf{LSTM} acts as a cumulative water balance integrator and memory anchor: predictive shares are led by Hydrological Supply ($29.7\%$, dominated by $P - ET_0$ at $24.9\%$) and Memory and Spatial Baseline ($25.1\%$, where lagged yield contributes $21.2\%$), capturing soil moisture recharge and multi-year agronomic persistence.
+\end{itemize}
+
+\subsection{Spatial Heterogeneity of Predictive Performance}
+\label{sec:res_spatial_performance}
+
+Figure~\ref{fig:county_r2_map} maps county-level out-of-sample explained variance ($R^2_{\text{OOS}}$) for the sequential LSTM at harvest closure horizon $H^*(s)$ across all 135 study counties.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\textwidth]{figures/fig_county_r2_map.pdf}
+    \caption{Spatial distribution of out-of-sample predictive performance ($R^2_{\text{OOS}}$) for the LSTM model at harvest closure horizon $H^*(s)$ across the 135 study counties (2011--2025).}
+    \label{fig:county_r2_map}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025 out-of-sample test evaluations.}}
+\end{figure}
+
+Out-of-sample performance demonstrates broad spatial robustness: $98\%$ of the panel (132 out of 135 counties) achieves positive explained variance ($R^2_{\text{OOS}} > 0$) relative to the naive baseline. Across the study domain, the median county-level $R^2_{\text{OOS}}$ is $+0.386$, with the 75th percentile reaching $+0.475$ and peak counties exceeding $+0.70$. State median scores are highest in Iowa ($0.416$), Indiana ($0.412$), and Illinois ($0.337$), where rainfed production aligns with regional climate forzings. The remaining three counties in western Minnesota record marginal negative scores due to near-zero historical anomaly variance, despite absolute errors ($4.3\text{ bu/ac}$) being fully in line with the panel average.
+
+% ==============================================================================
+% SECTION 5.5: ANOMALY SPACE VERSUS RAW YIELD LEVELS
+% ==============================================================================
+
+\section{Anomaly Space versus Raw Yield Performance}
+\label{sec:res_raw_vs_anomaly}
+
+We reconstruct physical yield forecasts by adding the training-only trend to the predicted anomaly, following Equation~\eqref{eq:yield_reconstruction}:
+\begin{equation}
+    \hat{y}_{c,Y}^{(H)} = \hat{\tau}_{c,Y} + \hat{\epsilon}_{c,Y}^{(H)}
+    \label{eq:level_projection}
+\end{equation}
+As established in Section~\ref{sec:meth_loss_metrics}, RMSE and MAE are algebraically identical between anomaly and reconstructed yield spaces because trend extrapolation $\hat{\tau}_{c,Y}$ is constant across models. Table~\ref{tab:raw_vs_anomaly_performance} reports performance metrics across both spaces at harvest closure across the $2{,}025$ test evaluations.
+
+\input{tables/tab_raw_vs_anomaly_performance}
+
+Evaluating predictions on reconstructed physical yield levels ($\hat{y} = \hat{\tau} + \hat{\epsilon}$) clarifies the distinction between long-term agronomic progress and interannual weather skill (Table~\ref{tab:raw_vs_anomaly_performance}). The naive trend benchmark accounts for $47.4\%$ of total raw yield variance ($r = 0.746$) across the test partition without ingesting meteorological data, capturing multidecadal genetic breeding, fertilizer efficiency, and permanent cross-county soil endowments.
+
+Conditioning on ERA5-Land surface reanalysis and historical carryover raises explained variance to $66.8\%$ ($r = 0.833$) for LSTM and $67.3\%$ ($r = 0.838$) for the Linear-Recurrent Ensemble, resolving an incremental $+19.9$ percentage points of commercial yield variation beyond technological momentum.
+
+Evaluating predictions on both levels also contextualizes comparisons with studies that benchmark models directly on raw physical yields \citep{ChenZhang2026, Khaki2020}. In raw yield space, high explained variance ($R^2 \ge 0.65$--$0.75$) reflects the joint contribution of multidecadal agronomic trends and interannual meteorological shocks. Projecting forecasts into anomaly space separates these two components, confirming that the empirical models capture genuine climate-induced departures from trend ($R^2_{\text{OOS}} = 0.378$) while preserving operational utility for physical production volume estimates.
+
+% ==============================================================================
+% SECTION 5.6: MACRO-REGIONAL AGGREGATION AND SUPPLY-CHAIN VALUE
+% ==============================================================================
+
+\section{Macro-Regional Aggregation and Supply-Chain Value}
+\label{sec:res_macro_portfolio}
+
+While county-level estimation ($M_{\text{test}} = 2{,}025$) provides the statistical degrees of freedom required to calibrate non-linear stress thresholds without sample starvation, commercial supply-chain decision-makers operate on aggregate regional volumes. Table~\ref{tab:yearly_macro_yields} presents regional mean yield anomaly forecasts at harvest closure across the 15 test campaigns (2011--2025), ordered by realized anomaly severity.
+
+\input{tables/tab_yearly_macro_yields}
+
+When county forecasts are aggregated to the macro-regional scale, idiosyncratic local error components cancel via the law of large numbers, generating a substantial surge in predictive accuracy. At this commercial aggregate level, the sequential LSTM emerges as the clear champion specification across all evaluated statistical dimensions in Table~\ref{tab:yearly_macro_yields}. The recurrent architecture achieves the lowest out-of-sample error magnitude ($\text{RMSE} = 2.04\text{ bu/ac}$ and $\text{MAE} = 1.78\text{ bu/ac}$), cutting naive baseline risk by $47\%$ ($\text{RMSE}_{\text{naive}} = 3.84\text{ bu/ac}$). Concurrently, LSTM records the highest explained variance ($R^2_{\text{macro}} = 0.717$ against $0.687$ for the ensemble and $0.607$ for ElasticNet) and the strongest linear correlation with historical regional production departures ($r = 0.910$). When adding the secular trend to reconstruct absolute yield levels, correlation reaches $r = 0.954$.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_macro_horizon_progression.pdf}
+    \caption{Macro-regional aggregate evaluation across the 15-year test panel (2011--2025): (a) Progression of regional aggregate forecast error (RMSE, bu/ac) across monthly lead times ($H = 11 \dots 1$); (b) Model calibration regression slopes relative to the ideal 1:1 parity diagonal ($\beta = 1.00$) at harvest closure ($H^*(s)$).}
+    \label{fig:macro_horizon_progression}
+    \vspace{0.2em}
+    {\footnotesize \textit{Source: Author's calculation on USDA NASS and ECMWF ERA5-Land data, 2011--2025.}}
+\end{figure}
+
+Figure~\ref{fig:macro_horizon_progression} illustrates this operational performance across lead times and historical campaigns. Panel (a) shows that macro-regional forecasting skill emerges sharply between June ($H=5$, Macro-RMSE $\approx 3.12\text{ bu/ac}$) and August ($H=3$, Macro-RMSE $\approx 2.58\text{ bu/ac}$), matching the pod-filling window when broad-scale moisture deficits dictate aggregate supply. 
+
+Panel (b) compares calibration regression lines across model architectures against the ideal 1:1 diagonal ($\beta = 1.00$). While all estimators display positive slope coefficients tracking regional swings, they differ markedly in responsiveness. Random Forest exhibits the strongest tail shrinkage ($\beta = 0.35, r = 0.81$), flattening macro-regional forecasts excessively toward zero. Conversely, ElasticNet ($\beta = 0.56, r = 0.78$), the ensemble ($\beta = 0.56, r = 0.88$), and LSTM ($\beta = 0.55, r = 0.91$) achieve substantially steeper slopes, capturing more than half of the realized interannual amplitude. Among these, the sequential LSTM provides the tightest dispersion around its calibration line, combining higher slope sensitivity with superior directional correlation across both moderate seasons and extreme macro-climatic shock years (2012 drought and 2016 bumper harvest).
