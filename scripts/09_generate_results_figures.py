@@ -72,9 +72,12 @@ COLORS = {
     "RandomForest (+Lag)": "#ff7f0e",
     "XGBoost (+Lag)": "#d62728",
     "XGBoost": "#d62728",
-    "LSTM (Weather-Only)": "#2ca02c",
+    "LSTM (Weather-Only)": "#8e44ad",
     "LSTM (+Lag)": "#8e44ad",
+    "LSTM": "#8e44ad",
+    "Ensemble (Weather-Only)": "#16a085",
     "Ensemble (ENet + LSTM)": "#16a085",
+    "Ensemble": "#16a085",
 }
 
 
@@ -126,8 +129,8 @@ def plot_figure_5_1(preds):
     ax1.axhline(0, color="black", linestyle="--", linewidth=0.9, alpha=0.6)
     ax1.set_ylabel(r"Pooled Out-of-Sample $R^2_{\mathrm{OOS}}$")
     ax1.set_title(r"(a) Multi-Horizon Explained Anomaly Variance ($R^2_{\mathrm{OOS}}$)", loc="left", fontweight="bold", fontsize=11)
-    ax1.set_ylim(min(-0.35, min(ax1.get_ylim())), max(0.42, max(ax1.get_ylim())))
-    ax1.legend(loc="lower left", frameon=True, fontsize=8.0, ncol=2)
+    ax1.set_ylim(-0.35, 0.45)
+    ax1.legend(loc="upper left", frameon=True, fontsize=8.0, ncol=2)
 
     reference = preds[(preds["model"] == "Naive") & (preds["H"] == 1)]
     naive_rmse = np.sqrt(np.mean(reference["y_true_anomaly"] ** 2))
@@ -222,6 +225,68 @@ def plot_macro_horizon_progression(preds):
     plt.tight_layout()
     fig.savefig(FIGURES_DIR / "fig_macro_horizon_progression.pdf")
     fig.savefig(FIGURES_DIR / "fig_macro_horizon_progression.png")
+    plt.close(fig)
+
+
+def plot_macro_portfolio_scatter(preds):
+    print("Generating Figure 5.7: Macro-regional portfolio 15-year scatter along 45-degree line...")
+    sub = preds[(preds["model"] == "Ensemble (ENet + LSTM)") & (preds["H"] == 1)]
+    yearly = sub.groupby("year")[["y_true_anomaly", "y_pred_anomaly"]].mean().reset_index()
+
+    yt = yearly["y_true_anomaly"].values
+    yp = yearly["y_pred_anomaly"].values
+    years = yearly["year"].values
+
+    ss_res = np.sum((yt - yp) ** 2)
+    ss_tot = np.sum(yt ** 2)
+    r2 = 1.0 - ss_res / ss_tot
+    rmse = np.sqrt(np.mean((yt - yp) ** 2))
+    r_corr, _ = pearsonr(yt, yp)
+
+    fig, ax = plt.subplots(figsize=(6.8, 6.2))
+
+    # Reference 45 degree line
+    lims = [-9.0, 9.0]
+    ax.plot(lims, lims, color="#555555", linestyle="--", linewidth=1.2, label=r"Ideal 1:1 Parity ($y = \hat{y}$)")
+    ax.axhline(0, color="#cccccc", linestyle=":", linewidth=0.8)
+    ax.axvline(0, color="#cccccc", linestyle=":", linewidth=0.8)
+
+    # Scatter points
+    ax.scatter(yt, yp, color="#16a085", s=75, edgecolor="#0e6251", linewidth=1.3, zorder=4, label="Ensemble Portfolio Realizations")
+
+    # Annotate points with year
+    for yr, x, y in zip(years, yt, yp):
+        offset_x = 0.25 if yr != 2012 else 0.3
+        offset_y = -0.35 if yr in [2012, 2024] else 0.22
+        weight = "bold" if yr in [2012, 2016] else "normal"
+        color = "#c0392b" if yr == 2012 else ("#27ae60" if yr == 2016 else "#333333")
+        ax.annotate(str(yr), (x, y), xytext=(x + offset_x, y + offset_y),
+                    fontsize=8.5, fontweight=weight, color=color)
+
+    # Metric box
+    textstr = "\n".join([
+        r"$\mathbf{Macro-Regional\ Performance}$",
+        rf"$R^2 = {r2:.3f}$",
+        rf"$\mathrm{{RMSE}} = {rmse:.2f}\ \mathrm{{bu/ac}}$",
+        rf"$\mathrm{{Pearson}}\ r = {r_corr:.3f}$",
+        rf"$N = {len(years)}\ \mathrm{{annual\ seasons}}$"
+    ])
+    props = dict(boxstyle="round,pad=0.5", facecolor="#f8f9fa", edgecolor="#b0bec5", alpha=0.9)
+    ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=9.2,
+            verticalalignment="top", bbox=props)
+
+    ax.set_xlim(lims)
+    ax.set_ylim(lims)
+    ax.set_aspect("equal")
+    ax.set_xlabel(r"Realized Macro-Regional Yield Anomaly $\bar{y}_t$ (bu/acre)", fontsize=10.5)
+    ax.set_ylabel(r"Predicted Macro-Regional Yield Anomaly $\bar{\hat{y}}_t$ (bu/acre)", fontsize=10.5)
+    ax.set_title(r"Commercial Portfolio Aggregation at Harvest Closure ($H^*(s)$)", fontsize=11.5, fontweight="bold", pad=10)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    ax.legend(loc="lower right", frameon=True, fontsize=8.8)
+
+    plt.tight_layout()
+    fig.savefig(FIGURES_DIR / "fig_macro_portfolio_scatter.pdf")
+    fig.savefig(FIGURES_DIR / "fig_macro_portfolio_scatter.png", dpi=300)
     plt.close(fig)
 
 
@@ -568,8 +633,8 @@ def plot_figure_5_4(pfi_data):
         curr_dom = d_name
 
     panels = [
-        (ax1, "share_enet", "(a) ENet (+Lag)"),
-        (ax2, "share_xgb", "(b) XGB (+Lag)"),
+        (ax1, "share_enet", "(a) ElasticNet"),
+        (ax2, "share_xgb", "(b) XGBoost"),
         (ax3, "share_lstm", "(c) LSTM (Surrogate)"),
     ]
 
@@ -602,13 +667,14 @@ def plot_figure_5_4(pfi_data):
     fig.savefig(FIGURES_DIR / "fig54_pfi_faceted_bars.pdf")
     fig.savefig(FIGURES_DIR / "fig54_pfi_faceted_bars.png", dpi=300)
     plt.close(fig)
+    return res_df
 
 
 # ==============================================================================
 # ==============================================================================
 # FIGURE 5.5: GPFI Macro-Domain Physiological Sensitivity Bars (100% Stacked)
 # ==============================================================================
-def plot_figure_5_5(pfi_data):
+def plot_figure_5_5(pfi_data, res_df=None):
     print("Generating Figure 5.5: GPFI Macro-Domain 100% Stacked Bars...")
     if pfi_data is None:
         return
@@ -621,14 +687,24 @@ def plot_figure_5_5(pfi_data):
         {"domain": "Memory & Spatial Baseline", "color": "#7570b3", "prefixes": ["lag_anomaly", "spatial"]}
     ]
 
-    records = []
-    for domain in canonical_domains:
-        row = {"domain":domain["domain"], "color":domain["color"]}
-        row.update(attribution_losses(pfi_data, domain["prefixes"], 10))
-        records.append(row)
-    dom_df = pd.DataFrame(records)
+    if res_df is not None:
+        # Sum micro variable shares directly by domain to ensure 100% additive consistency
+        dom_df = res_df.groupby("domain")[["dr2_enet", "dr2_xgb", "dr2_lstm"]].sum().reset_index()
+        domain_colors_map = {d["domain"]: d["color"] for d in canonical_domains}
+        dom_df["color"] = dom_df["domain"].map(domain_colors_map)
+        dom_order = {d["domain"]: i for i, d in enumerate(canonical_domains)}
+        dom_df["order"] = dom_df["domain"].map(dom_order)
+        dom_df = dom_df.sort_values("order").reset_index(drop=True)
+    else:
+        records = []
+        for domain in canonical_domains:
+            row = {"domain":domain["domain"], "color":domain["color"]}
+            row.update(attribution_losses(pfi_data, domain["prefixes"], 10))
+            records.append(row)
+        dom_df = pd.DataFrame(records)
+
     dom_df.to_csv(PROCESSED_DIR / "diagnostics/forecast_pfi_domains.csv", index=False)
-    models = ["(a) ElasticNet (+Lag)", "(b) XGBoost (+Lag)", "(c) LSTM (Surrogate)"]
+    models = ["(a) ElasticNet", "(b) XGBoost", "(c) LSTM (Surrogate)"]
     model_cols = ["dr2_enet", "dr2_xgb", "dr2_lstm"]
 
     matrix_vals = np.array([dom_df[c].values for c in model_cols])
@@ -687,7 +763,7 @@ def plot_figure_5_5(pfi_data):
 # FIGURE 5.6: Spatial Choropleth of Out-of-Sample County R2
 # ==============================================================================
 def plot_figure_5_6(preds):
-    print("Generating Figure 5.6: County R2 Spatial Map with Minnesota Rule Highlight...")
+    print("Generating Figure 5.6: County R2 Spatial Map with Zero-Anchored Colormap...")
     if not SHAPEFILE.exists():
         return
 
@@ -703,32 +779,43 @@ def plot_figure_5_6(preds):
         county_r2.append({"GEOID": str(fips).zfill(5), "r2_oos": r2})
 
     df_r2 = pd.DataFrame(county_r2)
-    color_min = min(-0.05, float(df_r2.r2_oos.min()))
-    color_max = max(0.65, float(df_r2.r2_oos.max()))
     gdf = gpd.read_file(SHAPEFILE)
     midwest_fips = ["17", "18", "19", "27", "29", "39"]
     gdf_mw = gdf[gdf["STATEFP"].isin(midwest_fips)].to_crs(epsg=5070)
     gdf_merged = gdf_mw.merge(df_r2, on="GEOID", how="left")
 
     fig, ax = plt.subplots(figsize=(10.5, 7.8))
-    gdf_mw.plot(ax=ax, color="#f2f2f2", edgecolor="#d9d9d9", linewidth=0.4)
-    gdf_merged.dropna(subset=["r2_oos"]).plot(
+    # Base background for Midwest
+    gdf_mw.plot(ax=ax, color="#f4f4f4", edgecolor="#d9d9d9", linewidth=0.4)
+
+    # Positive R2 counties
+    pos_mask = gdf_merged["r2_oos"] >= 0.0
+    gdf_merged[pos_mask].plot(
         column="r2_oos", ax=ax, cmap="YlGnBu", legend=True,
-        vmin=color_min, vmax=color_max,
+        vmin=0.0, vmax=0.70,
         legend_kwds={
-            "label": r"Trend-relative $R^2_{\mathrm{OOS}}$ at harvest closure $H^*(s)$",
+            "label": r"County Out-of-Sample $R^2_{\mathrm{OOS}}$ at Harvest Closure (2011--2025)",
             "orientation": "horizontal", "pad": 0.04, "shrink": 0.65, "aspect": 25
         },
         edgecolor="#333333", linewidth=0.5
     )
+
+    # Negative R2 outlier counties (highlighted in soft warning salmon)
+    neg_mask = gdf_merged["r2_oos"] < 0.0
+    if neg_mask.any():
+        gdf_merged[neg_mask].plot(
+            ax=ax, color="#f5b7b1", edgecolor="#c0392b", linewidth=1.2
+        )
+
+    # State boundaries
     gdf_states = gdf_mw.dissolve(by="STATE_NAME")
     gdf_states.plot(ax=ax, facecolor="none", edgecolor="#111111", linewidth=1.2)
 
-    # Highlight Minnesota boundary with distinct red dashed contour
-    gdf_mn = gdf_mw[gdf_mw["STATEFP"] == "27"].dissolve(by="STATEFP")
-    gdf_mn.plot(ax=ax, facecolor="none", edgecolor="#99000d", linewidth=2.0, linestyle="--")
+    # Custom legend for negative counties
+    neg_patch = Patch(facecolor="#f5b7b1", edgecolor="#c0392b", label=r"$R^2 < 0$ (Small historical variance, $N=3$)")
+    ax.legend(handles=[neg_patch], loc="lower right", frameon=True, facecolor="white", edgecolor="#cccccc", fontsize=9.0)
 
-    ax.set_title(r"County-level forecast skill at harvest closure $H^*(s)$ (2011--2025)", fontsize=11.5, fontweight="bold", pad=12)
+    ax.set_title(r"Spatial Distribution of Out-of-Sample Forecast Skill ($R^2_{\mathrm{OOS}}$) at Harvest Closure", fontsize=11.5, fontweight="bold", pad=12)
     ax.axis("off")
 
     plt.tight_layout()
@@ -747,12 +834,13 @@ def main():
 
     plot_figure_5_1(preds)
     plot_macro_horizon_progression(preds)
+    plot_macro_portfolio_scatter(preds)
     plot_figure_5_2(preds)
     plot_figure_5_3(preds)
 
     pfi_data = prepare_pfi_data()
-    plot_figure_5_4(pfi_data)
-    plot_figure_5_5(pfi_data)
+    res_df = plot_figure_5_4(pfi_data)
+    plot_figure_5_5(pfi_data, res_df=res_df)
 
     plot_figure_5_6(preds)
     print("All Chapter 5 figures generated successfully into output/thesis/figures/!")
@@ -821,17 +909,16 @@ def generate_table_a1_and_figure_a2():
         r"\begin{table}[htbp]",
         r"\centering",
         r"\singlespacing",
-        r"\small",
+        r"\footnotesize",
         r"\caption{Empirical yield anomaly distributions by decile ($D_1 \dots D_{10}$): Baseline Expanding Linear Trend vs Full-Sample Cubic Trend.}",
         r"\label{tab:appendix_decile_distribution}",
         r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc @{}}",
         r"\toprule",
         r"& \multicolumn{2}{c}{\textbf{Baseline (Expanding Linear Trend)}} & \multicolumn{2}{c}{\textbf{Robustness (Full-Sample Cubic Trend)}} \\",
         r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}",
-        r"\textbf{Decile} & \textbf{Anomaly Range (bu/ac)} & \textbf{\% Negative ($\epsilon < 0$)} & \textbf{Anomaly Range (bu/ac)} & \textbf{\% Negative ($\epsilon < 0$)} \\",
+        r"\textbf{Decile} & \textbf{Range (bu/ac)} & \textbf{\% Negative} & \textbf{Range (bu/ac)} & \textbf{\% Negative} \\",
         r"\midrule",
-        r"\multicolumn{5}{l}{\textit{\textbf{Panel A: Complete Historical Panel (1951--2025, $N = 10{,}125$)}}} \\",
-        r"\midrule",
+        r"\multicolumn{5}{l}{\textit{\textbf{Panel A: Complete Historical Panel (1951--2025, $N = 10{,}125$)}}} \\[0.5ex]",
     ]
     
     for d in range(10):
@@ -851,9 +938,8 @@ def generate_table_a1_and_figure_a2():
     tex.append(r"\midrule")
     tex.append(f"\\textbf{{Historical Total}} & $[{s_hist_exp.min():+.1f}, {s_hist_exp.max():+.1f}]$ & \\textbf{{{tot_neg_e:.1f}\\%}} & $[{s_hist_cub.min():+.1f}, {s_hist_cub.max():+.1f}]$ & \\textbf{{{tot_neg_c:.1f}\\%}} \\\\")
     
-    tex.append(r"\midrule[\heavyrulewidth]")
-    tex.append(r"\multicolumn{5}{l}{\textit{\textbf{Panel B: Out-of-Sample Test Set (2011--2025, $N = 2{,}025$)}}} \\",)
     tex.append(r"\midrule")
+    tex.append(r"\multicolumn{5}{l}{\textit{\textbf{Panel B: Out-of-Sample Test Set (2011--2025, $N = 2{,}025$)}}} \\[0.5ex]")
     
     for d in range(10):
         low_e, high_e = q_test_exp[d], q_test_exp[d+1]
@@ -876,7 +962,7 @@ def generate_table_a1_and_figure_a2():
         r"\bottomrule",
         r"\end{tabular*}",
         r"\vspace{0.2em}",
-        r"{\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025). The baseline expanding-window trend shifts upward in the test set (mean $+2.41$ bu/ac), whereas the full-sample cubic trend remains centered at $-0.06$ bu/ac.}}",
+        r"{\footnotesize \textit{Source: Author's calculation on USDA NASS county soybean yields (1951--2025). \% Negative indicates the proportion of county-years with negative anomaly ($\epsilon < 0$). The baseline expanding-window trend shifts upward in the test set (mean $+2.41$ bu/ac), whereas the full-sample cubic trend remains centered at $-0.06$ bu/ac.}}",
         r"\end{table}",
     ])
     
@@ -980,9 +1066,9 @@ def generate_table_a2_and_figure_a3():
     df_c = pd.read_parquet(DATA_DIR / "predictions_cubic_full_detrend.parquet")
     
     horizons = [
-        (5, r"\multicolumn{13}{l}{\textit{\textbf{Panel A: Early Vegetative Horizon ($H = 5$, June 30)}}} \\"),
-        (3, r"\multicolumn{13}{l}{\textit{\textbf{Panel B: Pod-Filling Reproductive Horizon ($H = 3$, August 31)}}} \\"),
-        (1, r"\multicolumn{13}{l}{\textit{\textbf{Panel C: Harvest Closure ($H = 1^*$, October 31 / September 30 MN)}}} \\"),
+        (5, r"\multicolumn{11}{l}{\textit{\textbf{Panel A: Early Vegetative Horizon ($H = 5$, June 30)}}} \\"),
+        (3, r"\multicolumn{11}{l}{\textit{\textbf{Panel B: Pod-Filling Reproductive Horizon ($H = 3$, August 31)}}} \\"),
+        (1, r"\multicolumn{11}{l}{\textit{\textbf{Panel C: Harvest Closure ($H = 1^*$, October 31 / September 30 MN)}}} \\"),
     ]
     models = ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]
     
@@ -991,15 +1077,15 @@ def generate_table_a2_and_figure_a3():
         r"\centering",
         r"\singlespacing",
         r"\scriptsize",
-        r"\setlength{\tabcolsep}{2.5pt}",
+        r"\setlength{\tabcolsep}{3.0pt}",
         r"\renewcommand{\arraystretch}{0.96}",
         r"\caption{Out-of-sample decile mean predicted anomaly ($\bar{\hat{\epsilon}}$, bu/ac) vs observed anomaly ($\bar{\epsilon}$) across key lead times ($H = 5, 3, 1^*$). Comparison between \textbf{Base} (expanding linear trend) and \textbf{Full} (full-sample cubic trend). In bold the prediction closest to the respective observed decile mean.}",
         r"\label{tab:appendix_decile_error_performance}",
-        r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc cc cc cc cc @{}}",
+        r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc cc cc cc @{}}",
         r"\toprule",
-        r"& \multicolumn{2}{c}{\textbf{Observed } $\bar{\epsilon}$} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM (+Lag)}} & \multicolumn{2}{c}{\textbf{Ensemble}} & \multicolumn{2}{c}{\textbf{Model Mean}} \\",
-        r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}\cmidrule(lr){12-13}",
-        r"\textbf{Decile} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\",
+        r"& \multicolumn{2}{c}{\textbf{Observed } $\bar{\epsilon}$} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM}} & \multicolumn{2}{c}{\textbf{Ensemble}} \\",
+        r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}",
+        r"\textbf{Decile} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\",
         r"\midrule",
     ]
     
@@ -1017,11 +1103,9 @@ def generate_table_a2_and_figure_a3():
         ref_c["decile"] = pd.qcut(ref_c["y_true_anomaly"], 10, labels=range(1, 11))
         
         piv_b = sub_b.pivot(index=["year", "county_fips"], columns="model", values="y_pred_anomaly").reset_index()
-        piv_b["Model Mean"] = piv_b[models].mean(axis=1)
         piv_b = pd.merge(ref_b, piv_b, on=["year", "county_fips"])
         
         piv_c = sub_c.pivot(index=["year", "county_fips"], columns="model", values="y_pred_anomaly").reset_index()
-        piv_c["Model Mean"] = piv_c[models].mean(axis=1)
         piv_c = pd.merge(ref_c, piv_c, on=["year", "county_fips"])
         
         for d in range(1, 11):
@@ -1035,7 +1119,7 @@ def generate_table_a2_and_figure_a3():
             row_items.append(f"{yb:+.2f}")
             row_items.append(f"{yc:+.2f}")
             
-            for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]:
+            for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]:
                 pb = db[m].mean()
                 pc = dc[m].mean()
                 
@@ -1060,32 +1144,32 @@ def generate_table_a2_and_figure_a3():
             piv_c_all = piv_c
             
             # Mean Bias
-            b_bias = [f"\\textbf{{{piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean():+.2f}}}" if abs(piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean()) < abs(piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean()) else f"{piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean():+.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
-            c_bias = [f"\\textbf{{{piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean():+.2f}}}" if abs(piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean()) < abs(piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean()) else f"{piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean():+.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
+            b_bias = [f"\\textbf{{{piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean():+.2f}}}" if abs(piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean()) < abs(piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean()) else f"{piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean():+.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
+            c_bias = [f"\\textbf{{{piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean():+.2f}}}" if abs(piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean()) < abs(piv_b_all[m].mean() - piv_b_all['y_true_anomaly'].mean()) else f"{piv_c_all[m].mean() - piv_c_all['y_true_anomaly'].mean():+.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
             bias_pairs = []
             for bb, cb in zip(b_bias, c_bias):
                 bias_pairs.extend([bb, cb])
             tex.append(r"\textbf{Mean Signed Bias} & --- & --- & " + " & ".join(bias_pairs) + r" \\")
             
             # MAE
-            b_mae = [f"\\textbf{{{np.mean(np.abs(piv_b_all[m] - piv_b_all['y_true_anomaly'])):.2f}}}" if np.mean(np.abs(piv_b_all[m] - piv_b_all['y_true_anomaly'])) < np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])) else f"{np.mean(np.abs(piv_b_all[m] - piv_b_all['y_true_anomaly'])):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
-            c_mae = [f"\\textbf{{{np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])):.2f}}}" if np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])) else f"{np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
+            b_mae = [f"\\textbf{{{np.mean(np.abs(piv_b_all[m] - piv_b_all['y_true_anomaly'])):.2f}}}" if np.mean(np.abs(piv_b_all[m] - piv_b_all['y_true_anomaly'])) < np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])) else f"{np.mean(np.abs(piv_b_all[m] - piv_b_all['y_true_anomaly'])):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
+            c_mae = [f"\\textbf{{{np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])):.2f}}}" if np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])) else f"{np.mean(np.abs(piv_c_all[m] - piv_c_all['y_true_anomaly'])):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
             mae_pairs = []
             for bm, cm in zip(b_mae, c_mae):
                 mae_pairs.extend([bm, cm])
             tex.append(r"\textbf{MAE (bu/ac)} & --- & --- & " + " & ".join(mae_pairs) + r" \\")
             
             # RMSE
-            b_rmse = [f"\\textbf{{{np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)):.2f}}}" if np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)) < np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)) else f"{np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
-            c_rmse = [f"\\textbf{{{np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)):.2f}}}" if np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)) < np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)) else f"{np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
+            b_rmse = [f"\\textbf{{{np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)):.2f}}}" if np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)) < np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)) else f"{np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
+            c_rmse = [f"\\textbf{{{np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)):.2f}}}" if np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)) < np.sqrt(np.mean((piv_b_all[m] - piv_b_all['y_true_anomaly'])**2)) else f"{np.sqrt(np.mean((piv_c_all[m] - piv_c_all['y_true_anomaly'])**2)):.2f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
             rmse_pairs = []
             for br, cr in zip(b_rmse, c_rmse):
                 rmse_pairs.extend([br, cr])
             tex.append(r"\textbf{RMSE (bu/ac)} & --- & --- & " + " & ".join(rmse_pairs) + r" \\")
             
             # Pearson r
-            b_r = [f"\\textbf{{{pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0]:.3f}}}" if pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0] > pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0] else f"{pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0]:.3f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
-            c_r = [f"\\textbf{{{pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0]:.3f}}}" if pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0] > pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0] else f"{pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0]:.3f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble", "Model Mean"]]
+            b_r = [f"\\textbf{{{pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0]:.3f}}}" if pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0] > pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0] else f"{pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0]:.3f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
+            c_r = [f"\\textbf{{{pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0]:.3f}}}" if pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0] > pearsonr(piv_b_all[m], piv_b_all['y_true_anomaly'])[0] else f"{pearsonr(piv_c_all[m], piv_c_all['y_true_anomaly'])[0]:.3f}" for m in ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]]
             r_pairs = []
             for br_, cr_ in zip(b_r, c_r):
                 r_pairs.extend([br_, cr_])
@@ -1123,7 +1207,7 @@ def generate_table_a2_and_figure_a3():
     models_plot = [
         ("ElasticNet", "#1f77b4", "ElasticNet"),
         ("XGBoost", "#d62728", "XGBoost"),
-        ("LSTM", "#8e44ad", "LSTM (+Lag)"),
+        ("LSTM", "#8e44ad", "LSTM"),
         ("Ensemble", "#16a085", "Ensemble"),
     ]
     
@@ -1146,7 +1230,7 @@ def generate_table_a2_and_figure_a3():
     ax1.grid(True, linestyle="--", alpha=0.4)
     
     # Panel (b): Signed Residuals
-    for m_key, col, lbl in [("ElasticNet", "#1f77b4", "ElasticNet"), ("LSTM", "#8e44ad", "LSTM (+Lag)"), ("Ensemble", "#16a085", "Ensemble")]:
+    for m_key, col, lbl in [("ElasticNet", "#1f77b4", "ElasticNet"), ("LSTM", "#8e44ad", "LSTM"), ("Ensemble", "#16a085", "Ensemble")]:
         errs_b = [sb_h1[(sb_h1["decile"] == d) & (sb_h1["model"] == m_key)]["y_pred_anomaly"].mean() - sb_h1[(sb_h1["decile"] == d) & (sb_h1["model"] == m_key)]["y_true_anomaly"].mean() for d in deciles]
         errs_c = [sc_h1[(sc_h1["decile"] == d) & (sc_h1["model"] == m_key)]["y_pred_anomaly"].mean() - sc_h1[(sc_h1["decile"] == d) & (sc_h1["model"] == m_key)]["y_true_anomaly"].mean() for d in deciles]
         
@@ -1199,15 +1283,15 @@ def generate_table_a3():
         r"\centering",
         r"\singlespacing",
         r"\scriptsize",
-        r"\setlength{\tabcolsep}{2.0pt}",
+        r"\setlength{\tabcolsep}{3.0pt}",
         r"\renewcommand{\arraystretch}{1.06}",
         r"\caption{Macro-regional aggregate yield forecasts ($\bar{\hat{y}}$, bu/ac) at harvest closure ($H = 1^*$) across test years (2011--2025) ordered by realized cubic anomaly ($\bar{\epsilon}_{\text{cub}}$). In bold the specification closest to actual yield.}",
         r"\label{tab:appendix_yearly_raw_yields}",
-        r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} c c cc cc cc cc cc cc @{}}",
+        r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} c c cc cc cc cc cc @{}}",
         r"\toprule",
-        r"& & \multicolumn{2}{c}{\textbf{Secular Trend } $\bar{\tau}$} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM (+Lag)}} & \multicolumn{2}{c}{\textbf{Ensemble}} & \multicolumn{2}{c}{\textbf{Model Mean}} \\",
-        r"\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}\cmidrule(lr){13-14}",
-        r"\textbf{Year} & \textbf{Actual ($\bar{\epsilon}_{\text{cub}}$)} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\",
+        r"& & \multicolumn{2}{c}{\textbf{Secular Trend } $\bar{\tau}$} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM}} & \multicolumn{2}{c}{\textbf{Ensemble}} \\",
+        r"\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}",
+        r"\textbf{Year} & \textbf{Actual ($\bar{\epsilon}_{\text{cub}}$)} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\",
         r"\midrule",
     ]
     
@@ -1233,9 +1317,6 @@ def generate_table_a3():
         ens_b = sub_b[sub_b["model"] == "Ensemble"]["raw_yield_pred"].mean()
         ens_c = sub_c[sub_c["model"] == "Ensemble"]["raw_yield_pred"].mean()
         
-        ml_b = np.mean([en_b, xgb_b, ls_b, ens_b])
-        ml_c = np.mean([en_c, xgb_c, ls_c, ens_c])
-        
         records.append({
             "year": y, "y_obs": y_obs,
             "tau_b": tau_b, "tau_c": tau_c,
@@ -1243,7 +1324,6 @@ def generate_table_a3():
             "xgb_b": xgb_b, "xgb_c": xgb_c,
             "ls_b": ls_b, "ls_c": ls_c,
             "ens_b": ens_b, "ens_c": ens_c,
-            "ml_b": ml_b, "ml_c": ml_c,
         })
         
         def pair_fmt(vb, vc):
@@ -1260,17 +1340,16 @@ def generate_table_a3():
         x_b, x_c = pair_fmt(xgb_b, xgb_c)
         l_b, l_c = pair_fmt(ls_b, ls_c)
         ens_b_s, ens_c_s = pair_fmt(ens_b, ens_c)
-        ml_b_s, ml_c_s = pair_fmt(ml_b, ml_c)
         
         y_label_str = f"{y_obs:.2f} {{\\tiny ({diff_c:+.2f})}}"
-        tex.append(f"{y} & {y_label_str} & {t_b} & {t_c} & {e_b} & {e_c} & {x_b} & {x_c} & {l_b} & {l_c} & {ens_b_s} & {ens_c_s} & {ml_b_s} & {ml_c_s} \\\\")
+        tex.append(f"{y} & {y_label_str} & {t_b} & {t_c} & {e_b} & {e_c} & {x_b} & {x_c} & {l_b} & {l_c} & {ens_b_s} & {ens_c_s} \\\\")
         
     tex.append(r"\midrule")
     df_rec = pd.DataFrame(records)
     
     # 1. Bias
     bias_strs = []
-    for tag in ["tau", "en", "xgb", "ls", "ens", "ml"]:
+    for tag in ["tau", "en", "xgb", "ls", "ens"]:
         vb = np.mean(df_rec[f"{tag}_b"] - df_rec["y_obs"])
         vc = np.mean(df_rec[f"{tag}_c"] - df_rec["y_obs"])
         if abs(vb) < abs(vc):
@@ -1283,7 +1362,7 @@ def generate_table_a3():
     
     # 2. MAE
     mae_strs = []
-    for tag in ["tau", "en", "xgb", "ls", "ens", "ml"]:
+    for tag in ["tau", "en", "xgb", "ls", "ens"]:
         vb = np.mean(np.abs(df_rec[f"{tag}_b"] - df_rec["y_obs"]))
         vc = np.mean(np.abs(df_rec[f"{tag}_c"] - df_rec["y_obs"]))
         if vb < vc:
@@ -1296,7 +1375,7 @@ def generate_table_a3():
     
     # 3. RMSE
     rmse_strs = []
-    for tag in ["tau", "en", "xgb", "ls", "ens", "ml"]:
+    for tag in ["tau", "en", "xgb", "ls", "ens"]:
         vb = np.sqrt(np.mean((df_rec[f"{tag}_b"] - df_rec["y_obs"])**2))
         vc = np.sqrt(np.mean((df_rec[f"{tag}_c"] - df_rec["y_obs"])**2))
         if vb < vc:
@@ -1309,7 +1388,7 @@ def generate_table_a3():
     
     # 4. Pearson r
     r_strs = []
-    for tag in ["tau", "en", "xgb", "ls", "ens", "ml"]:
+    for tag in ["tau", "en", "xgb", "ls", "ens"]:
         rb, _ = pearsonr(df_rec[f"{tag}_b"], df_rec["y_obs"])
         rc, _ = pearsonr(df_rec[f"{tag}_c"], df_rec["y_obs"])
         if rb > rc:

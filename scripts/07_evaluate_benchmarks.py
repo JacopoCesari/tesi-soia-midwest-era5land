@@ -78,7 +78,17 @@ def load_combined_predictions():
         raise ValueError("Ensemble forecasts must be fully paired")
     ensemble["y_pred_anomaly"] = (ensemble.y_pred_anomaly + ensemble.y_pred_anomaly_lstm) / 2
     ensemble["model"] = "Ensemble (ENet + LSTM)"
-    combined = pd.concat([combined, ensemble[weather.columns]], ignore_index=True)
+
+    enet_w = combined[combined.model.eq("ElasticNet")]
+    recurrent_w = combined[combined.model.eq("LSTM (Weather-Only)")]
+    ensemble_w = enet_w.merge(recurrent_w[keys + ["y_pred_anomaly"]], on=keys,
+                              how="outer", validate="one_to_one", suffixes=("", "_lstm"), indicator=True)
+    if not ensemble_w._merge.eq("both").all():
+        raise ValueError("Weather-only ensemble forecasts must be fully paired")
+    ensemble_w["y_pred_anomaly"] = (ensemble_w.y_pred_anomaly + ensemble_w.y_pred_anomaly_lstm) / 2
+    ensemble_w["model"] = "Ensemble (Weather-Only)"
+
+    combined = pd.concat([combined, ensemble[weather.columns], ensemble_w[weather.columns]], ignore_index=True)
     for (model, horizon), group in combined.groupby(["model", "H"]):
         if len(group) != 2025 or group.county_fips.nunique() != 135 or set(group.year) != set(TEST_YEARS):
             raise ValueError(f"Incomplete evaluation panel: {model}, H={horizon}")
@@ -153,11 +163,12 @@ def annual_loss_differentials(predictions, model, horizon, reference="Naive"):
 
 PRIMARY_MODELS = ["Naive", "ElasticNet (+Lag)", "RandomForest (+Lag)", "XGBoost (+Lag)",
                   "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
-SHORT_NAMES = {"Naive": "Naive", "ElasticNet": "ENet (weather)",
-               "RandomForest": "RF (weather)", "XGBoost": "XGB (weather)",
-               "ElasticNet (+Lag)": "ENet (+Lag)", "RandomForest (+Lag)": "RF (+Lag)",
-               "XGBoost (+Lag)": "XGB (+Lag)", "LSTM (Weather-Only)": "LSTM (weather)",
-               "LSTM (+Lag)": "LSTM (+Lag)", "Ensemble (ENet + LSTM)": "Ensemble"}
+SHORT_NAMES = {"Naive": "Naive Secular Trend", "ElasticNet": "ElasticNet",
+               "RandomForest": "Random Forest", "XGBoost": "XGBoost",
+               "ElasticNet (+Lag)": "ElasticNet", "RandomForest (+Lag)": "Random Forest",
+               "XGBoost (+Lag)": "XGBoost", "LSTM (Weather-Only)": "LSTM",
+               "LSTM (+Lag)": "LSTM", "Ensemble (ENet + LSTM)": "Ensemble",
+               "Ensemble (Weather-Only)": "Ensemble"}
 TABLE_DIR = ROOT / "output/thesis/tables"
 REPORT_DIR = ROOT / "output/data/processed/diagnostics"
 
@@ -230,11 +241,11 @@ def write_table(filename, caption, label, headers, rows, notes=""):
     horizons = filename == "tab_horizon_performance.tex"
     shocks = filename == "tab_tail_risk_performance.tex"
     spacing = "1.08" if deciles else ("1.10" if regional else "1.12")
-    padding = "3.0pt" if deciles else ("3.2pt" if regional else ("3.5pt" if horizons else "4.0pt"))
+    padding = "3.0pt" if (deciles or horizons) else ("3.2pt" if regional else "4.0pt")
     cutoffs = {11: "Dec 31", 10: "Jan 31", 9: "Feb 28/29", 8: "Mar 31", 7: "Apr 30",
                6: "May 31", 5: "Jun 30", 4: "Jul 31", 3: "Aug 31", 2: "Sep 30", 1: r"$H^*(s)$"}
     if horizons:
-        headers = ["H", "Cutoff Date", "ENet", "RF", "XGB", "LSTM", "ENet", "RF", "XGB", "LSTM", "Ens"]
+        headers = ["H", "Cutoff Date", "ENet", "RF", "XGB", "LSTM", "Ens", "ENet", "RF", "XGB", "LSTM", "Ens"]
     elif shocks:
         headers = ["H", "Cutoff Date", "Naive Trend", "ElasticNet", "XGBoost", "LSTM", "Ens"]
     columns = "c l" + " c"*(len(headers)-2) if horizons or shocks else ("l" if deciles else "c") + " c"*(len(headers)-1)
@@ -243,8 +254,8 @@ def write_table(filename, caption, label, headers, rows, notes=""):
              r"\caption{" + caption + "}", r"\label{" + label + "}",
              r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}" + columns + " @{}}", r"\toprule"]
     if horizons:
-        lines.extend([r"& & \multicolumn{4}{c}{\textbf{Weather-Only ($R^2_{\mathrm{OOS}}$)}} & \multicolumn{5}{c}{\textbf{Integrated (+Lag, $R^2_{\mathrm{OOS}}$)}} \\",
-                      r"\cmidrule(lr){3-6}\cmidrule(lr){7-11}"])
+        lines.extend([r"& & \multicolumn{5}{c}{\textbf{Weather-Only ($R^2_{\mathrm{OOS}}$)}} & \multicolumn{5}{c}{\textbf{Integrated (+Lag, $R^2_{\mathrm{OOS}}$)}} \\",
+                      r"\cmidrule(lr){3-7}\cmidrule(lr){8-12}"])
     lines.extend([" & ".join(r"\textbf{" + header + "}" for header in headers) + r" \\", r"\midrule"])
     panels = {0: r"\textbf{Panel A: Early Vegetative Horizon} ($H=5$, June 30)",
               10: r"\textbf{Panel B: Pod-Filling Horizon} ($H=3$, August 31)",
@@ -257,7 +268,7 @@ def write_table(filename, caption, label, headers, rows, notes=""):
                 if horizon == 6:
                     lines.append(r"\midrule")
                 title = r"Pre-Sowing Horizons ($H=11\dots7$)" if horizon == 11 else r"Crop Campaign ($H=6\dots1$)"
-                lines.append(r"\multicolumn{11}{l}{\textit{" + title + r"}} \\")
+                lines.append(r"\multicolumn{12}{l}{\textit{" + title + r"}} \\")
             scores = list(map(float, cells[1:]))
             cells[1:] = [r"\textbf{" + value + "}" if float(value) == max(scores) else value for value in cells[1:]]
             cells = ["$H=" + cells[0] + "$", cutoffs[horizon], *cells[1:]]
@@ -305,16 +316,16 @@ def write_table(filename, caption, label, headers, rows, notes=""):
 
 def write_evidence_tables(predictions, metrics, inference, regional):
     indexed = metrics.set_index(["model", "H"])
-    weather = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)"]
+    weather = ["ElasticNet", "RandomForest", "XGBoost", "LSTM (Weather-Only)", "Ensemble (Weather-Only)"]
     integrated = ["ElasticNet (+Lag)", "RandomForest (+Lag)", "XGBoost (+Lag)", "LSTM (+Lag)", "Ensemble (ENet + LSTM)"]
     all_models = weather + integrated
     rows = []
     for horizon in ACTIVE_HORIZONS:
         scores = [indexed.loc[(model,horizon), "R2_OOS"] for model in all_models]
         rows.append([str(horizon), *[f"{value:+.2f}" for value in scores]])
-    write_table("tab_horizon_performance.tex", r"Pooled out-of-sample $R^2$ across forecast horizons and information sets (2011--2025).",
-                "tab:horizon_performance", ["H", "ENet W", "RF W", "XGB W", "LSTM W", "ENet L", "RF L", "XGB L", "LSTM L", "Ens L"], rows,
-                r"W: weather-only; L: integrated lagged-yield specification; Ens: ensemble.")
+    write_table("tab_horizon_performance.tex", r"Pooled county-level out-of-sample $R^2$ across forecast horizons and information sets (2011--2025).",
+                "tab:horizon_performance", ["H", "Cutoff Date", "ENet", "RF", "XGB", "LSTM", "Ens", "ENet", "RF", "XGB", "LSTM", "Ens"], rows,
+                r"Weather-only specifies ERA5-Land predictors; Integrated specifications add lagged anomaly $\epsilon_{t-1}$.")
     reg=regional[regional.scope.eq("harvest_closure")]
     observed=reg[reg.model.eq("Naive")].set_index("year").observed
     rows=[]

@@ -538,10 +538,10 @@ def plot_figure_5_1_comparison(df_base, df_full):
 
     models_to_plot = ["ElasticNet", "XGBoost", "LSTM", "Ensemble"]
     model_labels = {
-        "ElasticNet": "ElasticNet (+Lag)",
-        "XGBoost": "XGBoost (+Lag)",
-        "LSTM": "LSTM (+Lag)",
-        "Ensemble": "Linear-Recurrent Ensemble"
+        "ElasticNet": "ElasticNet",
+        "XGBoost": "XGBoost",
+        "LSTM": "LSTM",
+        "Ensemble": "Ensemble"
     }
 
     for m in models_to_plot:

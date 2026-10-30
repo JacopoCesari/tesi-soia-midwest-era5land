@@ -2,59 +2,59 @@
 \centering
 \singlespacing
 \scriptsize
-\setlength{\tabcolsep}{2.5pt}
+\setlength{\tabcolsep}{3.0pt}
 \renewcommand{\arraystretch}{0.96}
 \caption{Out-of-sample decile mean predicted anomaly ($\bar{\hat{\epsilon}}$, bu/ac) vs observed anomaly ($\bar{\epsilon}$) across key lead times ($H = 5, 3, 1^*$). Comparison between \textbf{Base} (expanding linear trend) and \textbf{Full} (full-sample cubic trend). In bold the prediction closest to the respective observed decile mean.}
 \label{tab:appendix_decile_error_performance}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc cc cc cc cc @{}}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l cc cc cc cc cc @{}}
 \toprule
-& \multicolumn{2}{c}{\textbf{Observed } $\bar{\epsilon}$} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM (+Lag)}} & \multicolumn{2}{c}{\textbf{Ensemble}} & \multicolumn{2}{c}{\textbf{Model Mean}} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}\cmidrule(lr){12-13}
-\textbf{Decile} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\
+& \multicolumn{2}{c}{\textbf{Observed } $\bar{\epsilon}$} & \multicolumn{2}{c}{\textbf{ElasticNet}} & \multicolumn{2}{c}{\textbf{XGBoost}} & \multicolumn{2}{c}{\textbf{LSTM}} & \multicolumn{2}{c}{\textbf{Ensemble}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}
+\textbf{Decile} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} & \textbf{Base} & \textbf{Full} \\
 \midrule
-\multicolumn{13}{l}{\textit{\textbf{Panel A: Early Vegetative Horizon ($H = 5$, June 30)}}} \\
+\multicolumn{11}{l}{\textit{\textbf{Panel A: Early Vegetative Horizon ($H = 5$, June 30)}}} \\
 \midrule
-$D_{1}$ (Shortfall) & -8.82 & -10.18 & \textbf{-1.69} & -1.36 & \textbf{-2.08} & -1.82 & \textbf{-0.92} & +0.01 & \textbf{-1.30} & -0.67 & \textbf{-1.50} & -0.96 \\
-$D_{2}$ & -3.43 & -5.32 & \textbf{-0.67} & -0.51 & \textbf{-1.14} & -1.20 & \textbf{-0.69} & -0.13 & \textbf{-0.68} & -0.32 & \textbf{-0.80} & -0.54 \\
-$D_{3}$ & -0.93 & -3.00 & \textbf{-0.26} & -0.32 & \textbf{-0.46} & -0.85 & \textbf{-0.09} & -0.07 & \textbf{-0.18} & -0.20 & \textbf{-0.25} & -0.36 \\
-$D_{4}$ & +0.92 & -1.38 & \textbf{+0.13} & +0.02 & \textbf{+0.03} & -0.27 & \textbf{+0.29} & +0.18 & \textbf{+0.21} & +0.10 & \textbf{+0.17} & +0.01 \\
-$D_{5}$ & +2.48 & +0.02 & +0.26 & \textbf{-0.15} & +0.04 & \textbf{+0.04} & +0.54 & \textbf{+0.33} & +0.40 & \textbf{+0.09} & +0.31 & \textbf{+0.08} \\
-$D_{6}$ & +3.80 & +1.24 & +0.55 & \textbf{+0.32} & +0.54 & \textbf{+0.23} & +0.88 & \textbf{+0.49} & +0.72 & \textbf{+0.40} & +0.67 & \textbf{+0.36} \\
-$D_{7}$ & +5.02 & +2.32 & +0.67 & \textbf{+0.44} & +0.72 & \textbf{+0.41} & +0.72 & \textbf{+0.46} & +0.70 & \textbf{+0.45} & +0.71 & \textbf{+0.44} \\
-$D_{8}$ & +6.29 & +3.43 & +0.59 & \textbf{+0.42} & +0.60 & \textbf{+0.36} & +0.88 & \textbf{+0.50} & +0.73 & \textbf{+0.46} & +0.70 & \textbf{+0.43} \\
-$D_{9}$ & +7.77 & +4.73 & +1.01 & \textbf{+0.37} & +0.84 & \textbf{+0.52} & +1.33 & \textbf{+0.82} & +1.17 & \textbf{+0.60} & +1.09 & \textbf{+0.58} \\
-$D_{10}$ (Peak) & +11.01 & +7.50 & +0.77 & \textbf{+0.69} & +0.37 & \textbf{+0.39} & +0.90 & \textbf{+1.05} & +0.84 & \textbf{+0.87} & +0.72 & \textbf{+0.75} \\
+$D_{1}$ (Shortfall) & -8.82 & -10.18 & \textbf{-1.69} & -1.36 & \textbf{-2.08} & -1.82 & \textbf{-0.92} & +0.01 & \textbf{-1.30} & -0.67 \\
+$D_{2}$ & -3.43 & -5.32 & \textbf{-0.67} & -0.51 & \textbf{-1.14} & -1.20 & \textbf{-0.69} & -0.13 & \textbf{-0.68} & -0.32 \\
+$D_{3}$ & -0.93 & -3.00 & \textbf{-0.26} & -0.32 & \textbf{-0.46} & -0.85 & \textbf{-0.09} & -0.07 & \textbf{-0.18} & -0.20 \\
+$D_{4}$ & +0.92 & -1.38 & \textbf{+0.13} & +0.02 & \textbf{+0.03} & -0.27 & \textbf{+0.29} & +0.18 & \textbf{+0.21} & +0.10 \\
+$D_{5}$ & +2.48 & +0.02 & +0.26 & \textbf{-0.15} & +0.04 & \textbf{+0.04} & +0.54 & \textbf{+0.33} & +0.40 & \textbf{+0.09} \\
+$D_{6}$ & +3.80 & +1.24 & +0.55 & \textbf{+0.32} & +0.54 & \textbf{+0.23} & +0.88 & \textbf{+0.49} & +0.72 & \textbf{+0.40} \\
+$D_{7}$ & +5.02 & +2.32 & +0.67 & \textbf{+0.44} & +0.72 & \textbf{+0.41} & +0.72 & \textbf{+0.46} & +0.70 & \textbf{+0.45} \\
+$D_{8}$ & +6.29 & +3.43 & +0.59 & \textbf{+0.42} & +0.60 & \textbf{+0.36} & +0.88 & \textbf{+0.50} & +0.73 & \textbf{+0.46} \\
+$D_{9}$ & +7.77 & +4.73 & +1.01 & \textbf{+0.37} & +0.84 & \textbf{+0.52} & +1.33 & \textbf{+0.82} & +1.17 & \textbf{+0.60} \\
+$D_{10}$ (Peak) & +11.01 & +7.50 & +0.77 & \textbf{+0.69} & +0.37 & \textbf{+0.39} & +0.90 & \textbf{+1.05} & +0.84 & \textbf{+0.87} \\
 \midrule
-\multicolumn{13}{l}{\textit{\textbf{Panel B: Pod-Filling Reproductive Horizon ($H = 3$, August 31)}}} \\
+\multicolumn{11}{l}{\textit{\textbf{Panel B: Pod-Filling Reproductive Horizon ($H = 3$, August 31)}}} \\
 \midrule
-$D_{1}$ (Shortfall) & -8.82 & -10.18 & \textbf{-2.19} & -2.01 & \textbf{-1.77} & -1.39 & \textbf{-2.61} & -1.22 & \textbf{-2.40} & -1.62 & \textbf{-2.24} & -1.56 \\
-$D_{2}$ & -3.43 & -5.32 & \textbf{-0.84} & -0.87 & \textbf{-0.59} & -0.86 & \textbf{-1.32} & -0.22 & \textbf{-1.08} & -0.55 & \textbf{-0.96} & -0.62 \\
-$D_{3}$ & -0.93 & -3.00 & \textbf{-0.14} & -0.08 & \textbf{-0.15} & -0.08 & \textbf{-0.61} & +0.53 & \textbf{-0.38} & +0.22 & \textbf{-0.32} & +0.15 \\
-$D_{4}$ & +0.92 & -1.38 & \textbf{+0.56} & +0.28 & \textbf{+0.73} & +0.47 & \textbf{+0.26} & +0.70 & \textbf{+0.41} & +0.49 & \textbf{+0.49} & +0.48 \\
-$D_{5}$ & +2.48 & +0.02 & +0.71 & \textbf{+0.52} & +0.73 & \textbf{+0.69} & +0.55 & \textbf{+0.96} & +0.63 & \textbf{+0.74} & +0.66 & \textbf{+0.73} \\
-$D_{6}$ & +3.80 & +1.24 & +1.11 & \textbf{+1.10} & +1.23 & \textbf{+1.04} & +1.13 & \textbf{+1.37} & +1.12 & \textbf{+1.23} & +1.15 & \textbf{+1.18} \\
-$D_{7}$ & +5.02 & +2.32 & +1.46 & \textbf{+1.23} & +1.66 & \textbf{+1.25} & +1.42 & \textbf{+1.79} & +1.44 & \textbf{+1.51} & +1.50 & \textbf{+1.45} \\
-$D_{8}$ & +6.29 & +3.43 & +1.56 & \textbf{+1.30} & +1.72 & \textbf{+1.28} & +1.38 & \textbf{+2.02} & +1.47 & \textbf{+1.66} & +1.53 & \textbf{+1.57} \\
-$D_{9}$ & +7.77 & +4.73 & +1.78 & \textbf{+1.57} & +1.84 & \textbf{+1.43} & +1.65 & \textbf{+2.28} & +1.72 & \textbf{+1.93} & +1.75 & \textbf{+1.80} \\
-$D_{10}$ (Peak) & +11.01 & +7.50 & +2.33 & \textbf{+2.24} & +2.11 & \textbf{+1.60} & +1.84 & \textbf{+2.42} & +2.09 & \textbf{+2.33} & +2.09 & \textbf{+2.15} \\
+$D_{1}$ (Shortfall) & -8.82 & -10.18 & \textbf{-2.19} & -2.01 & \textbf{-1.77} & -1.39 & \textbf{-2.61} & -1.22 & \textbf{-2.40} & -1.62 \\
+$D_{2}$ & -3.43 & -5.32 & \textbf{-0.84} & -0.87 & \textbf{-0.59} & -0.86 & \textbf{-1.32} & -0.22 & \textbf{-1.08} & -0.55 \\
+$D_{3}$ & -0.93 & -3.00 & \textbf{-0.14} & -0.08 & \textbf{-0.15} & -0.08 & \textbf{-0.61} & +0.53 & \textbf{-0.38} & +0.22 \\
+$D_{4}$ & +0.92 & -1.38 & \textbf{+0.56} & +0.28 & \textbf{+0.73} & +0.47 & \textbf{+0.26} & +0.70 & \textbf{+0.41} & +0.49 \\
+$D_{5}$ & +2.48 & +0.02 & +0.71 & \textbf{+0.52} & +0.73 & \textbf{+0.69} & +0.55 & \textbf{+0.96} & +0.63 & \textbf{+0.74} \\
+$D_{6}$ & +3.80 & +1.24 & +1.11 & \textbf{+1.10} & +1.23 & \textbf{+1.04} & +1.13 & \textbf{+1.37} & +1.12 & \textbf{+1.23} \\
+$D_{7}$ & +5.02 & +2.32 & +1.46 & \textbf{+1.23} & +1.66 & \textbf{+1.25} & +1.42 & \textbf{+1.79} & +1.44 & \textbf{+1.51} \\
+$D_{8}$ & +6.29 & +3.43 & +1.56 & \textbf{+1.30} & +1.72 & \textbf{+1.28} & +1.38 & \textbf{+2.02} & +1.47 & \textbf{+1.66} \\
+$D_{9}$ & +7.77 & +4.73 & +1.78 & \textbf{+1.57} & +1.84 & \textbf{+1.43} & +1.65 & \textbf{+2.28} & +1.72 & \textbf{+1.93} \\
+$D_{10}$ (Peak) & +11.01 & +7.50 & +2.33 & \textbf{+2.24} & +2.11 & \textbf{+1.60} & +1.84 & \textbf{+2.42} & +2.09 & \textbf{+2.33} \\
 \midrule
-\multicolumn{13}{l}{\textit{\textbf{Panel C: Harvest Closure ($H = 1^*$, October 31 / September 30 MN)}}} \\
+\multicolumn{11}{l}{\textit{\textbf{Panel C: Harvest Closure ($H = 1^*$, October 31 / September 30 MN)}}} \\
 \midrule
-$D_{1}$ (Shortfall) & -8.82 & -10.18 & \textbf{-2.13} & -1.59 & \textbf{-1.59} & -1.77 & \textbf{-2.18} & -2.03 & \textbf{-2.16} & -1.81 & \textbf{-2.02} & -1.80 \\
-$D_{2}$ & -3.43 & -5.32 & \textbf{-0.83} & -0.39 & \textbf{-0.43} & -0.76 & \textbf{-0.60} & -0.78 & \textbf{-0.72} & -0.59 & \textbf{-0.65} & -0.63 \\
-$D_{3}$ & -0.93 & -3.00 & \textbf{-0.24} & +0.24 & \textbf{-0.19} & -0.22 & \textbf{-0.13} & +0.32 & \textbf{-0.18} & +0.28 & \textbf{-0.19} & +0.16 \\
-$D_{4}$ & +0.92 & -1.38 & \textbf{+0.70} & +0.63 & \textbf{+0.60} & +0.38 & \textbf{+0.85} & +0.53 & \textbf{+0.78} & +0.58 & \textbf{+0.73} & +0.53 \\
-$D_{5}$ & +2.48 & +0.02 & +1.05 & \textbf{+0.84} & +0.84 & \textbf{+0.74} & +1.21 & \textbf{+0.66} & +1.13 & \textbf{+0.75} & +1.06 & \textbf{+0.75} \\
-$D_{6}$ & +3.80 & +1.24 & +1.50 & \textbf{+1.56} & +1.29 & \textbf{+1.22} & +1.69 & \textbf{+1.25} & +1.60 & \textbf{+1.40} & +1.52 & \textbf{+1.36} \\
-$D_{7}$ & +5.02 & +2.32 & +1.84 & \textbf{+1.71} & +1.86 & \textbf{+1.36} & +2.07 & \textbf{+1.64} & +1.96 & \textbf{+1.68} & +1.93 & \textbf{+1.60} \\
-$D_{8}$ & +6.29 & +3.43 & +1.98 & \textbf{+1.79} & +1.79 & \textbf{+1.39} & +2.34 & \textbf{+1.71} & +2.16 & \textbf{+1.75} & +2.07 & \textbf{+1.66} \\
-$D_{9}$ & +7.77 & +4.73 & +2.21 & \textbf{+2.19} & +2.01 & \textbf{+1.77} & +2.55 & \textbf{+2.16} & +2.38 & \textbf{+2.18} & +2.29 & \textbf{+2.07} \\
-$D_{10}$ (Peak) & +11.01 & +7.50 & +2.86 & \textbf{+2.90} & +2.33 & \textbf{+1.97} & +2.84 & \textbf{+2.31} & +2.85 & \textbf{+2.60} & +2.72 & \textbf{+2.45} \\
+$D_{1}$ (Shortfall) & -8.82 & -10.18 & \textbf{-2.13} & -1.59 & \textbf{-1.59} & -1.77 & \textbf{-2.18} & -2.03 & \textbf{-2.16} & -1.81 \\
+$D_{2}$ & -3.43 & -5.32 & \textbf{-0.83} & -0.39 & \textbf{-0.43} & -0.76 & \textbf{-0.60} & -0.78 & \textbf{-0.72} & -0.59 \\
+$D_{3}$ & -0.93 & -3.00 & \textbf{-0.24} & +0.24 & \textbf{-0.19} & -0.22 & \textbf{-0.13} & +0.32 & \textbf{-0.18} & +0.28 \\
+$D_{4}$ & +0.92 & -1.38 & \textbf{+0.70} & +0.63 & \textbf{+0.60} & +0.38 & \textbf{+0.85} & +0.53 & \textbf{+0.78} & +0.58 \\
+$D_{5}$ & +2.48 & +0.02 & +1.05 & \textbf{+0.84} & +0.84 & \textbf{+0.74} & +1.21 & \textbf{+0.66} & +1.13 & \textbf{+0.75} \\
+$D_{6}$ & +3.80 & +1.24 & +1.50 & \textbf{+1.56} & +1.29 & \textbf{+1.22} & +1.69 & \textbf{+1.25} & +1.60 & \textbf{+1.40} \\
+$D_{7}$ & +5.02 & +2.32 & +1.84 & \textbf{+1.71} & +1.86 & \textbf{+1.36} & +2.07 & \textbf{+1.64} & +1.96 & \textbf{+1.68} \\
+$D_{8}$ & +6.29 & +3.43 & +1.98 & \textbf{+1.79} & +1.79 & \textbf{+1.39} & +2.34 & \textbf{+1.71} & +2.16 & \textbf{+1.75} \\
+$D_{9}$ & +7.77 & +4.73 & +2.21 & \textbf{+2.19} & +2.01 & \textbf{+1.77} & +2.55 & \textbf{+2.16} & +2.38 & \textbf{+2.18} \\
+$D_{10}$ (Peak) & +11.01 & +7.50 & +2.86 & \textbf{+2.90} & +2.33 & \textbf{+1.97} & +2.84 & \textbf{+2.31} & +2.85 & \textbf{+2.60} \\
 \midrule
-\textbf{Mean Signed Bias} & --- & --- & -1.52 & \textbf{+1.05} & -1.56 & \textbf{+0.67} & -1.35 & \textbf{+0.84} & -1.43 & \textbf{+0.95} & -1.46 & \textbf{+0.88} \\
-\textbf{MAE (bu/ac)} & --- & --- & 4.04 & \textbf{3.44} & 4.10 & \textbf{3.37} & 3.85 & \textbf{3.65} & 3.86 & \textbf{3.42} & 3.88 & \textbf{3.36} \\
-\textbf{RMSE (bu/ac)} & --- & --- & 5.05 & \textbf{4.48} & 5.12 & \textbf{4.39} & 4.86 & \textbf{4.79} & 4.83 & \textbf{4.45} & 4.86 & \textbf{4.38} \\
-\textbf{Pearson $r$} & --- & --- & \textbf{0.518} & 0.505 & 0.506 & \textbf{0.512} & \textbf{0.566} & 0.417 & \textbf{0.590} & 0.506 & \textbf{0.594} & 0.527 \\
+\textbf{Mean Signed Bias} & --- & --- & -1.52 & \textbf{+1.05} & -1.56 & \textbf{+0.67} & -1.35 & \textbf{+0.84} & -1.43 & \textbf{+0.95} \\
+\textbf{MAE (bu/ac)} & --- & --- & 4.04 & \textbf{3.44} & 4.10 & \textbf{3.37} & 3.85 & \textbf{3.65} & 3.86 & \textbf{3.42} \\
+\textbf{RMSE (bu/ac)} & --- & --- & 5.05 & \textbf{4.48} & 5.12 & \textbf{4.39} & 4.86 & \textbf{4.79} & 4.83 & \textbf{4.45} \\
+\textbf{Pearson $r$} & --- & --- & \textbf{0.518} & 0.505 & 0.506 & \textbf{0.512} & \textbf{0.566} & 0.417 & \textbf{0.590} & 0.506 \\
 \bottomrule
 \end{tabular*}
 \vspace{0.2em}
